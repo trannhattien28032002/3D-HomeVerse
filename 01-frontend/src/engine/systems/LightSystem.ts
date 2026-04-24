@@ -18,6 +18,7 @@ export class LightSystem extends System {
     }
 
     update(world: World, deltaTime: number): void {
+        void deltaTime;
 
         // =====================
         // 🌤 AMBIENT LIGHTS

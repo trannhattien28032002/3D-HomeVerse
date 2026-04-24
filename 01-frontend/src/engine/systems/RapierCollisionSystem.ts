@@ -8,206 +8,276 @@ import { ColliderAABB } from "../components/ColliderAABB";
 import { StaticBody } from "../components/StaticBody";
 import { DynamicBody } from "../components/DynamicBody";
 
+const SWEEP_EPSILON = 2e-3;          // buffer gap before collision surface
+const MOVE_THRESHOLD_SQ = 1e-6;     // minimum movement squared to trigger move (1mm²)
+
+/**
+ * RapierCollisionSystem
+ *
+ * === Chiến lược: pure spatial query — KHÔNG dùng step() ===
+ *
+ * Vì sao KHÔNG dùng step() + KinematicCharacterController:
+ *   1. KCC + step() trigger nhiều code path trong Rapier WASM có thể
+ *      panic (unreachable) do NaN, degenerate contacts, arena resize...
+ *   2. Chúng ta không cần simulation — chỉ cần "có thể đến vị trí này không?"
+ *
+ * Giải pháp:
+ *   - Static walls → Fixed RigidBody trong Rapier (collision proxy).
+ *   - Dynamic wall (đang kéo) → KHÔNG tạo Rapier body. Dùng castShape
+ *     thuần tuý để sweep AABB từ cachedPos → proposed position.
+ *   - castShape dùng fresh RAPIER.Cuboid shape (không lưu collider.shape).
+ *   - filterPredicate exclude non-fixed bodies.
+ *   - cachedPos (JS Map) track "last safe position" — không bao giờ gọi
+ *     body.translation() trên wrapper đã lưu qua frame.
+ *
+ * === Lưu ý WASM handle ===
+ *   Lưu handle (number) không phải object. Lấy fresh wrapper mỗi khi cần:
+ *     const body = physicsWorld.getRigidBody(handle);
+ */
 export class RapierCollisionSystem extends System {
     public physicsWorld: RAPIER.World | null = null;
-    public characterController: RAPIER.KinematicCharacterController | null = null;
     private initialized = false;
 
-    private entityToBody = new Map<number, RAPIER.RigidBody>();
-    private entityToCollider = new Map<number, RAPIER.Collider>();
-    private isDynamic = new Map<number, boolean>();
+    // Chỉ track Static bodies (Fixed Rapier bodies)
+    private staticBodyHandle     = new Map<number, number>(); // entity → rigidbody handle
+    private staticColliderHandle = new Map<number, number>(); // entity → collider handle
+
+    /**
+     * Last-safe-position cache cho dynamic entities.
+     * Điểm xuất phát của mỗi castShape sweep.
+     */
+    private cachedPos = new Map<number, { x: number; y: number; z: number }>();
 
     constructor() {
         super();
-        
-        // Cú lừa WebAssembly: Đợi load xong mới tạo World để không bị crash "Cannot read properties"
         RAPIER.init().then(() => {
-            const gravity = { x: 0.0, y: 0.0, z: 0.0 };
-            this.physicsWorld = new RAPIER.World(gravity);
-            this.characterController = this.physicsWorld.createCharacterController(0.01);
-            this.initialized = true;
+            // Không cần gravity — chỉ là spatial query engine
+            this.physicsWorld = new RAPIER.World({ x: 0, y: 0, z: 0 });
+            this.initialized  = true;
         });
     }
 
+    // ------------------------------------------------------------------ //
+    // ECS System update                                                    //
+    // ------------------------------------------------------------------ //
+
     update(world: World): void {
-        if (!this.initialized || !this.physicsWorld || !this.characterController) return;
+        if (!this.initialized || !this.physicsWorld) return;
 
-        const dynamicEntities = Query.entitiesWith(
-            world,
-            Transform,
-            ColliderAABB,
-            DynamicBody
-        );
+        const dynamicEntities = Query.entitiesWith(world, Transform, ColliderAABB, DynamicBody);
+        const staticEntities  = Query.entitiesWith(world, Transform, ColliderAABB, StaticBody);
 
-        const staticEntities = Query.entitiesWith(
-            world,
-            Transform,
-            ColliderAABB,
-            StaticBody
-        );
-
-        const currentPhysicsEntities = new Set([...dynamicEntities, ...staticEntities]);
-
-        // 1. Dọn dẹp body cũ nếu một Entity đã bị xóa hoặc mất component ColliderAABB
-        for (const entityId of this.entityToBody.keys()) {
-            if (!currentPhysicsEntities.has(entityId)) {
-                this.physicsWorld!.removeRigidBody(this.entityToBody.get(entityId)!);
-                this.entityToBody.delete(entityId);
-                this.entityToCollider.delete(entityId);
-                this.isDynamic.delete(entityId);
+        // 1. GC static bodies không còn tồn tại
+        const staticSet = new Set(staticEntities);
+        for (const id of Array.from(this.staticBodyHandle.keys())) {
+            if (!staticSet.has(id)) {
+                const h    = this.staticBodyHandle.get(id)!;
+                const body = this.physicsWorld.getRigidBody(h);
+                if (body) this.physicsWorld.removeRigidBody(body);
+                this.staticBodyHandle.delete(id);
+                this.staticColliderHandle.delete(id);
             }
         }
 
-        // 2. Chấm dứt sớm nếu không có vật thể nào đang di chuyển để tiết kiệm CPU (Giống AABB)
-        if (dynamicEntities.length === 0) {
-            // Vẫn cần sync Static Entities lần đầu để nạp vào Physics World
-            for (const id of staticEntities) {
-                this.syncEntity(world, id, false);
+        // 2. GC cachedPos của entities không còn dynamic
+        const dynamicSet = new Set(dynamicEntities);
+        for (const id of Array.from(this.cachedPos.keys())) {
+            if (!dynamicSet.has(id)) this.cachedPos.delete(id);
+        }
+
+        // 3. Sync all static walls vào Rapier
+        for (const id of staticEntities) {
+            this.syncStaticBody(world, id);
+        }
+
+        // 4. Collision detection cho dynamic entities (castShape, KHÔNG step)
+        for (const id of dynamicEntities) {
+            const t = world.getComponent(id, Transform)!;
+            const c = world.getComponent(id, ColliderAABB)!;
+
+            // Khởi tạo cache nếu lần đầu kéo
+            if (!this.cachedPos.has(id)) {
+                this.cachedPos.set(id, { x: t.x, y: t.y, z: t.z });
             }
+            const cached = this.cachedPos.get(id)!;
+
+            this.resolveCollision(t, c, cached);
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    // Public API — dùng bởi engine.ts clampMovement2D                    //
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Synchronous query — dùng bởi Konva dragBoundFunc.
+     * Tìm vị trí an toàn gần nhất cho entity khi kéo đến (targetX, targetY, targetZ).
+     */
+    public clampMovement(
+        world: World,
+        entityId: number,
+        targetX: number,
+        targetY: number,
+        targetZ: number
+    ): { x: number; y: number; z: number } | null {
+        if (!this.initialized || !this.physicsWorld) return null;
+
+        const c = world.getComponent(entityId, ColliderAABB);
+        if (!c) return null;
+
+        const cached = this.cachedPos.get(entityId);
+        if (!cached) return null;
+
+        const fakeTrans = { x: targetX, y: targetY, z: targetZ, rotY: 0 };
+        const t = world.getComponent(entityId, Transform);
+        if (t) fakeTrans.rotY = t.rotY;
+
+        const dx  = targetX - cached.x;
+        const dy  = targetY - cached.y;
+        const dz  = targetZ - cached.z;
+        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (len < Math.sqrt(MOVE_THRESHOLD_SQ)) {
+            return { x: cached.x, y: cached.y, z: cached.z };
+        }
+
+        const rot   = this.rotYToQuat(fakeTrans.rotY);
+        const shape = new RAPIER.Cuboid(c.width, c.height, c.depth);
+        const hit   = this.physicsWorld.castShape(
+            { x: cached.x, y: cached.y, z: cached.z },
+            rot,
+            { x: dx, y: dy, z: dz },
+            shape,
+            0.0, 1.0, true,
+            undefined, undefined, undefined, undefined,
+            (col) => this.isFixed(col)
+        );
+
+        if (hit != null && hit.time_of_impact < 1.0) {
+            const toi = Math.max(0, hit.time_of_impact - SWEEP_EPSILON / len);
+            return {
+                x: cached.x + dx * toi,
+                y: cached.y + dy * toi,
+                z: cached.z + dz * toi,
+            };
+        }
+
+        return { x: targetX, y: targetY, z: targetZ };
+    }
+
+    // ------------------------------------------------------------------ //
+    // Private helpers                                                      //
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Sweep shape từ cachedPos → transform, clamp nếu hit.
+     * Tất cả query dùng fresh RAPIER.Cuboid — không cần collider object.
+     */
+    private resolveCollision(
+        t: Transform,
+        c: ColliderAABB,
+        cached: { x: number; y: number; z: number }
+    ): void {
+        const dx  = t.x - cached.x;
+        const dy  = t.y - cached.y;
+        const dz  = t.z - cached.z;
+        const lenSq = dx * dx + dy * dy + dz * dz;
+
+        if (lenSq < MOVE_THRESHOLD_SQ) {
+            // Không di chuyển — giữ nguyên vị trí an toàn
+            t.x = cached.x; t.y = cached.y; t.z = cached.z;
             return;
         }
 
-        // 3. Đồng bộ hóa Tường tĩnh
-        for (const id of staticEntities) {
-            this.syncEntity(world, id, false);
-        }
+        const len   = Math.sqrt(lenSq);
+        const rot   = this.rotYToQuat(t.rotY);
 
-        // 4. Đồng bộ hóa Tường động (Đang bị con trỏ kéo)
-        // Chúng ta ghi nhớ vị trí ban đầu Rapier của nó, thay đổi target thành Transform do chuột kéo
-        const dragMovements = new Map<number, RAPIER.Vector3>();
+        // Fresh shape mỗi frame — không có WASM memory aliasing issue
+        const shape = new RAPIER.Cuboid(c.width, c.height, c.depth);
 
-        for (const id of dynamicEntities) {
-            this.syncEntity(world, id, true);
+        const hit = this.physicsWorld!.castShape(
+            { x: cached.x, y: cached.y, z: cached.z },
+            rot,
+            { x: dx, y: dy, z: dz },
+            shape,
+            0.0,    // targetDistance: start detect at distance 0
+            1.0,    // maxToi: sweep full movement vector
+            true,   // stopAtPenetration
+            undefined, undefined, undefined, undefined,
+            (col) => this.isFixed(col)  // chỉ va chạm với Fixed bodies (tường tĩnh)
+        );
 
-            const body = this.entityToBody.get(id);
-            const collider = this.entityToCollider.get(id);
-            const transform = world.getComponent(id, Transform)!;
-
-            if (body && collider) {
-                const currentPos = body.translation();
-                // Vector yêu cầu nhảy tới vị trí chuột (chưa lọc qua tường)
-                const targetPos = { x: transform.x, y: transform.y, z: transform.z };
-                
-                const movementDirection = new RAPIER.Vector3(
-                    targetPos.x - currentPos.x,
-                    targetPos.y - currentPos.y,
-                    targetPos.z - currentPos.z
-                );
-
-                // Giao việc trượt/va chạm cho Character Controller xử lý
-                this.characterController.computeColliderMovement(
-                    collider,
-                    movementDirection,
-                    RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC // Chỉ cản bởi tường tĩnh
-                );
-
-                const correctedMovement = this.characterController.computedMovement();
-                
-                // Set the next Kinematic position after filtering out wall collisions
-                body.setNextKinematicTranslation({
-                    x: currentPos.x + correctedMovement.x,
-                    y: currentPos.y + correctedMovement.y,
-                    z: currentPos.z + correctedMovement.z
-                });
-            }
-        }
-
-        // 5. Giải quyết va chạm vật lý (Step Time)
-        this.physicsWorld!.step();
-
-        // 6. Nạp kết quả hợp lệ lên lại ECS Transform (Chuột ở trong tường thì Transform vẫn trượt dọc bên ngoài)
-        for (const id of dynamicEntities) {
-            const body = this.entityToBody.get(id);
-            const transform = world.getComponent(id, Transform);
-            
-            if (body && transform) {
-                const finalPos = body.translation();
-                transform.x = finalPos.x;
-                transform.y = finalPos.y;
-                transform.z = finalPos.z;
-            }
+        if (hit != null && hit.time_of_impact < 1.0) {
+            // Dừng trước tường một khoảng SWEEP_EPSILON
+            const toi = Math.max(0, hit.time_of_impact - SWEEP_EPSILON / len);
+            t.x = cached.x + dx * toi;
+            t.y = cached.y + dy * toi;
+            t.z = cached.z + dz * toi;
+            // cachedPos KHÔNG update — entity bị chặn
+        } else {
+            // Đường thông — chấp nhận vị trí mới
+            cached.x = t.x;
+            cached.y = t.y;
+            cached.z = t.z;
         }
     }
 
-    public clampMovement(entityId: number, targetX: number, targetY: number, targetZ: number): { x: number, y: number, z: number } | null {
-        if (!this.initialized || !this.physicsWorld || !this.characterController) return null;
-
-        const body = this.entityToBody.get(entityId);
-        const collider = this.entityToCollider.get(entityId);
-        
-        if (!body || !collider) return null;
-
-        const currentPos = body.translation();
-        const movementDirection = new RAPIER.Vector3(
-            targetX - currentPos.x,
-            targetY - currentPos.y,
-            targetZ - currentPos.z
-        );
-
-        this.characterController.computeColliderMovement(
-            collider,
-            movementDirection,
-            RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC // Chỉ cản bởi tường tĩnh
-        );
-
-        const correctedMovement = this.characterController.computedMovement();
-        
-        return {
-            x: currentPos.x + correctedMovement.x,
-            y: currentPos.y + correctedMovement.y,
-            z: currentPos.z + correctedMovement.z
-        };
-    }
-
-    private syncEntity(world: World, id: number, isDynamicState: boolean) {
+    /**
+     * Tạo hoặc cập nhật Fixed body cho entity tĩnh.
+     * Dùng cachedPos (JS) thay vì body.translation() để so sánh vị trí.
+     */
+    private syncStaticBody(world: World, id: number): void {
         const t = world.getComponent(id, Transform)!;
         const c = world.getComponent(id, ColliderAABB)!;
+        const q = this.rotYToQuat(t.rotY);
 
-        // Nếu trạng thái của vật thay đổi (VD: Cầm lên (Static->Dynamic) rồi Thả xuống (Dynamic->Static))
-        if (this.entityToBody.has(id)) {
-            const wasDynamic = this.isDynamic.get(id);
-            if (wasDynamic !== isDynamicState) {
-                this.physicsWorld!.removeRigidBody(this.entityToBody.get(id)!);
-                this.entityToBody.delete(id);
-                this.entityToCollider.delete(id);
-            }
-        }
+        if (!this.staticBodyHandle.has(id)) {
+            // Tạo Fixed body mới
+            const desc = RAPIER.RigidBodyDesc.fixed();
+            desc.setTranslation(t.x, t.y, t.z);
+            desc.setRotation(q);
 
-        // Nếu chưa tồn tại trong Rapier World thì khởi tạo
-        if (!this.entityToBody.has(id)) {
-            // DynamicBody dùng KinematicPositionBased để trượt thủ công cực mượt bằng setNextKinematicTranslation
-            // StaticBody dùng Fixed để làm vật cản chết đứng
-            const rigidBodyDesc = isDynamicState 
-                ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-                : RAPIER.RigidBodyDesc.fixed();
-            
-            // Tính toán Quaternion từ t.rotY (Euler Y)
-            const q = { x: 0, y: Math.sin(t.rotY / 2), z: 0, w: Math.cos(t.rotY / 2) };
-            rigidBodyDesc.setTranslation(t.x, t.y, t.z);
-            rigidBodyDesc.setRotation(q);
-            
-            const body = this.physicsWorld!.createRigidBody(rigidBodyDesc);
+            const body     = this.physicsWorld!.createRigidBody(desc);
+            const cDesc    = RAPIER.ColliderDesc.cuboid(c.width, c.height, c.depth);
+            const collider = this.physicsWorld!.createCollider(cDesc, body);
 
-            // ECS C.width/height/depth là nửa kích thước (Half Extents). Rapier cuboid cũng cần nửa kích thước!
-            const colliderDesc = RAPIER.ColliderDesc.cuboid(c.width, c.height, c.depth);
-            const collider = this.physicsWorld!.createCollider(colliderDesc, body);
-
-            this.entityToBody.set(id, body);
-            this.entityToCollider.set(id, collider);
-            this.isDynamic.set(id, isDynamicState);
+            this.staticBodyHandle.set(id, body.handle);
+            this.staticColliderHandle.set(id, collider.handle);
+            // Lưu vị trí vào cachedPos để compare sau này
+            this.cachedPos.set(id, { x: t.x, y: t.y, z: t.z });
         } else {
-            // Chức năng nâng cao: Nếu kéo thả cửa sổ 2D => thay đổi Transform nhưng bức tường là STATIC,
-            // bắt buộc phải cập nhật cứng vị trí FixedBody để nó khớp với React store
-            const body = this.entityToBody.get(id)!;
-            const q = { x: 0, y: Math.sin(t.rotY / 2), z: 0, w: Math.cos(t.rotY / 2) };
+            // Kiểm tra xem tường có bị di chuyển không (từ 2D plan drag)
+            const cached = this.cachedPos.get(id)!;
+            const distSq = (t.x - cached.x) ** 2 + (t.y - cached.y) ** 2 + (t.z - cached.z) ** 2;
 
-            if (!isDynamicState) {
-                body.setTranslation({ x: t.x, y: t.y, z: t.z }, true);
-                body.setRotation(q, true);
-            } else {
-                // Với vật đang kéo bằng chuột, ta cập nhật góc xoay mượt mà qua Kinematic Target
-                body.setNextKinematicRotation(q);
+            if (distSq > MOVE_THRESHOLD_SQ) {
+                const h    = this.staticBodyHandle.get(id)!;
+                const body = this.physicsWorld!.getRigidBody(h); // FRESH wrapper
+                if (body) {
+                    body.setTranslation({ x: t.x, y: t.y, z: t.z }, true);
+                    body.setRotation(q, true);
+                    cached.x = t.x;
+                    cached.y = t.y;
+                    cached.z = t.z;
+                }
             }
         }
+    }
+
+    /**
+     * Kiểm tra collider có thuộc Fixed body không.
+     * Dùng trong filterPredicate của castShape.
+     * Lấy fresh RigidBody wrapper mỗi lần — an toàn trong synchronous call.
+     */
+    private isFixed(col: RAPIER.Collider): boolean {
+        const parentHandle = col.parent()?.handle;
+        if (parentHandle == null) return false;
+        const body = this.physicsWorld!.getRigidBody(parentHandle);
+        return body != null && body.isFixed();
+    }
+
+    private rotYToQuat(rotY: number): { x: number; y: number; z: number; w: number } {
+        const half = (rotY ?? 0) / 2;
+        return { x: 0, y: Math.sin(half), z: 0, w: Math.cos(half) };
     }
 }

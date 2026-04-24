@@ -8,14 +8,19 @@ import { Mesh } from "../components/Mesh";
 import { Selectable } from "../components/Selectable";
 import { DynamicBody } from "../components/DynamicBody";
 import { StaticBody } from "../components/StaticBody";
+import { WallTag } from "../components/WallTag";
 
 import { TransformControls } from "three/addons/controls/TransformControls.js";
-// import { EngineEvents } from "../events/EngineEvents";
+import { EngineEvents } from "../events/EngineEvents";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+type MeshWithEntity = THREE.Object3D & { __entity?: number };
 
 export class GizmoSystem extends System {
     private camera: THREE.Camera;
     private scene: THREE.Scene;
     private controls: TransformControls;
+    private rendererDomElement: HTMLCanvasElement;
 
     private world!: World;
     private draggingEntity: number | null = null;
@@ -25,35 +30,37 @@ export class GizmoSystem extends System {
     private raycaster = new THREE.Raycaster();
     private mouse = new THREE.Vector2();
     private pickObjects: THREE.Object3D[] = [];
-    // private events: EngineEvents;
-    // private lastTransformEmitMs = 0;
-    // private readonly transformEmitIntervalMs = 50;
+    private events?: EngineEvents;
+    private lastTransformEmitMs = 0;
+    private readonly transformEmitIntervalMs = 50;
 
     constructor(
         camera: THREE.Camera,
         scene: THREE.Scene,
         renderer: THREE.WebGLRenderer,
-        orbitControls: any,
-        _events?: unknown
+        orbitControls: OrbitControls,
+        events?: EngineEvents
     ) {
         super();
 
         this.camera = camera;
         this.scene = scene;
+        this.rendererDomElement = renderer.domElement;
 
         this.controls = new TransformControls(camera, renderer.domElement);
         this.controls.setMode("translate");
 
         this.scene.add(this.controls.getHelper());
-        // this.events = events;
+        this.events = events;
 
-        this.controls.addEventListener("dragging-changed", (event: any) => {
-            orbitControls.enabled = !event.value;
+        this.controls.addEventListener("dragging-changed", (event) => {
+            const isDragging = Boolean(event.value);
+            orbitControls.enabled = !isDragging;
 
             const object = this.controls.object;
-            const entity = object ? (object as any).__entity : null;
+            const entity = object ? (object as MeshWithEntity).__entity ?? null : null;
 
-            if (event.value) {
+            if (isDragging) {
                 // Start dragging: make the selected entity dynamic for collision resolving.
                 if (entity == null) return;
 
@@ -62,6 +69,7 @@ export class GizmoSystem extends System {
                     entity,
                     StaticBody
                 );
+
                 this.releaseFramesLeft = 0;
 
                 if (this.draggingEntityWasStatic) {
@@ -71,7 +79,7 @@ export class GizmoSystem extends System {
                     this.world.addComponent(entity, new DynamicBody());
                 }
 
-                // this.events.emit("draggingChanged", { entityId: entity, dragging: true });
+                this.events?.emit("draggingChanged", { entityId: entity, dragging: true });
                 return;
             }
 
@@ -80,17 +88,20 @@ export class GizmoSystem extends System {
             // IMPORTANT: defer removal a couple frames so collision can clamp the final position
             // even if the user releases while "past" a blocker in a single frame.
             this.releaseFramesLeft = 2;
-            // this.events.emit("draggingChanged", { entityId: this.draggingEntity, dragging: false });
+            this.events?.emit("draggingChanged", { entityId: this.draggingEntity, dragging: false });
         });
         // 🔥 Sync THREE → ECS
         this.controls.addEventListener("objectChange", () => {
             const object = this.controls.object;
+
             if (!object) return;
 
-            const entity = (object as any).__entity;
+            const entity = (object as MeshWithEntity).__entity;
             if (entity == null) return;
 
             const transform = this.world.getComponent(entity, Transform);
+            const wallTag = this.world.getComponent(entity, WallTag);
+
             if (!transform) return;
 
             transform.x = object.position.x;
@@ -98,25 +109,27 @@ export class GizmoSystem extends System {
             transform.z = object.position.z;
             transform.rotY = object.rotation.y;
 
-            // const now = performance.now();
-            // if (now - this.lastTransformEmitMs >= this.transformEmitIntervalMs) {
-            //     this.lastTransformEmitMs = now;
-            //     this.events.emit("transformChanged", {
-            //         entityId: entity,
-            //         x: transform.x,
-            //         y: transform.y,
-            //         z: transform.z,
-            //         rotY: transform.rotY
-            //     });
-            // }
+            const now = performance.now();
+            if (now - this.lastTransformEmitMs >= this.transformEmitIntervalMs) {
+                this.lastTransformEmitMs = now;
+                this.events?.emit("entityMoved", {
+                    entityId: entity,
+                    wallId: wallTag?.wallId,
+                    x: transform.x,
+                    y: transform.y,
+                    z: transform.z,
+                    rotY: transform.rotY
+                });
+            }
         });
 
-        renderer.domElement.addEventListener("mousedown", this.onMouseDown);
+        this.rendererDomElement.addEventListener("mousedown", this.onMouseDown);
     }
 
     private onMouseDown = (event: MouseEvent) => {
         const rect = (event.target as HTMLElement).getBoundingClientRect();
 
+        // Convert mouse coordinates to normalized device coordinates
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
@@ -133,7 +146,7 @@ export class GizmoSystem extends System {
             const mesh = meshComp.mesh;
 
             // 🔥 gắn entity vào mesh (QUAN TRỌNG)
-            (mesh as any).__entity = e;
+            (mesh as MeshWithEntity).__entity = e;
 
             objects.push(mesh);
         }
@@ -144,15 +157,22 @@ export class GizmoSystem extends System {
 
         if (hits.length === 0) {
             this.controls.detach();
-            // this.events.emit("selectionChanged", { entityId: null });
+            this.events?.emit("entitySelected", { entityId: null });
             return;
         }
 
         const mesh = hits[0].object;
 
         this.controls.attach(mesh);
-        // this.events.emit("selectionChanged", { entityId: (mesh as any).__entity ?? null });
+        this.events?.emit("entitySelected", { entityId: (mesh as MeshWithEntity).__entity ?? null });
     };
+
+    dispose() {
+        this.rendererDomElement.removeEventListener("mousedown", this.onMouseDown);
+        this.controls.detach();
+        this.scene.remove(this.controls.getHelper());
+        this.controls.dispose();
+    }
 
     update(world: World): void {
         this.world = world;

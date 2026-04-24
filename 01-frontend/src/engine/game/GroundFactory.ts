@@ -4,10 +4,11 @@ import { Mesh } from "../components/Mesh";
 import { StaticBody } from "../components/StaticBody";
 import { ColliderAABB } from "../components/ColliderAABB";
 import { Grounded } from "../components/Grounded";
+import { World } from "../ecs/World";
 
-export function createGround(world: any, scene: THREE.Scene) {
+export function createGround(world: World, scene: THREE.Scene) {
     const entity = world.createEntity();
-    
+
     // Visual
     const geometry = new THREE.PlaneGeometry(100, 100);
     const material = new THREE.MeshStandardMaterial({ metalness: 0, roughness: 1 });

@@ -4,6 +4,10 @@ import { World } from "../ecs/World";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
+/**
+ * Quản lý Camera xoay quanh vật thể (Orbit Controls).
+ * System này liên tục gọi controls.update() để đảm bảo khung hình người dùng vuốt trơn tru.
+ */
 export class OrbitControlSystem extends System {
     controls: OrbitControls;
 
@@ -30,6 +34,8 @@ export class OrbitControlSystem extends System {
     }
 
     update(world: World, deltaTime: number): void {
+        void world;
+        void deltaTime;
         this.controls.update();
     }
 }

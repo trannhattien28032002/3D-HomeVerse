@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D OBB SAT Collision Simulation</title>
+    <style>
+        body { 
+            margin: 0; overflow: hidden; 
+            background-color: #1e1e2e; color: #cdd6f4; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        #info { 
+            position: absolute; top: 15px; left: 20px; 
+            pointer-events: none; z-index: 10;
+        }
+        h2 { margin: 0 0 5px 0; color: #f5e0dc; }
+        p { margin: 0; color: #a6adc8; max-width: 400px; font-size: 14px; line-height: 1.5; }
+        
+        #panel {
+            position: absolute; top: 15px; right: 15px; width: 340px;
+            background: rgba(24, 24, 37, 0.85); padding: 15px; border-radius: 8px;
+            border: 1px solid #45475a; max-height: 90vh; overflow-y: auto;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        h3 { margin-top: 0; color: #f5e0dc; border-bottom: 1px solid #45475a; padding-bottom: 10px; margin-bottom: 10px; }
+        .help { font-size: 13px; color: #bac2de; margin-bottom: 15px; line-height: 1.6; }
+        kbd {
+            background-color: #45475a; padding: 2px 5px; border-radius: 4px;
+            font-family: monospace; color: #f38ba8; font-weight: bold;
+        }
+        .axis-item {
+            display: flex; justify-content: space-between; margin-bottom: 5px;
+            padding: 6px 10px; border-radius: 4px; background: #313244; font-size: 13px;
+            font-family: monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .axis-item:hover {
+            filter: brightness(1.2);
+        }
+        .axis-item.is-selected {
+            border: 1px solid #cba6f7;
+            box-shadow: 0 0 8px rgba(203, 166, 247, 0.5);
+            transform: translateX(-5px);
+        }
+        .separated { 
+            background: rgba(166, 227, 161, 0.15); 
+            border-left: 4px solid #a6e3a1; 
+            color: #a6e3a1; font-weight: bold;
+        }
+        .overlapped { 
+            background: rgba(243, 139, 168, 0.1); 
+            border-left: 4px solid #f38ba8; 
+            color: #f38ba8;
+        }
+        .parallel {
+            background: rgba(108, 112, 134, 0.2); 
+            border-left: 4px solid #6c7086; 
+            color: #a6adc8;
+        }
+        .header-row {
+            display: flex; justify-content: space-between;
+            font-size: 12px; color: #a6adc8; margin-bottom: 5px; padding: 0 10px;
+        }
+        #status-banner {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            padding: 10px 30px; border-radius: 30px; font-weight: bold; font-size: 20px;
+            text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            pointer-events: none; z-index: 10;
+        }
+        .status-safe { background: rgba(166, 227, 161, 0.9); color: #11111b; }
+        .status-collide { background: rgba(243, 139, 168, 0.9); color: #11111b; }
+    </style>
+
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="info">
+        <h2>3D SAT & OBB Simulation</h2>
+        <p>15 Trục SAT hiện <b>đang bị ẩn</b> để tránh rối mắt.<br>
+           Hãy <b>Click vào một trục bất kỳ</b> ở bảng bên phải để hiện trục đó ra không gian 3D.</p>
+    </div>
+
+    <div id="status-banner" class="status-safe">AN TOÀN</div>
+
+    <div id="panel">
+        <h3>Kiểm tra 15 Trục SAT</h3>
+        <div class="help">
+            🖱️ <b>Click vào tên trục ở dưới</b> để xem trực quan.<br>
+            ⌨️ Bấm <kbd>T</kbd> để di chuyển, <kbd>R</kbd> để xoay hộp.
+        </div>
+        <div class="header-row">
+            <span>TÊN TRỤC (AXIS)</span>
+            <span>OVERLAP</span>
+        </div>
+        <div id="axes-list"></div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#1e1e2e');
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(6, 6, 9);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const orbit = new OrbitControls(camera, renderer.domElement);
+        orbit.enableDamping = true;
+        orbit.dampingFactor = 0.05;
+
+        scene.add(new THREE.GridHelper(15, 15, 0x45475a, 0x313244));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
+
+        // OBB A & B
+        const extentsA = new THREE.Vector3(1, 0.6, 1.2);
+        const extentsB = new THREE.Vector3(0.8, 0.8, 0.8);
+
+        const matA = new THREE.MeshPhongMaterial({ color: 0x89b4fa, transparent: true, opacity: 0.6, depthWrite: false });
+        const matB = new THREE.MeshPhongMaterial({ color: 0xf9e2af, transparent: true, opacity: 0.6, depthWrite: false });
+        const matCollide = new THREE.MeshPhongMaterial({ color: 0xf38ba8, transparent: true, opacity: 0.8 });
+
+        const geomA = new THREE.BoxGeometry(extentsA.x*2, extentsA.y*2, extentsA.z*2);
+        const geomB = new THREE.BoxGeometry(extentsB.x*2, extentsB.y*2, extentsB.z*2);
+
+        const meshA = new THREE.Mesh(geomA, matA);
+        const meshB = new THREE.Mesh(geomB, matB);
+
+        meshA.position.set(-2, extentsA.y, 0);
+        meshB.position.set(2, extentsB.y + 0.5, 0);
+        meshB.rotation.set(Math.PI/6, Math.PI/4, 0);
+
+        scene.add(meshA);
+        scene.add(meshB);
+
+        // Transform Controls
+        const transformControl = new TransformControls(camera, renderer.domElement);
+        transformControl.addEventListener('dragging-changed', function (event) {
+            orbit.enabled = !event.value;
+        });
+        scene.add(transformControl);
+        transformControl.attach(meshB);
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        window.addEventListener('mousedown', (event) => {
+            if (event.clientX > window.innerWidth - 360 && event.clientY < window.innerHeight - 50) return; 
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([meshA, meshB]);
+            if (intersects.length > 0) {
+                transformControl.attach(intersects[0].object);
+            }
+        });
+
+        window.addEventListener('keydown', (event) => {
+            switch (event.key.toLowerCase()) {
+                case 't': transformControl.setMode('translate'); break;
+                case 'r': transformControl.setMode('rotate'); break;
+            }
+        });
+
+        // Khởi tạo 15 Visualizers cho 15 trục và UI Elements
+        const axisVisualizers = [];
+        const axesListEl = document.getElementById('axes-list');
+        const axisUIElements = [];
+
+        for (let i = 0; i < 15; i++) {
+            const arrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 3, 0xffffff, 0.6, 0.4);
+            scene.add(arrow);
+            
+            const lineGeom = new THREE.BufferGeometry();
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0, linewidth: 3 });
+            const line = new THREE.Line(lineGeom, lineMat);
+            scene.add(line);
+            
+            axisVisualizers.push({ arrow, line });
+
+            // Khởi tạo DOM Element 1 lần duy nhất để tránh giật lag và mất sự kiện click
+            const el = document.createElement('div');
+            el.className = 'axis-item';
+            // Dùng onmousedown sẽ nhạy hơn onclick nhiều
+            el.onmousedown = () => window.selectAxis(i);
+            axesListEl.appendChild(el);
+            axisUIElements.push(el);
+        }
+
+        function getObbData(mesh, extents) {
+            mesh.updateMatrixWorld();
+            const center = new THREE.Vector3();
+            center.setFromMatrixPosition(mesh.matrixWorld);
+            const extractAxis = (index) => {
+                const elements = mesh.matrixWorld.elements;
+                return new THREE.Vector3(elements[index*4], elements[index*4+1], elements[index*4+2]).normalize();
+            };
+            return {
+                c: center,
+                u: [extractAxis(0), extractAxis(1), extractAxis(2)],
+                e: [extents.x, extents.y, extents.z]
+            };
+        }
+
+        const statusBanner = document.getElementById('status-banner');
+        let selectedAxisIndex = -1;
+
+        window.selectAxis = function(index) {
+            if (selectedAxisIndex === index) {
+                selectedAxisIndex = -1; // Click lại để bỏ chọn
+            } else {
+                selectedAxisIndex = index;
+            }
+            updateSAT(); // Force update
+        }
+
+        function updateSAT() {
+            const A = getObbData(meshA, extentsA);
+            const B = getObbData(meshB, extentsB);
+            const T = new THREE.Vector3().subVectors(B.c, A.c);
+            const midpoint = new THREE.Vector3().addVectors(A.c, B.c).multiplyScalar(0.5);
+
+            const axesToTest = [
+                { name: "A.X", axis: A.u[0] },
+                { name: "A.Y", axis: A.u[1] },
+                { name: "A.Z", axis: A.u[2] },
+                { name: "B.X", axis: B.u[0] },
+                { name: "B.Y", axis: B.u[1] },
+                { name: "B.Z", axis: B.u[2] },
+                { name: "A.X × B.X", axis: new THREE.Vector3().crossVectors(A.u[0], B.u[0]) },
+                { name: "A.X × B.Y", axis: new THREE.Vector3().crossVectors(A.u[0], B.u[1]) },
+                { name: "A.X × B.Z", axis: new THREE.Vector3().crossVectors(A.u[0], B.u[2]) },
+                { name: "A.Y × B.X", axis: new THREE.Vector3().crossVectors(A.u[1], B.u[0]) },
+                { name: "A.Y × B.Y", axis: new THREE.Vector3().crossVectors(A.u[1], B.u[1]) },
+                { name: "A.Y × B.Z", axis: new THREE.Vector3().crossVectors(A.u[1], B.u[2]) },
+                { name: "A.Z × B.X", axis: new THREE.Vector3().crossVectors(A.u[2], B.u[0]) },
+                { name: "A.Z × B.Y", axis: new THREE.Vector3().crossVectors(A.u[2], B.u[1]) },
+                { name: "A.Z × B.Z", axis: new THREE.Vector3().crossVectors(A.u[2], B.u[2]) },
+            ];
+
+            let colliding = true;
+
+            for (let i = 0; i < 15; i++) {
+                const item = axesToTest[i];
+                let L = item.axis;
+                let vis = axisVisualizers[i];
+                let uiEl = axisUIElements[i];
+                
+                const isSelected = (selectedAxisIndex === i);
+                let selectedClass = isSelected ? "is-selected" : "";
+                
+                const isParallel = L.lengthSq() < 1e-6;
+                
+                if (isParallel) {
+                    vis.arrow.visible = false;
+                    vis.line.visible = false;
+                    uiEl.className = `axis-item parallel ${selectedClass}`;
+                    uiEl.innerHTML = `<span>${item.name}</span><span>|| Song song</span>`;
+                    continue;
+                }
+                
+                L.normalize();
+
+                let origin;
+                if (i < 3) origin = A.c; 
+                else if (i < 6) origin = B.c; 
+                else origin = midpoint; 
+
+                if (isSelected) {
+                    vis.arrow.setDirection(L);
+                    vis.arrow.position.copy(origin);
+                    vis.arrow.visible = true;
+                    vis.arrow.scale.set(1.5, 1.5, 1.5);
+                    
+                    vis.line.visible = true;
+                    const p1 = new THREE.Vector3().copy(L).multiplyScalar(10).add(origin);
+                    const p2 = new THREE.Vector3().copy(L).multiplyScalar(-10).add(origin);
+                    vis.line.geometry.setFromPoints([p1, p2]);
+                } else {
+                    vis.arrow.visible = false;
+                    vis.line.visible = false;
+                }
+
+                const rA = A.e[0]*Math.abs(A.u[0].dot(L)) + A.e[1]*Math.abs(A.u[1].dot(L)) + A.e[2]*Math.abs(A.u[2].dot(L));
+                const rB = B.e[0]*Math.abs(B.u[0].dot(L)) + B.e[1]*Math.abs(B.u[1].dot(L)) + B.e[2]*Math.abs(B.u[2].dot(L));
+                const distance = Math.abs(T.dot(L));
+                const overlap = (rA + rB) - distance;
+
+                if (overlap < 0) {
+                    colliding = false;
+                    uiEl.className = `axis-item separated ${selectedClass}`;
+                    uiEl.innerHTML = `<span>${item.name}</span><span>${overlap.toFixed(3)}</span>`;
+                    
+                    if (isSelected) {
+                        vis.arrow.setColor(0xa6e3a1);
+                        vis.line.material.color.setHex(0xa6e3a1);
+                    }
+                } else {
+                    uiEl.className = `axis-item overlapped ${selectedClass}`;
+                    uiEl.innerHTML = `<span>${item.name}</span><span>+${overlap.toFixed(3)}</span>`;
+                    
+                    if (isSelected) {
+                        vis.arrow.setColor(0xf38ba8);
+                        vis.line.material.color.setHex(0xf38ba8);
+                    }
+                }
+            }
+
+            if (colliding) {
+                meshA.material = matCollide;
+                meshB.material = matCollide;
+                statusBanner.className = 'status-collide';
+                statusBanner.innerText = '💥 VA CHẠM (COLLISION)';
+            } else {
+                meshA.material = matA;
+                meshB.material = matB;
+                statusBanner.className = 'status-safe';
+                statusBanner.innerText = '✅ AN TOÀN';
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateSAT();
+            orbit.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

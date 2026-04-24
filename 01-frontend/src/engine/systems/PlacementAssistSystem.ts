@@ -9,6 +9,11 @@ import { DynamicBody } from "../components/DynamicBody";
 import { SnapToGrid } from "../components/SnapToGrid";
 import { AutoAlign } from "../components/AutoAlign";
 
+/**
+ * Hệ thống hỗ trợ đặt để (Placement Assist).
+ * Tính toán khả năng bắt điểm (Snap to grid, Snap to objects) 
+ * và xử lý các hành vi "Dính" vào tường hoặc sàn.
+ */
 export class PlacementAssistSystem extends System {
     private readonly epsilon = 1e-4;
 

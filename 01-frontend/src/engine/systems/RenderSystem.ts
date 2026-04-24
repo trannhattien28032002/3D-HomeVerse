@@ -6,6 +6,10 @@ import { Transform } from "../components/Transform";
 import { Mesh } from "../components/Mesh";
 import { World } from "../ecs/World";
 
+/**
+ * Cập nhật vị trí của lưới 3D (Mesh) trong Three.js để khớp với
+ * dữ liệu tọa độ (Transform) quản lý bởi ECS.
+ */
 export class RenderSystem extends System {
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
@@ -23,6 +27,7 @@ export class RenderSystem extends System {
     }
 
     update(world: World, deltaTime: number): void {
+        void deltaTime;
         const entities = Query.entitiesWith(world, Transform, Mesh);
 
         for (const entity of entities) {

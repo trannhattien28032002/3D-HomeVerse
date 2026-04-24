@@ -12,8 +12,10 @@ import { Selectable } from "../components/Selectable";
 import { Draggable } from "../components/Draggable";
 import { SnapToGrid } from "../components/SnapToGrid";
 import { AutoAlign } from "../components/AutoAlign";
+import { World } from "../ecs/World";
 
 type CreateWallOptions = {
+    wallId?: number;
     x?: number;
     y?: number;
     z?: number;
@@ -25,9 +27,10 @@ type CreateWallOptions = {
 };
 
 export function createWall(
-    world: any,
+    world: World,
     scene: THREE.Scene,
     {
+        wallId,
         x = 0,
         y = 0.5,
         z = -5,
@@ -66,11 +69,13 @@ export function createWall(
         height: h,
         thickness: d
     }));
-    world.addComponent(entity, new WallTag());
+    if (wallId !== undefined) {
+        world.addComponent(entity, new WallTag(wallId));
+    }
     world.addComponent(entity, new Selectable());
     world.addComponent(entity, new Draggable({ lockY: true }));
     world.addComponent(entity, new SnapToGrid({ enabled: true, size: 0.1, axes: "xz" }));
     world.addComponent(entity, new AutoAlign({ enabled: true, axes: "xz", tolerance: 0.2 }));
-    
+
     return entity;
 }

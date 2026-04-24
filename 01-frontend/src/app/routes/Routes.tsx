@@ -1,15 +1,14 @@
-import React from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Route, Routes as RouterRoutes } from "react-router-dom";
+import EditorPage from "@/app/pages/EditorPage";
+import Plan2DPage from "@/app/pages/Plan2DPage";
 
-type MyRouteProps {}
-
-const Routes: React.FC<MyRoutesProps> = () => {
+export default function AppRoutes() {
   return (
     <BrowserRouter>
-        <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/login" element={<Login />} />
-        </Routes>
+      <RouterRoutes>
+        <Route path="/" element={<EditorPage />} />
+        <Route path="/plan-2d" element={<Plan2DPage />} />
+      </RouterRoutes>
     </BrowserRouter>
-  )
+  );
 }
