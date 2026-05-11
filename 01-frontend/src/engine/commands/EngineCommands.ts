@@ -3,31 +3,59 @@
  * Không có logic ở đây — chỉ là data shape.
  *
  * Flow: UI dispatch(command) → engine xử lý → ECS thay đổi → SnapshotSystem emit
+ *
+ * ┌─────────────────────────────────────────────────────────┐
+ * │  Node-driven topology                                    │
+ * │  • Node có ID riêng — là source of truth                │
+ * │  • Wall = derived từ (startNodeId, endNodeId)            │
+ * │  • Moving a node automatically updates ALL walls         │
+ * └─────────────────────────────────────────────────────────┘
  */
 export type EngineCommand =
-    /** Tạo tường mới trong ECS + Three.js scene */
-    | { type: "ADD_WALL";    wallId: number; x: number; z: number; w: number; d: number; rotY: number }
 
-    /** Dịch chuyển tâm tường (chỉ x, z — y cố định = 0.5) */
-    | { type: "MOVE_WALL";   wallId: number; x: number; z: number }
+    // ── Node commands ──────────────────────────────────────────
 
     /**
-     * Cập nhật toàn bộ transform + kích thước tường sau khi resize/rotate trong Konva.
-     * X, Z thay đổi vì tâm pivot có thể dịch chuyển khi scale.
+     * Tạo một node mới tại vị trí world-space.
+     * Engine trả về nodeId thông qua return value (synchronous).
+     * Dùng khi bắt đầu vẽ tường ở vị trí mới (không snap).
      */
-    | { type: "RESIZE_WALL"; wallId: number; x: number; z: number; w: number; d: number; rotY: number }
+    | { type: "ENSURE_NODE"; nodeId: number; x: number; z: number }
 
-    /** Xóa tường khỏi ECS + Three.js scene, giải phóng geometry/material */
+    /**
+     * Di chuyển node theo ID — cập nhật tất cả walls có chung node này.
+     * Đây là lệnh duy nhất cho phép thay đổi hình dạng tường.
+     */
+    | { type: "MOVE_NODE"; nodeId: number; x: number; z: number }
+
+    // ── Wall commands ──────────────────────────────────────────
+
+    /**
+     * Tạo tường mới nối hai node đã tồn tại.
+     * Geometry được WallGeometrySystem tự tính từ node positions.
+     */
+    | { type: "ADD_WALL"; wallId: number; startNodeId: number; endNodeId: number; thickness: number }
+
+    /** Xóa tường. Nodes không còn được dùng sẽ bị xóa tự động. */
     | { type: "REMOVE_WALL"; wallId: number }
 
     /**
-     * Bắt đầu kéo tường (chuyển từ StaticBody → DynamicBody để Rapier xử lý collision).
-     * Gọi trước khi bắt đầu kéo.
+     * Gộp sourceNodeId vào targetNodeId.
+     * Tất cả walls kết nối với sourceNodeId sẽ được reroute sang targetNodeId.
+     * sourceNodeId bị xóa sau khi gộp.
+     * Dùng khi kéo node chồng lên node khác (snap-to-connect).
      */
-    | { type: "BEGIN_DRAG";  wallId: number }
+    | { type: "MERGE_NODE"; sourceNodeId: number; targetNodeId: number }
 
     /**
-     * Kết thúc kéo tường (chuyển từ DynamicBody → StaticBody).
-     * Gọi sau khi thả tường.
+     * Cắt một bức tường làm đôi tại một vị trí cụ thể (x, z).
+     * Sẽ tạo ra một node mới và một tường mới. Tường cũ sẽ được cập nhật endNodeId thành newNodeId.
      */
-    | { type: "END_DRAG";    wallId: number };
+    | { type: "SPLIT_WALL"; originalWallId: number; newWallId: number; newNodeId: number; x: number; z: number }
+
+    /**
+     * Tự động quét và xử lý các giao cắt của một bức tường mới/di chuyển với tất cả tường cũ.
+     */
+    | { type: "RESOLVE_INTERSECTIONS"; wallId: number }
+;
+

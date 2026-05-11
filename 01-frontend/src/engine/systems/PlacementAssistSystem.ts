@@ -9,11 +9,6 @@ import { DynamicBody } from "../components/DynamicBody";
 import { SnapToGrid } from "../components/SnapToGrid";
 import { AutoAlign } from "../components/AutoAlign";
 
-/**
- * Hệ thống hỗ trợ đặt để (Placement Assist).
- * Tính toán khả năng bắt điểm (Snap to grid, Snap to objects) 
- * và xử lý các hành vi "Dính" vào tường hoặc sàn.
- */
 export class PlacementAssistSystem extends System {
     private readonly epsilon = 1e-4;
 
@@ -105,18 +100,16 @@ export class PlacementAssistSystem extends System {
             const doX = align.axes === "x" || align.axes === "xz";
             const doZ = align.axes === "z" || align.axes === "xz";
 
-            // Align by snapping AABB faces to nearby static AABB faces when within tolerance.
             if (doX) {
                 let bestDist = tol;
                 let bestX = tA.x;
                 for (let i = 0; i < sCount; i++) {
                     if (this.sId[i] === d) continue;
-                    // Need overlap on Y and Z to consider aligning on X.
                     if (!overlapsOn(tA.y, hAy, this.sCy[i], this.sHy[i])) continue;
                     if (!overlapsOn(tA.z, hAz, this.sCz[i], this.sHz[i])) continue;
 
-                    const targetPos1 = this.sCx[i] - (this.sHx[i] + hAx) - this.epsilon; // A to left of B
-                    const targetPos2 = this.sCx[i] + (this.sHx[i] + hAx) + this.epsilon; // A to right of B
+                    const targetPos1 = this.sCx[i] - (this.sHx[i] + hAx) - this.epsilon;
+                    const targetPos2 = this.sCx[i] + (this.sHx[i] + hAx) + this.epsilon;
                     const d1 = Math.abs(tA.x - targetPos1);
                     if (d1 < bestDist) {
                         bestDist = d1;
@@ -136,7 +129,6 @@ export class PlacementAssistSystem extends System {
                 let bestZ = tA.z;
                 for (let i = 0; i < sCount; i++) {
                     if (this.sId[i] === d) continue;
-                    // Need overlap on Y and X to consider aligning on Z.
                     if (!overlapsOn(tA.y, hAy, this.sCy[i], this.sHy[i])) continue;
                     if (!overlapsOn(tA.x, hAx, this.sCx[i], this.sHx[i])) continue;
 

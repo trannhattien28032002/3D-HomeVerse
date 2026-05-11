@@ -3,61 +3,88 @@ import { World } from "../ecs/World";
 import { Query } from "../ecs/Query";
 
 import { WallTag } from "../components/WallTag";
-import { Transform } from "../components/Transform";
 import { WallSize } from "../components/WallSize";
+import { WallNodes } from "../components/WallNodes";
+import { WallPolygon } from "../components/WallPolygon";
+import { Transform } from "../components/Transform";
+import { RoomGeometry } from "../components/RoomGeometry";
+import { NodeRegistry } from "../graph/NodeRegistry";
 
-import { EngineEvents, type ECSSnapshot, type WallSnapshot } from "../events/EngineEvents";
+import { EngineEvents, type ECSSnapshot, type NodeSnapshot, type WallSnapshot, type NodeCapSnapshot, type RoomSnapshot } from "../events/EngineEvents";
 
-/**
- * Chạy CUỐI CÙNG mỗi frame, sau tất cả các mutations.
- *
- * Thu thập dữ liệu tất cả wall entities (có WallTag + Transform + WallSize),
- * so sánh với frame trước. Nếu có thay đổi → emit snapshot để UI re-render.
- *
- * React không cần poll — nó chỉ subscribe và phản ứng khi có snapshot mới.
- */
 export class SnapshotSystem extends System {
     private readonly events: EngineEvents;
-    /** Checksum đơn giản để tránh emit khi data không đổi */
+    private readonly nodes: NodeRegistry;
     private lastHash = "";
 
-    constructor(events: EngineEvents) {
+    constructor(events: EngineEvents, nodes: NodeRegistry) {
         super();
         this.events = events;
+        this.nodes = nodes;
     }
 
     update(world: World): void {
-        const entities = Query.entitiesWith(world, WallTag, Transform, WallSize);
+        const entities = Query.entitiesWith(world, WallTag, WallNodes, WallSize, Transform);
 
         const walls: WallSnapshot[] = [];
-
         for (const e of entities) {
-            const tag = world.getComponent(e, WallTag)!;
-            const t   = world.getComponent(e, Transform)!;
-            const s   = world.getComponent(e, WallSize)!;
+            const tag  = world.getComponent(e, WallTag)!;
+            const wn   = world.getComponent(e, WallNodes)!;
+            const t    = world.getComponent(e, Transform)!;
+            const poly = world.getComponent(e, WallPolygon);
 
             walls.push({
                 wallId: tag.wallId,
-                x:      t.x,
-                y:      t.y,
-                z:      t.z,
-                w:      s.length,
-                d:      s.thickness,
-                rotY:   t.rotY,
+                startNodeId: wn.startNodeId,
+                endNodeId: wn.endNodeId,
+                thickness: wn.thickness,
+                cx: t.x,
+                cz: t.z,
+                polygon: poly ? poly.points.map(p => ({ x: p.x, z: p.z })) : undefined,
             });
         }
 
-        // Change detection — chỉ emit khi data thực sự thay đổi
-        const hash = walls
-            .map((w) =>
-                `${w.wallId}:${w.x.toFixed(4)},${w.z.toFixed(4)},${w.w.toFixed(4)},${w.d.toFixed(4)},${w.rotY.toFixed(4)}`
+        const nodeSnapshots: NodeSnapshot[] = [];
+        for (const n of this.nodes.all()) {
+            nodeSnapshots.push({ id: n.id, x: n.x, z: n.z });
+        }
+
+        const wallHash = walls
+            .map(w =>
+                `${w.wallId}:n${w.startNodeId}-n${w.endNodeId}|cx${w.cx.toFixed(3)},${w.cz.toFixed(3)}` +
+                (w.polygon ? `|poly${w.polygon.map(p => `${p.x.toFixed(2)},${p.z.toFixed(2)}`).join(";")}` : "")
             )
             .join("|");
 
+        const nodeHash = nodeSnapshots
+            .map(n => `${n.id}:${n.x.toFixed(4)},${n.z.toFixed(4)}`)
+            .join("|");
+
+        const caps: NodeCapSnapshot[] = [];
+        for (const [nodeId, pts] of this.nodes.nodeCaps) {
+            caps.push({ nodeId, polygon: pts });
+        }
+
+        const capHash = caps
+            .map(c => `cap${c.nodeId}:${c.polygon.map(p => `${p.x.toFixed(2)},${p.z.toFixed(2)}`).join(";")}`)
+            .join("|");
+
+        const hash = wallHash + "##" + nodeHash + "##" + capHash;
         if (hash === this.lastHash) return;
         this.lastHash = hash;
 
-        const snapshot: ECSSnapshot = { walls };
+        const rooms: RoomSnapshot[] = [];
+        const roomEntities = Query.entitiesWith(world, RoomGeometry);
+        for (const e of roomEntities) {
+            const geo = world.getComponent(e, RoomGeometry)!;
+            rooms.push({
+                id: `room-${e}`,
+                area: geo.area,
+                polygon: geo.points.map(p => ({ x: p.x, z: p.z }))
+            });
+        }
+
+        const snapshot: ECSSnapshot = { nodes: nodeSnapshots, walls, caps, rooms };
         this.events.emit("snapshot", snapshot);
     }
 }

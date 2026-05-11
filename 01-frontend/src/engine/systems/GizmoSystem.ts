@@ -9,6 +9,7 @@ import { Selectable } from "../components/Selectable";
 import { DynamicBody } from "../components/DynamicBody";
 import { StaticBody } from "../components/StaticBody";
 import { WallTag } from "../components/WallTag";
+import { WallNodes } from "../components/WallNodes";
 
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { EngineEvents } from "../events/EngineEvents";
@@ -31,8 +32,6 @@ export class GizmoSystem extends System {
     private mouse = new THREE.Vector2();
     private pickObjects: THREE.Object3D[] = [];
     private events?: EngineEvents;
-    private lastTransformEmitMs = 0;
-    private readonly transformEmitIntervalMs = 50;
 
     constructor(
         camera: THREE.Camera,
@@ -61,7 +60,6 @@ export class GizmoSystem extends System {
             const entity = object ? (object as MeshWithEntity).__entity ?? null : null;
 
             if (isDragging) {
-                // Start dragging: make the selected entity dynamic for collision resolving.
                 if (entity == null) return;
 
                 this.draggingEntity = entity;
@@ -83,14 +81,11 @@ export class GizmoSystem extends System {
                 return;
             }
 
-            // Stop dragging: restore original body type.
             if (this.draggingEntity == null) return;
-            // IMPORTANT: defer removal a couple frames so collision can clamp the final position
-            // even if the user releases while "past" a blocker in a single frame.
             this.releaseFramesLeft = 2;
             this.events?.emit("draggingChanged", { entityId: this.draggingEntity, dragging: false });
         });
-        // 🔥 Sync THREE → ECS
+        
         this.controls.addEventListener("objectChange", () => {
             const object = this.controls.object;
 
@@ -109,18 +104,7 @@ export class GizmoSystem extends System {
             transform.z = object.position.z;
             transform.rotY = object.rotation.y;
 
-            const now = performance.now();
-            if (now - this.lastTransformEmitMs >= this.transformEmitIntervalMs) {
-                this.lastTransformEmitMs = now;
-                this.events?.emit("entityMoved", {
-                    entityId: entity,
-                    wallId: wallTag?.wallId,
-                    x: transform.x,
-                    y: transform.y,
-                    z: transform.z,
-                    rotY: transform.rotY
-                });
-            }
+            void wallTag; 
         });
 
         this.rendererDomElement.addEventListener("mousedown", this.onMouseDown);
@@ -129,7 +113,6 @@ export class GizmoSystem extends System {
     private onMouseDown = (event: MouseEvent) => {
         const rect = (event.target as HTMLElement).getBoundingClientRect();
 
-        // Convert mouse coordinates to normalized device coordinates
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
@@ -140,14 +123,13 @@ export class GizmoSystem extends System {
         objects.length = 0;
 
         for (const e of entities) {
+            if (this.world.hasComponent(e, WallNodes)) continue;
+
             const meshComp = this.world.getComponent(e, Mesh);
             if (!meshComp) continue;
 
             const mesh = meshComp.mesh;
-
-            // 🔥 gắn entity vào mesh (QUAN TRỌNG)
             (mesh as MeshWithEntity).__entity = e;
-
             objects.push(mesh);
         }
 

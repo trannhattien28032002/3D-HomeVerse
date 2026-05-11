@@ -2,23 +2,51 @@
 // Snapshot types — dữ liệu ECS "chụp" ra cho UI mỗi frame
 // ============================================================
 
+/** Snapshot của một node trong topology graph */
+export type NodeSnapshot = {
+    id: number;
+    x: number; // world-space
+    z: number;
+};
+
 /**
- * Snapshot của một tường từ ECS (world-space coords).
- * UI sẽ tự quy đổi sang pixel khi render.
+ * Snapshot của một tường.
+ * UI dùng `polygon` để vẽ miter-cut shape.
+ * `startNodeId` / `endNodeId` để biết node nào là endpoint.
  */
 export type WallSnapshot = {
     wallId: number;
-    x: number;
-    y: number;
-    z: number;
-    w: number; // WallSize.length
-    d: number; // WallSize.thickness
-    rotY: number;
+    startNodeId: number;
+    endNodeId: number;
+    thickness: number;
+    /** Center of AABB bounding box (world-space) — dùng cho label */
+    cx: number;
+    cz: number;
+    /** 4 miter-cut corners in world-space */
+    polygon?: { x: number; z: number }[];
+};
+
+/** Fill polygon for a node junction with 3+ walls */
+export type NodeCapSnapshot = {
+    nodeId: number;
+    polygon: { x: number; z: number }[];
+};
+
+/** Snapshot of a detected room / floor */
+export type RoomSnapshot = {
+    id: string; // unique identifier
+    area: number;
+    polygon: { x: number; z: number }[];
 };
 
 /** Toàn bộ trạng thái scene mà ECS emit mỗi khi có thay đổi */
 export type ECSSnapshot = {
+    nodes: NodeSnapshot[];
     walls: WallSnapshot[];
+    /** Node cap polygons to fill gaps at multi-wall junctions */
+    caps: NodeCapSnapshot[];
+    /** Detected rooms / floors */
+    rooms: RoomSnapshot[];
 };
 
 // ============================================================
@@ -27,11 +55,10 @@ export type ECSSnapshot = {
 
 export type EngineEventMap = {
     entitySelected:  { entityId: number | null };
-    entityMoved:     { entityId: number; wallId?: number; x: number; y: number; z: number; w?: number; h?: number; d?: number; rotY?: number };
     entityAdded:     { entityId: number; type?: string };
     entityRemoved:   { entityId: number };
     draggingChanged: { entityId: number | null; dragging: boolean };
-    /** Phát ra mỗi frame khi có wall nào thay đổi Transform/WallSize. */
+    /** Phát ra mỗi frame khi có node/wall nào thay đổi. */
     snapshot:        ECSSnapshot;
 };
 

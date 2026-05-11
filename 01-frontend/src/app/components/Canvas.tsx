@@ -1,15 +1,6 @@
 import { useEffect, useRef } from "react";
-import { createEngine } from "@/engine/engine";
+import { createEngine } from "src/engine/engine";
 
-/**
- * Canvas 3D — khởi động engine một lần duy nhất khi mount.
- *
- * Engine tự quản lý default walls (3 tường mặc định).
- * Mọi thay đổi từ Gizmo trong 3D sẽ được SnapshotSystem
- * emit ra, useWallStore nhận và cập nhật Konva tự động.
- *
- * Không còn cần import usePlanStore hay lắng nghe entityMoved.
- */
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
