@@ -1,31 +1,33 @@
 import * as THREE from "three";
-import { System } from "../ecs/System";
-import { World } from "../ecs/World";
-import { NodeRegistry } from "../graph/NodeRegistry";
-import { RoomDetection } from "../graph/RoomDetection";
-import { RoomGeometry } from "../components/RoomGeometry";
+import { System } from "src/engine/ecs/System";
+import { World } from "src/engine/ecs/World";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
+import { RoomDetection } from "src/engine/graph/RoomDetection";
+import { RoomGeometry } from "src/engine/components/RoomGeometry";
+import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
+import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
 
 
 export class RoomSystem extends System {
     private nodeReg: NodeRegistry;
     private scene: THREE.Scene | null;
-    
+    private meshRegistry: MeshRegistry | null;
+    private materialRegistry: MaterialRegistry | null;
+
     private lastHash: string = "";
-    
-    private roomEntities = new Map<string, number>(); 
-    private roomMeshes = new Map<number, THREE.Mesh>(); 
+    private roomEntities = new Map<string, number>();
 
-    private floorMat = new THREE.MeshStandardMaterial({ 
-        color: 0xe2e8f0, // Light gray
-        roughness: 0.9,
-        metalness: 0.1,
-        side: THREE.DoubleSide
-    });
-
-    constructor(nodeReg: NodeRegistry, scene?: THREE.Scene) {
+    constructor(
+        nodeReg: NodeRegistry,
+        scene?: THREE.Scene,
+        meshRegistry?: MeshRegistry,
+        materialRegistry?: MaterialRegistry,
+    ) {
         super();
         this.nodeReg = nodeReg;
-        this.scene = scene || null;
+        this.scene = scene ?? null;
+        this.meshRegistry = meshRegistry ?? null;
+        this.materialRegistry = materialRegistry ?? null;
     }
 
     update(world: World): void {
@@ -46,7 +48,7 @@ export class RoomSystem extends System {
             currentKeys.add(key);
 
             let entity = this.roomEntities.get(key);
-            
+
             if (entity === undefined) {
                 entity = world.createEntity();
                 this.roomEntities.set(key, entity);
@@ -63,25 +65,21 @@ export class RoomSystem extends System {
                 this.updateRoomMesh(entity, room.points);
             }
         }
+
         for (const [key, entity] of this.roomEntities.entries()) {
             if (!currentKeys.has(key)) {
                 this.roomEntities.delete(key);
                 world.destroyEntity(entity);
-                
-                if (this.scene) {
-                    const mesh = this.roomMeshes.get(entity);
-                    if (mesh) {
-                        this.scene.remove(mesh);
-                        mesh.geometry.dispose();
-                        this.roomMeshes.delete(entity);
-                    }
+
+                if (this.scene && this.meshRegistry) {
+                    this.meshRegistry.dispose(`room-${entity}`);
                 }
             }
         }
     }
 
-    private updateRoomMesh(entity: number, points: {x: number, z: number}[]) {
-        if (!this.scene) return;
+    private updateRoomMesh(entity: number, points: { x: number; z: number }[]) {
+        if (!this.scene || !this.meshRegistry || !this.materialRegistry) return;
 
         const shape = new THREE.Shape();
         shape.moveTo(points[0].x, -points[0].z);
@@ -92,16 +90,24 @@ export class RoomSystem extends System {
         const geo = new THREE.ShapeGeometry(shape);
         geo.rotateX(-Math.PI / 2);
 
-        let mesh = this.roomMeshes.get(entity);
-        if (!mesh) {
-            mesh = new THREE.Mesh(geo, this.floorMat);
+        const meshKey = `room-${entity}`;
+        const existing = this.meshRegistry.get(meshKey);
+
+        if (!existing) {
+            const mat = this.materialRegistry.get({
+                color: 0xe2e8f0,
+                roughness: 0.9,
+                metalness: 0.1,
+                side: THREE.DoubleSide,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
             mesh.position.y = -0.01;
             mesh.receiveShadow = true;
             this.scene.add(mesh);
-            this.roomMeshes.set(entity, mesh);
+            this.meshRegistry.register(meshKey, mesh);
         } else {
-            mesh.geometry.dispose();
-            mesh.geometry = geo;
+            existing.geometry.dispose();
+            existing.geometry = geo;
         }
     }
 }

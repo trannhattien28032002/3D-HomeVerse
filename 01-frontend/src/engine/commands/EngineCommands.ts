@@ -57,5 +57,11 @@ export type EngineCommand =
      * Tự động quét và xử lý các giao cắt của một bức tường mới/di chuyển với tất cả tường cũ.
      */
     | { type: "RESOLVE_INTERSECTIONS"; wallId: number }
+
+    /**
+     * Cập nhật thông số kích thước của một bức tường (thickness và/hoặc height).
+     * Giá trị tính bằng world units. WallGeometrySystem sẽ rebuild mesh trên frame kế tiếp.
+     */
+    | { type: "UPDATE_WALL"; wallId: number; thickness?: number; height?: number }
 ;
 

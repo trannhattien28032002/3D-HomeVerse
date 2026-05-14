@@ -1,4 +1,4 @@
-import { Component } from "../ecs/Component";
+import { Component } from "src/engine/ecs/Component";
 
 export type SnapAxes = "x" | "y" | "z" | "xy" | "xz" | "yz" | "xyz";
 

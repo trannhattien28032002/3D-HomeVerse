@@ -1,4 +1,4 @@
-import { World } from "./World";
+import { World } from "src/engine/ecs/World";
 
 /**
  * Lớp cơ sở (Base Class) cho tất cả các System trong hệ thống ECS.

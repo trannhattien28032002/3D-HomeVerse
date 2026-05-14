@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Component } from "../ecs/Component";
+import { Component } from "src/engine/ecs/Component";
 
 export class Mesh extends Component {
     mesh: THREE.Mesh;

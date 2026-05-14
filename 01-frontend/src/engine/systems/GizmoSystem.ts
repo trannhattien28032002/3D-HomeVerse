@@ -8,7 +8,6 @@ import { Mesh } from "../components/Mesh";
 import { Selectable } from "../components/Selectable";
 import { DynamicBody } from "../components/DynamicBody";
 import { StaticBody } from "../components/StaticBody";
-import { WallTag } from "../components/WallTag";
 import { WallNodes } from "../components/WallNodes";
 
 import { TransformControls } from "three/addons/controls/TransformControls.js";
@@ -95,16 +94,12 @@ export class GizmoSystem extends System {
             if (entity == null) return;
 
             const transform = this.world.getComponent(entity, Transform);
-            const wallTag = this.world.getComponent(entity, WallTag);
-
             if (!transform) return;
 
             transform.x = object.position.x;
             transform.y = object.position.y;
             transform.z = object.position.z;
             transform.rotY = object.rotation.y;
-
-            void wallTag; 
         });
 
         this.rendererDomElement.addEventListener("mousedown", this.onMouseDown);

@@ -1,13 +1,13 @@
-import { System } from "../ecs/System";
-import { Query } from "../ecs/Query";
-import { World } from "../ecs/World";
+import { System } from "src/engine/ecs/System";
+import { Query } from "src/engine/ecs/Query";
+import { World } from "src/engine/ecs/World";
 
-import { Transform } from "../components/Transform";
-import { ColliderAABB } from "../components/ColliderAABB";
-import { StaticBody } from "../components/StaticBody";
-import { DynamicBody } from "../components/DynamicBody";
-import { SnapToGrid } from "../components/SnapToGrid";
-import { AutoAlign } from "../components/AutoAlign";
+import { Transform } from "src/engine/components/Transform";
+import { ColliderAABB } from "src/engine/components/ColliderAABB";
+import { StaticBody } from "src/engine/components/StaticBody";
+import { DynamicBody } from "src/engine/components/DynamicBody";
+import { SnapToGrid } from "src/engine/components/SnapToGrid";
+import { AutoAlign } from "src/engine/components/AutoAlign";
 
 export class PlacementAssistSystem extends System {
     private readonly epsilon = 1e-4;

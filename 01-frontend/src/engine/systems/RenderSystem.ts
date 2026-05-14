@@ -1,11 +1,11 @@
 import * as THREE from "three";
 
-import { System } from "../ecs/System";
-import { Query } from "../ecs/Query";
-import { Transform } from "../components/Transform";
-import { Mesh } from "../components/Mesh";
-import { WallNodes } from "../components/WallNodes";
-import { World } from "../ecs/World";
+import { System } from "src/engine/ecs/System";
+import { Query } from "src/engine/ecs/Query";
+import { Transform } from "src/engine/components/Transform";
+import { Mesh } from "src/engine/components/Mesh";
+import { WallNodes } from "src/engine/components/WallNodes";
+import { World } from "src/engine/ecs/World";
 
 export class RenderSystem extends System {
     private renderer: THREE.WebGLRenderer;
@@ -19,8 +19,8 @@ export class RenderSystem extends System {
     ) {
         super();
         this.renderer = renderer;
-        this.scene    = scene;
-        this.camera   = camera;
+        this.scene = scene;
+        this.camera = camera;
     }
 
     update(world: World, deltaTime: number): void {
@@ -28,10 +28,10 @@ export class RenderSystem extends System {
         const entities = Query.entitiesWith(world, Transform, Mesh);
 
         for (const entity of entities) {
-            const transform  = world.getComponent(entity, Transform)!;
-            const meshComp   = world.getComponent(entity, Mesh)!;
-            const mesh       = meshComp.mesh;
-            const isWall     = world.hasComponent(entity, WallNodes);
+            const transform = world.getComponent(entity, Transform)!;
+            const meshComp = world.getComponent(entity, Mesh)!;
+            const mesh = meshComp.mesh;
+            const isWall = world.hasComponent(entity, WallNodes);
 
             if (isWall) {
                 mesh.position.set(0, transform.y, 0);

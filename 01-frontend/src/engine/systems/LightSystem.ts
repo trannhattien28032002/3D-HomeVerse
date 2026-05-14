@@ -20,9 +20,6 @@ export class LightSystem extends System {
     update(world: World, deltaTime: number): void {
         void deltaTime;
 
-        // =====================
-        // 🌤 AMBIENT LIGHTS
-        // =====================
         const ambients = Query.entitiesWith(world, AmbientLightComponent);
 
         for (const e of ambients) {
@@ -48,9 +45,6 @@ export class LightSystem extends System {
             }
         }
 
-        // =====================
-        // ☀️ DIRECTIONAL LIGHTS
-        // =====================
         const directionals = Query.entitiesWith(
             world,
             DirectionalLightComponent,

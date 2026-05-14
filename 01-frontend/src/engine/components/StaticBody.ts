@@ -1,4 +1,4 @@
-import { Component } from "../ecs/Component.js";
+import { Component } from "src/engine/ecs/Component.js";
 
 export class StaticBody extends Component {
     constructor() {

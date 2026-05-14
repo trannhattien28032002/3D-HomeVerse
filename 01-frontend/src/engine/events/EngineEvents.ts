@@ -19,11 +19,25 @@ export type WallSnapshot = {
     startNodeId: number;
     endNodeId: number;
     thickness: number;
+    height: number;
     /** Center of AABB bounding box (world-space) — dùng cho label */
     cx: number;
     cz: number;
     /** 4 miter-cut corners in world-space */
     polygon?: { x: number; z: number }[];
+};
+
+/** Dimension annotation for a single wall segment */
+export type DimensionSnapshot = {
+    wallId: number;
+    length: number;  // world units (meters)
+    startX: number;
+    startZ: number;
+    endX: number;
+    endZ: number;
+    /** Unit vector perpendicular to wall (left of start→end) */
+    perpX: number;
+    perpZ: number;
 };
 
 /** Fill polygon for a node junction with 3+ walls */
@@ -39,6 +53,24 @@ export type RoomSnapshot = {
     polygon: { x: number; z: number }[];
 };
 
+/** Angle annotation at a corner node where two walls meet */
+export type AngleDimensionSnapshot = {
+    nodeId: number;
+    wallId1: number;
+    wallId2: number;
+    /** Interior angle in degrees [5, 175] */
+    angle: number;
+    /** Arc start angle in degrees from +X axis (world space, CW in screen) */
+    startAngle: number;
+    /** Arc sweep in degrees (same as angle for 2-wall corners) */
+    sweepAngle: number;
+    cornerX: number; // world space
+    cornerZ: number;
+    /** Unit bisector vector pointing into the arc (world space) */
+    bisectorX: number;
+    bisectorZ: number;
+};
+
 /** Toàn bộ trạng thái scene mà ECS emit mỗi khi có thay đổi */
 export type ECSSnapshot = {
     nodes: NodeSnapshot[];
@@ -47,6 +79,10 @@ export type ECSSnapshot = {
     caps: NodeCapSnapshot[];
     /** Detected rooms / floors */
     rooms: RoomSnapshot[];
+    /** Wall dimension annotations */
+    dimensions: DimensionSnapshot[];
+    /** Angle annotations at wall corners */
+    angleDimensions: AngleDimensionSnapshot[];
 };
 
 // ============================================================

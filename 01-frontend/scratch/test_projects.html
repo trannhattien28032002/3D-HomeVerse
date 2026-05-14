@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tiny Home - My Projects</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&amp;family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#496640",
+                        "surface-bright": "#fdf9f0",
+                        "on-secondary-fixed-variant": "#324e2a",
+                        "on-tertiary-container": "#8c2c2f",
+                        "primary-fixed": "#ffdea6",
+                        "surface-container-high": "#ece8df",
+                        "on-secondary-fixed": "#062104",
+                        "secondary-fixed": "#caecbc",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#a23c3e",
+                        "on-surface": "#1c1c17",
+                        "tertiary-fixed-dim": "#ffb3b0",
+                        "inverse-surface": "#31312b",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#271900",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "surface-container": "#f1eee5",
+                        "surface-dim": "#dddad1",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#7c5800",
+                        "outline": "#837560",
+                        "on-surface-variant": "#504532",
+                        "primary-fixed-dim": "#ffbb16",
+                        "outline-variant": "#d5c4ac",
+                        "on-secondary-container": "#4f6c45",
+                        "on-primary-fixed-variant": "#5e4200",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f7f3ea",
+                        "on-primary-container": "#674900",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#7c5800",
+                        "inverse-primary": "#ffbb16",
+                        "background": "#fdf9f0",
+                        "secondary-fixed-dim": "#afd0a1",
+                        "on-background": "#1c1c17",
+                        "on-tertiary-fixed": "#410006",
+                        "tertiary-fixed": "#ffdad8",
+                        "surface-variant": "#e6e2d9",
+                        "on-tertiary-fixed-variant": "#832428",
+                        "inverse-on-surface": "#f4f0e7",
+                        "surface-container-highest": "#e6e2d9",
+                        "tertiary-container": "#ffa9a6",
+                        "primary-container": "#f8b400",
+                        "secondary-container": "#caecbc",
+                        "surface": "#fdf9f0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "margin-desktop": "40px",
+                        "container-max": "1280px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Nunito Sans"],
+                        "headline-xl": ["Cinzel"],
+                        "headline-sm": ["Cinzel"],
+                        "headline-md": ["Cinzel"],
+                        "body-md": ["Nunito Sans"],
+                        "headline-lg": ["Cinzel"],
+                        "body-lg": ["Nunito Sans"],
+                        "body-sm": ["Nunito Sans"],
+                        "label-lg": ["Nunito Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md h-screen w-full flex overflow-hidden relative">
+<!-- Ambient Texture/Grain Overlay -->
+<div class="pointer-events-none fixed inset-0 z-[-1] opacity-5 mix-blend-multiply" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+<!-- Shared Component: SideNavBar -->
+<nav class="hidden md:flex flex-shrink-0 bg-surface-container-low/60 dark:bg-surface-container-highest/40 backdrop-blur-2xl border-r border-outline-variant/20 shadow-xl h-screen w-64 flex-col p-gutter gap-4 relative z-20 relative">
+<!-- Header -->
+<div class="flex items-center gap-3 px-2 pt-2 pb-6">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">castle</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary">Tiny Home</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Cozy Architect</p>
+</div>
+</div>
+<!-- Primary CTA -->
+<button class="w-full bg-primary text-on-primary font-label-lg text-label-lg rounded-xl py-3 px-4 shadow-[0_0_15px_rgba(248,180,0,0.3)] hover:bg-surface-tint hover:shadow-[0_0_20px_rgba(248,180,0,0.5)] transition-all duration-300 flex items-center justify-center gap-2 mb-4">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Project
+        </button>
+<!-- Navigation Links -->
+<div class="flex-1 flex flex-col gap-2">
+<!-- Active Tab: My Projects -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container rounded-xl px-4 py-3 shadow-[0_0_10px_rgba(248,180,0,0.4)] scale-98 transition-transform duration-150 font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home_work</span>
+                My Projects
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all hover:scale-[1.02] hover:shadow-sm font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+                Design Gallery
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all hover:scale-[1.02] hover:shadow-sm font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">architecture</span>
+                Blueprints
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all hover:scale-[1.02] hover:shadow-sm font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+                Community
+            </a>
+</div>
+<!-- Footer Links -->
+<div class="flex flex-col gap-2 pt-4 border-t border-outline-variant/30">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all hover:scale-[1.02] hover:shadow-sm font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+                Help Center
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all hover:scale-[1.02] hover:shadow-sm font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Log Out
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto w-full relative">
+<!-- Inner container to respect grid limits -->
+<div class="max-w-container-max mx-auto p-margin-mobile md:p-margin-desktop min-h-full flex flex-col gap-8">
+<!-- Page Header -->
+<header class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-outline-variant/30 pb-6 relative z-10">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-primary drop-shadow-sm">My Projects</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Manage your cozy creations.</p>
+</div>
+<!-- Search/Filter - Carved style -->
+<div class="relative w-full md:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-full py-2 pl-10 pr-4 font-body-sm text-body-sm text-on-surface shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Search creations..." type="text"/>
+</div>
+</header>
+<!-- Projects Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter relative z-10">
+<!-- New Project Card (Prominent CTA) -->
+<button class="group flex flex-col items-center justify-center gap-4 bg-surface-container-lowest border-2 border-dashed border-outline-variant rounded-xl p-6 min-h-[280px] shadow-sm hover:shadow-[0_0_20px_rgba(248,180,0,0.3)] hover:border-primary transition-all duration-300">
+<div class="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-primary-container transition-colors duration-300">
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-[32px]">add</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant group-hover:text-primary transition-colors duration-300">New Project</span>
+</button>
+<!-- Project Card 1: Summer Cottage -->
+<article class="bg-surface-container-highest/40 backdrop-blur-md rounded-xl overflow-hidden border border-outline-variant/30 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.5)] hover:shadow-[0_10px_15px_-3px_rgba(124,88,0,0.1),0_4px_6px_-2px_rgba(124,88,0,0.05)] transition-all duration-300 group flex flex-col min-h-[280px] relative">
+<div class="relative h-48 overflow-hidden w-full">
+<img alt="Summer Cottage Diorama" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A highly detailed, handcrafted miniature diorama of a rustic summer cottage nestled in moss. The tiny house features a realistically textured thatched roof, miniature terracotta potted plants on a carved wooden windowsill, and tiny garden tools leaning against the stone foundation. The scene is bathed in warm, golden directional lighting simulating late afternoon sun, creating deep, cozy shadows and highlighting the intricate textures of the miniature materials. The overall aesthetic is magical, handcrafted, and inviting against a warm parchment background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLI4SS6cYP-aR9BG_8455ILZI1twieze0OfzXcqhao4XgJ74-TrL4v8Yj1v_-26BvsXgZwykmqvZOTxllTz4JjIjZeF2WPaHNzFlo2YZTpt-2QHXou6ZFk3Rj0ENUWpLy06cLGd8HIqamNdSzmNU0GyCkj2C7-mzDyTTOEoc9BETa8wLSTT2veXpxGXFfMlSKgabtXqW56S3_pKGEDAt2KGAnqAGqkRWvNTmJJ_eRh3IzmBzO7WK4t2BsEGh97FprSJP589mCeLqjh"/>
+<!-- Glassy overlay at bottom of image -->
+<div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-surface-dim/90 to-transparent"></div>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between relative bg-surface-dim/20 backdrop-blur-sm -mt-2 rounded-t-xl">
+<div class="flex justify-between items-start gap-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-1">Summer Cottage</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                                    Oct 12, 2023
+                                </p>
+</div>
+<!-- Overflow Menu Button -->
+<button class="text-outline hover:text-primary transition-colors p-1 rounded-full hover:bg-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Project Card 2: Mountain Hut -->
+<article class="bg-surface-container-highest/40 backdrop-blur-md rounded-xl overflow-hidden border border-outline-variant/30 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.5)] hover:shadow-[0_10px_15px_-3px_rgba(124,88,0,0.1),0_4px_6px_-2px_rgba(124,88,0,0.05)] transition-all duration-300 group flex flex-col min-h-[280px] relative">
+<div class="relative h-48 overflow-hidden w-full">
+<img alt="Mountain Hut Diorama" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A meticulously crafted miniature diorama depicting a solitary wooden mountain hut perched on faux rocky terrain sprinkled with artificial snow. The tiny cabin features rough-hewn log walls, a tiny glowing lantern hanging by the heavy timber door, and frosted pine trees surrounding it. The lighting is styled to mimic a crisp, magical twilight with a warm amber glow emitting from the miniature windows, contrasting against the cool shadows of the snow. The aesthetic is extremely detailed, cozy, and handcrafted, set within a bright, ethereal studio environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_Py_uD8I_ODDnmL2_EzBtcazLQAtnTIP0yuvbWWcSpBbgoZDOBl1QXho1OenVGpCzO_UzV75osNS5bdNH4MXI_dYra5ZPH0fJKp-b7ZgD_G4rFH2vbIr0c2TejYDFDmpn6rkoL4-kujysSBUwxfum5EpznJj2qTat4-VgoO-ycNjAl2q_G4CoYatP0ep98ClO7axZhRDVsnkpbdV4C3yMg3t-1c0YJ6-NbVQG9lWr4cNIIKsrVOIiYEcNDKpooRgxbfjjM2EREpTB"/>
+<div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-surface-dim/90 to-transparent"></div>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between relative bg-surface-dim/20 backdrop-blur-sm -mt-2 rounded-t-xl">
+<div class="flex justify-between items-start gap-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-1">Mountain Hut</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                                    Nov 05, 2023
+                                </p>
+</div>
+<button class="text-outline hover:text-primary transition-colors p-1 rounded-full hover:bg-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Project Card 3: Wizard's Tower -->
+<article class="bg-surface-container-highest/40 backdrop-blur-md rounded-xl overflow-hidden border border-outline-variant/30 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.5)] hover:shadow-[0_10px_15px_-3px_rgba(124,88,0,0.1),0_4px_6px_-2px_rgba(124,88,0,0.05)] transition-all duration-300 group flex flex-col min-h-[280px] relative">
+<div class="relative h-48 overflow-hidden w-full">
+<img alt="Wizard's Tower Diorama" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="An intricately built miniature diorama of a whimsical, slightly crooked wizard's tower constructed from tiny faux stones and miniature stained glass. The tower is draped in tiny, realistic ivy vines and sits upon a base of painted mossy cobblestones. Soft, ethereal golden lighting spills from the top turret window, casting long, warm shadows across the textured surfaces. The atmosphere is enchanting, handcrafted, and bright, embodying a cozy fantasy aesthetic over a soft cream background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEyfeKF7e8356Q7TPKVH4r3V7UmfkVtD92U0dbkP-dGJQRcxiL8ZA883rn-4blS7mKA2XbHamCmj3XICoMofsKhrI3VbN8Ym1P_FnUVOZCI7W9kLsDQtLsL6_8BjpIozOaatrfGSxr5jBocRcSvG7X5uclSnbLJUN58yIWV_E8uleFDEAIYBrLe-ymy5f7ZVK8Qq5tIFMN8XI06BZRD7m29mSoKUZKApOZC_-2qQJ5cSgMlnhfr_3w1Lm6yi8DVgs2kh0twPUYcu1W"/>
+<div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-surface-dim/90 to-transparent"></div>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between relative bg-surface-dim/20 backdrop-blur-sm -mt-2 rounded-t-xl">
+<div class="flex justify-between items-start gap-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-1">Wizard's Tower</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                                    Dec 01, 2023
+                                </p>
+</div>
+<button class="text-outline hover:text-primary transition-colors p-1 rounded-full hover:bg-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+</div>
+</main>
+</body></html>

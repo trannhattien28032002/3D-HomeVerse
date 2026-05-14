@@ -1,5 +1,5 @@
-import { Component } from "./Component";
-import { System } from "./System";
+import { Component } from "src/engine/ecs/Component";
+import { System } from "src/engine/ecs/System";
 
 type ComponentClass<T extends Component> = abstract new (...args: never[]) => T;
 

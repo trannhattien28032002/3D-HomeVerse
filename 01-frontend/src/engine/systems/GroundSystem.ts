@@ -1,8 +1,8 @@
-import { System } from "../ecs/System.js";
-import { Query } from "../ecs/Query.js";
-import { Transform } from "../components/Transform.js";
-import { Grounded } from "../components/Grounded.js";
-import { World } from "../ecs/World.js";
+import { System } from "../ecs/System";
+import { Query } from "../ecs/Query";
+import { Transform } from "../components/Transform";
+import { Grounded } from "../components/Grounded";
+import { World } from "../ecs/World";
 
 export class GroundSystem extends System {
     update(world: World, deltaTime: number) {
