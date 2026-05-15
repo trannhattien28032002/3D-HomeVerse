@@ -1,4 +1,11 @@
 /**
+ * SceneDocument — định dạng file lưu trữ scene HomeVerse (.homeverseplan).
+ *
+ * Chỉ lưu topology (nodes + walls) — KHÔNG lưu mesh, material, hay render state.
+ * Toàn bộ geometry được ECS systems tái tạo sau khi deserialize.
+ *
+ * Phiên bản hiện tại: v1. Bump version khi có breaking change, viết migration function.
+ *
  * HomeVerse Scene Document — persistent file format.
  *
  * Design rules:

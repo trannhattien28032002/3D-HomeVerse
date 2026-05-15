@@ -1,11 +1,27 @@
+/**
+ * ToolBase — interface chung cho tất cả tool trong PlanView2D.
+ *
+ * Kiến trúc Tool Pattern:
+ *   PlanView2D (host) ↔ ToolBase (interface) ← DrawWallTool / SelectTool
+ *
+ * Host gọi:
+ *   - update(ctx) mỗi render → sync context mới nhất
+ *   - onStageMouseDown/Click/Move/ContextMenu → delegate input events
+ *   - getWallProps(wall) → lấy Konva props để spread lên từng wall shape
+ *   - renderOverlay() → render Konva Layers đặc thù của tool
+ *   - onCancel() khi Escape / undo / switch tool
+ *   - deactivate() khi tool bị thay bằng tool khác
+ *
+ * ToolContext chứa tất cả data mà tool cần, được push từ host mỗi render.
+ * Không có closure stale — luôn có data mới nhất.
+ */
 import type React from "react";
 import type { KonvaEventObject } from "konva/lib/Node";
 
 import type { Node2D, Wall2D } from "src/app/store/useFloorPlanStore";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 
-// ── Per-wall props returned by each tool ──────────────────────────────────────
-
+/** Props mà tool trả về cho mỗi wall Konva shape — spread trực tiếp vào <Line>. */
 export type WallHandlers = {
     fill: string;
     stroke: string;
@@ -20,23 +36,25 @@ export type WallHandlers = {
     onDragEnd?: (e: any) => void;
 };
 
-// ── Runtime context passed to every tool on each render ───────────────────────
-
+/**
+ * Runtime context — host push xuống tool mỗi render.
+ * Tool lưu vào this.ctx và dùng trong handlers (không capture stale closure).
+ */
 export type ToolContext = {
     nodes: Node2D[];
     walls: Wall2D[];
-    originX: number;
+    originX: number;                              // viewport center px
     originY: number;
-    stageScale: number;
-    stageScaleRef: { current: number };
-    stagePosRef: { current: { x: number; y: number } };
-    nodeById: Map<number, Node2D>;
+    stageScale: number;                           // current zoom level
+    stageScaleRef: { current: number };           // ref để đọc trong event handler (không stale)
+    stagePosRef: { current: { x: number; y: number } }; // pan offset ref
+    nodeById: Map<number, Node2D>;                // O(1) lookup node theo ID
 
-    // Selection state is owned by the host (needed for WallPropertiesPanel and status bar)
+    // Selection state — owned bởi host (cần cho WallPropertiesPanel và status bar)
     selectedWallIds: Set<number>;
     setSelectedWallIds: React.Dispatch<React.SetStateAction<Set<number>>>;
 
-    // Engine commands
+    // Engine commands — tool dispatch để thay đổi ECS
     dispatch: (cmd: EngineCommand) => void;
     withTransaction: (label: string, fn: () => void) => void;
     beginTransaction: (label: string) => void;
@@ -45,35 +63,33 @@ export type ToolContext = {
     nextNodeId: () => number;
     nextWallId: () => number;
 
-    // Scale-compensated size helpers (passed so tools don't need stageScale directly)
-    ss: (px: number) => number;
-    sh: (px: number) => number;
+    // Scale-compensated helpers — tool không cần biết stageScale trực tiếp
+    ss: (px: number) => number; // screen-stable size (text/stroke)
+    sh: (px: number) => number; // handle-stable size
 
-    // Trigger a host re-render when tool changes imperative state (e.g. draw preview)
+    // Yêu cầu host re-render khi tool thay đổi imperative state
     requestUpdate: () => void;
 };
 
-// ── ToolBase interface ────────────────────────────────────────────────────────
-
 export interface ToolBase {
-    /** Called by the host on every render to sync the latest context. */
+    /** Host gọi mỗi render để sync context mới nhất. */
     update(ctx: ToolContext): void;
 
-    // Stage-level events (host handles pan/zoom, then delegates the rest here)
+    // Stage events — host xử lý pan/zoom trước, sau đó delegate xuống đây
     onStageMouseDown(e: KonvaEventObject<MouseEvent>): void;
     onStageClick(e: KonvaEventObject<MouseEvent>): void;
     onStageMouseMove(e: KonvaEventObject<MouseEvent>): void;
     onStageContextMenu(e: KonvaEventObject<MouseEvent>): void;
 
-    /** Cancel in-progress interaction (Escape key, undo, tool switch). */
+    /** Hủy thao tác đang dở (Escape, undo, switch tool). */
     onCancel(): void;
 
-    /** Per-wall event handlers spread onto each wall's Konva shape. */
+    /** Trả về Konva props cho mỗi wall shape — host spread vào <Line>. */
     getWallProps(wall: Wall2D): WallHandlers;
 
-    /** Tool-specific Konva overlay (Layers of handles, highlights, preview). */
+    /** Render Konva Layers đặc thù của tool (handles, preview line, highlights). */
     renderOverlay(): React.ReactNode;
 
-    /** Clean up all internal state when this tool is deactivated. */
+    /** Dọn sạch internal state khi tool bị deactivate. */
     deactivate(): void;
 }

@@ -1,26 +1,46 @@
+/**
+ * WallGeometrySystem — tính toán geometry miter cho tất cả tường.
+ *
+ * Chạy mỗi frame. Chỉ rebuild khi WallPolygon bị xóa (change signal) hoặc
+ * khi node position thay đổi.
+ *
+ * Thuật toán miter:
+ *   1. Với mỗi node, gom tất cả wall đính vào (WallAtNode[])
+ *   2. Sắp xếp radially theo góc
+ *   3. computeMiters(): tính điểm giao (leftPoint, rightPoint) tại mỗi góc tường
+ *      - Nếu góc đủ nhọn và khoảng cách trong giới hạn → miter (điểm nhọn)
+ *      - Ngược lại → bevel (cắt vát)
+ *   4. Cập nhật WallPolygon (4 điểm XZ) cho mỗi wall
+ *   5. Rebuild Three.js ExtrudeGeometry từ polygon + height
+ *   6. Cap mesh tại junction ≥ 3 tường
+ *
+ * Cache: nodeCache lưu miterPoints theo hash (pos + walls) để tránh tính lại.
+ * Output: WallPolygon component + Three.js mesh được cập nhật trong scene.
+ */
 import * as THREE from "three";
 
-import { System } from "../ecs/System";
-import { World } from "../ecs/World";
-import { Query } from "../ecs/Query";
+import { System } from "src/engine/ecs/System";
+import { World } from "src/engine/ecs/World";
+import { Query } from "src/engine/ecs/Query";
 
-import { WallNodes } from "../components/WallNodes";
-import { WallSize } from "../components/WallSize";
-import { WallPolygon, type Point2D } from "../components/WallPolygon";
-import { Mesh } from "../components/Mesh";
-import { Transform } from "../components/Transform";
-import { ColliderAABB } from "../components/ColliderAABB";
-import { NodeRegistry } from "../graph/NodeRegistry";
-import { MeshRegistry } from "../rendering/MeshRegistry";
-import { MaterialRegistry } from "../rendering/MaterialRegistry";
+import { WallNodes } from "src/engine/components/WallNodes";
+import { WallSize } from "src/engine/components/WallSize";
+import { WallPolygon, type Point2D } from "src/engine/components/WallPolygon";
+import { Mesh } from "src/engine/components/Mesh";
+import { Transform } from "src/engine/components/Transform";
+import { ColliderAABB } from "src/engine/components/ColliderAABB";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
+import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
+import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
 
+/** Thông tin về một tường tại một node — dùng để tính miter. */
 type WallAtNode = {
     entity: number;
-    nx: number; nz: number;
+    nx: number; nz: number;     // unit vector hướng ra khỏi node (dọc theo tường)
     thickness: number;
-    angle: number;
-    leftNx: number; leftNz: number;
-    rightNx: number; rightNz: number;
+    angle: number;              // góc từ node (radians) — dùng để sort radially
+    leftNx: number; leftNz: number;   // normal trái (vuông góc với nx/nz)
+    rightNx: number; rightNz: number; // normal phải
 };
 
 function computePair(

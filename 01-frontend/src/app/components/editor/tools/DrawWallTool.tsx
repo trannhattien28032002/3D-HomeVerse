@@ -18,20 +18,30 @@ type DrawState = {
     startNodeCommitted: boolean;
 };
 
-// ── DrawWallTool ──────────────────────────────────────────────────────────────
-
 /**
- * Handles all draw-mode interaction:
- *  - Click to place wall start/end nodes
- *  - Mouse move preview line (imperative Konva update — no React re-render per frame)
- *  - Angle snap relative to connected walls
- *  - Snap-to-node and snap-to-wall for both endpoints
+ * DrawWallTool — tool vẽ tường trong chế độ 2D Floor Plan.
+ *
+ * Flow tương tác:
+ *   Click 1: xác định điểm bắt đầu tường (startNode)
+ *     - Snap vào node hiện có → dùng lại node đó
+ *     - Snap vào wall → SPLIT_WALL tại điểm click, dùng node mới
+ *     - Click vào vùng trống → lazy node (chưa dispatch ENSURE_NODE, chờ click 2)
+ *   Mouse move: cập nhật preview line imperatively (không trigger React re-render)
+ *   Click 2: xác định điểm kết thúc → dispatch ADD_WALL + RESOLVE_INTERSECTIONS
+ *   End node trở thành start node của đoạn tiếp theo (chain drawing)
+ *   Right-click / Escape: hủy bỏ đoạn đang vẽ
+ *
+ * Tối ưu preview:
+ *   previewLineNode là Konva ref trực tiếp — gọi .points() imperative để update
+ *   canvas mà không tạo React re-render (60fps mouse move mà không tốn render cycle).
+ *
+ * Snap priority: node snap > wall snap > angle snap > grid snap
  */
 export class DrawWallTool implements ToolBase {
     private ctx!: ToolContext;
     private drawState: DrawState | null = null;
     private mousePos: { x: number; y: number } | null = null;
-    // Direct reference to the Konva Line node for imperative point updates
+    /** Ref trực tiếp tới Konva Line node — update imperatively không qua React. */
     private previewLineNode: { points: (pts: number[]) => void } | null = null;
 
     update(ctx: ToolContext): void {

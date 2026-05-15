@@ -1,19 +1,26 @@
+/**
+ * EngineContext — React context chia sẻ EngineInstance xuống toàn bộ component tree.
+ *
+ * Lifecycle:
+ *   1. EditorPage render → Canvas mount → createEngine(canvas) → onEngineCreated(engine)
+ *   2. EditorPage.setEngine(engine) → EngineContext.Provider value = engine
+ *   3. Tất cả child component gọi useEngineOrNull() để nhận engine
+ *
+ * Tại sao value ban đầu là null:
+ *   Engine được tạo trong useEffect của Canvas (sau render đầu tiên).
+ *   Các component như PlanView2D cần render trước khi engine ready → phải handle null.
+ *
+ * window.gameEngine: backward-compat + debug via DevTools.
+ *   useEngineOrNull() fallback về đây nếu context chưa có engine.
+ */
 import { createContext, useContext } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
 
-/**
- * React context that holds the active EngineInstance.
- * Provided by EditorPage via Canvas's onEngineCreated callback.
- * Value is null until the engine has been created (after first render).
- */
 export const EngineContext = createContext<EngineInstance | null>(null);
 
 /**
- * Returns the engine from context, falling back to window.gameEngine
- * for backward compatibility during migration.
- *
- * Use this in components that may render before the engine is ready
- * (e.g. PlanView2D, useFloorPlanStore). Returns null if neither is available.
+ * Hook an toàn — trả về null nếu engine chưa sẵn sàng.
+ * Dùng trong component có thể render trước engine (PlanView2D, useFloorPlanStore).
  */
 export function useEngineOrNull(): EngineInstance | null {
     const ctx = useContext(EngineContext);
@@ -21,9 +28,8 @@ export function useEngineOrNull(): EngineInstance | null {
 }
 
 /**
- * Returns the engine from context, falling back to window.gameEngine.
- * Throws if neither is available — use only in components that are guaranteed
- * to render after engine initialization.
+ * Hook strict — throw nếu không tìm thấy engine.
+ * Chỉ dùng trong component CHẮC CHẮN render sau khi engine đã khởi tạo.
  */
 export function useEngine(): EngineInstance {
     const engine = useEngineOrNull();

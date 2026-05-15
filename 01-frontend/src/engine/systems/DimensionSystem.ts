@@ -1,13 +1,34 @@
-import { System } from "../ecs/System";
-import { World } from "../ecs/World";
-import { Query } from "../ecs/Query";
-import { WallTag } from "../components/WallTag";
-import { WallNodes } from "../components/WallNodes";
-import { NodeRegistry } from "../graph/NodeRegistry";
-import type { DimensionSnapshot, AngleDimensionSnapshot } from "../events/EngineEvents";
+/**
+ * DimensionSystem — tính toán annotations kích thước cho PlanView2D.
+ *
+ * Chạy mỗi frame, trước SnapshotSystem.
+ * Kết quả được lưu vào public property (không emit event riêng) để
+ * SnapshotSystem đọc và đóng gói vào ECSSnapshot.
+ *
+ * Output:
+ *   lastDimensions:      DimensionSnapshot[] — độ dài từng tường (mm label)
+ *   lastAngleDimensions: AngleDimensionSnapshot[] — góc giữa các tường tại node
+ *
+ * Thuật toán angle dimension:
+ *   Với mỗi node có ≥ 2 tường:
+ *     1. Build direction vector từ node ra mỗi tường (outward)
+ *     2. Sắp xếp radially theo angle
+ *     3. Tính sweep (góc quét CW) giữa mỗi cặp liền kề
+ *     4. Chỉ emit các góc trong [5°, 175°] — bỏ qua reflex và degenerate
+ *     5. Tính bisector vector (cho label placement)
+ */
+import { System } from "src/engine/ecs/System";
+import { World } from "src/engine/ecs/World";
+import { Query } from "src/engine/ecs/Query";
+import { WallTag } from "src/engine/components/WallTag";
+import { WallNodes } from "src/engine/components/WallNodes";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
+import type { DimensionSnapshot, AngleDimensionSnapshot } from "src/engine/events/EngineEvents";
 
 export class DimensionSystem extends System {
+    /** Kết quả tính chiều dài — SnapshotSystem đọc sau khi update() chạy xong. */
     public lastDimensions: DimensionSnapshot[] = [];
+    /** Kết quả tính góc — SnapshotSystem đọc sau khi update() chạy xong. */
     public lastAngleDimensions: AngleDimensionSnapshot[] = [];
     private readonly nodes: NodeRegistry;
 
@@ -24,9 +45,9 @@ export class DimensionSystem extends System {
 
         for (const e of entities) {
             const tag = world.getComponent(e, WallTag)!;
-            const wn  = world.getComponent(e, WallNodes)!;
-            const sn  = this.nodes.get(wn.startNodeId);
-            const en  = this.nodes.get(wn.endNodeId);
+            const wn = world.getComponent(e, WallNodes)!;
+            const sn = this.nodes.get(wn.startNodeId);
+            const en = this.nodes.get(wn.endNodeId);
             if (!sn || !en) continue;
 
             const dx = en.x - sn.x;
@@ -41,7 +62,7 @@ export class DimensionSystem extends System {
                 wallId: tag.wallId,
                 length,
                 startX: sn.x, startZ: sn.z,
-                endX:   en.x, endZ:   en.z,
+                endX: en.x, endZ: en.z,
                 perpX: -uz, perpZ: ux,
             });
             wallNodeMap.set(tag.wallId, { startNodeId: wn.startNodeId, endNodeId: wn.endNodeId });

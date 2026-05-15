@@ -2,14 +2,14 @@ import * as CANNON from 'cannon-es';
 import { COLLISION_TYPES } from 'cannon-es';
 import { Vector3 } from 'three';
 
-import { System } from '../ecs/System';
-import { World } from '../ecs/World';
-import { Query } from '../ecs/Query';
+import { System } from 'src/engine/ecs/System';
+import { World } from 'src/engine/ecs/World';
+import { Query } from 'src/engine/ecs/Query';
 
-import { Transform } from '../components/Transform';
-import { ColliderAABB } from '../components/ColliderAABB';
-import { StaticBody } from '../components/StaticBody';
-import { DynamicBody } from '../components/DynamicBody';
+import { Transform } from 'src/engine/components/Transform';
+import { ColliderAABB } from 'src/engine/components/ColliderAABB';
+import { StaticBody } from 'src/engine/components/StaticBody';
+import { DynamicBody } from 'src/engine/components/DynamicBody';
 
 const MOVE_THRESHOLD_SQ = 1e-8; // 0.1mm²
 const _cannonPos = new CANNON.Vec3();
@@ -370,7 +370,7 @@ export class CannonCollisionSystem extends System {
         const ss = entry.syncedSize;
         const dx = t.x - sp.x, dy = t.y - sp.y, dz = t.z - sp.z;
         const dRot = Math.abs((t.rotY ?? 0) - entry.syncedRotY);
-        
+
         const sizeChanged = ss.w !== c.width || ss.h !== c.height || ss.d !== c.depth;
 
         if (sizeChanged) {

@@ -1,3 +1,30 @@
+/**
+ * EditorPage — trang chính của ứng dụng HomeVerse, điều phối toàn bộ editor.
+ *
+ * Trách nhiệm:
+ *   - Khởi tạo và cung cấp EngineContext cho toàn bộ React tree
+ *   - Quản lý mode (3d ↔ 2d) và toolMode2D (select / draw)
+ *   - Xử lý keyboard shortcuts: Ctrl+S (save), Ctrl+O (load)
+ *   - Lắng nghe custom DOM events từ InputSystem: tinyhome:nav, tinyhome:toggleMode
+ *   - Loading screen animation trong khi engine khởi động
+ *   - Viewport resize → sync vào useUIStore
+ *
+ * Layout:
+ *   TopNavBar (56px, fixed top)
+ *   ├── SceneView3D  (display: mode===3d, full viewport)
+ *   └── PlanView2D   (display: mode===2d, full viewport)
+ *   BottomNavBar (floating, bottom center)
+ *   BuildPanel   (chỉ trong 2D mode)
+ *   LoadingScreen (overlay, ẩn sau engine ready + fade out)
+ *
+ * State flow engine:
+ *   SceneView3D.onEngineCreated → setEngine → EngineContext.Provider value
+ *   → useFloorPlanStore, useEngine() trong children nhận được engine
+ *
+ * File format: .homeverseplan (JSON, SceneDocument v1)
+ *   Ctrl+S → serializeScene → Blob download
+ *   Ctrl+O → FileReader → validateSceneDocument → deserializeScene
+ */
 import { useEffect, useRef, useState } from "react";
 import { serializeScene, deserializeScene, validateSceneDocument, validationFailed } from "src/engine/serialization";
 import type { SceneDocument } from "src/engine/serialization";
@@ -18,11 +45,10 @@ export default function EditorPage() {
     const [activeNav, setActiveNav] = useState("select");
     const [toolMode2D, setToolMode2D] = useState<"select" | "draw">("select");
     const syncViewport = useUIStore((state) => state.syncViewport);
-    
-    // Holds the engine instance once Canvas fires onEngineCreated.
-    // null until after the first render (engine is created in a useEffect).
+
+    // engine: null cho đến khi Canvas.onEngineCreated fire (sau render đầu tiên)
     const [engine, setEngine] = useState<EngineInstance | null>(null);
-    // Stable ref so the Ctrl+S/Ctrl+O keydown handler never captures a stale closure.
+    // engineRef: stable ref để Ctrl+S/Ctrl+O handler không capture stale closure
     const engineRef = useRef<EngineInstance | null>(null);
     useEffect(() => { engineRef.current = engine; }, [engine]);
 
@@ -73,7 +99,7 @@ export default function EditorPage() {
     // ── Save / Load keyboard shortcuts ──────────────────────────────────────
     useEffect(() => {
         function onKeyDown(e: KeyboardEvent) {
-            if (!e.ctrlKey && !e.metaKey) return;
+            if (!e.ctrlKey && !e.metaKey) return; // ctrlKey là window và metaKey là MacOS
 
             if (e.key === "s") {
                 e.preventDefault();
@@ -82,9 +108,9 @@ export default function EditorPage() {
                 const doc = serializeScene(eng);
                 const json = JSON.stringify(doc, null, 2);
                 const blob = new Blob([json], { type: "application/json" });
-                const url  = URL.createObjectURL(blob);
-                const a    = document.createElement("a");
-                a.href     = url;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
                 a.download = "scene.homeverseplan";
                 a.click();
                 URL.revokeObjectURL(url);
@@ -101,80 +127,80 @@ export default function EditorPage() {
 
     return (
         <EngineContext.Provider value={engine}>
-        <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden", fontFamily: "'Nunito Sans', sans-serif" }}>
-            <TopNavBar mode={mode} />
+            <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden", fontFamily: "'Nunito Sans', sans-serif" }}>
+                <TopNavBar mode={mode} />
 
-            <div style={{ position: "absolute", top: 56, left: 0, right: 0, bottom: 0 }}>
-                <div style={{ display: mode === "3d" ? "block" : "none", width: "100%", height: "100%" }}>
-                    <SceneView3D
-                        onEngineCreated={setEngine}
-                        onReady={() => {
-                            setProgress(100);
-                            setTimeout(() => setEngineReady(true), 350);
-                        }}
-                    />
+                <div style={{ position: "absolute", top: 56, left: 0, right: 0, bottom: 0 }}>
+                    <div style={{ display: mode === "3d" ? "block" : "none", width: "100%", height: "100%" }}>
+                        <SceneView3D
+                            onEngineCreated={setEngine}
+                            onReady={() => {
+                                setProgress(100);
+                                setTimeout(() => setEngineReady(true), 350);
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: mode === "2d" ? "block" : "none", width: "100%", height: "100%" }}>
+                        <PlanView2D
+                            toolMode={mode === "2d" ? toolMode2D : undefined}
+                            onToolModeChange={m => {
+                                setToolMode2D(m);
+                                setActiveNav(m === "draw" ? "build" : "select");
+                            }}
+                        />
+                    </div>
                 </div>
-                <div style={{ display: mode === "2d" ? "block" : "none", width: "100%", height: "100%" }}>
-                    <PlanView2D
-                        toolMode={mode === "2d" ? toolMode2D : undefined}
-                        onToolModeChange={m => {
-                            setToolMode2D(m);
-                            setActiveNav(m === "draw" ? "build" : "select");
-                        }}
-                    />
-                </div>
-            </div>
 
-            {mode === "2d" && <BuildPanel activeNav={activeNav} />}
+                {mode === "2d" && <BuildPanel activeNav={activeNav} />}
 
-            <BottomNavBar
-                mode={mode}
-                activeNav={activeNav}
-                setActiveNav={setActiveNav}
-                setMode={setMode}
-                setToolMode2D={setToolMode2D}
-            />
-
-            <ShortcutHint />
-
-            {showLoader && (
-                <LoadingScreen
-                    progress={progress}
-                    done={engineReady}
-                    onFadeOutEnd={() => setShowLoader(false)}
+                <BottomNavBar
+                    mode={mode}
+                    activeNav={activeNav}
+                    setActiveNav={setActiveNav}
+                    setMode={setMode}
+                    setToolMode2D={setToolMode2D}
                 />
-            )}
-            {/* Hidden file input — triggered by Ctrl+O */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".homeverseplan,.json"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const eng = engineRef.current;
-                    if (!eng) { alert("Engine not ready. Please wait a moment and try again."); return; }
-                    const reader = new FileReader();
-                    reader.onload = (evt) => {
-                        try {
-                            const raw = JSON.parse(evt.target?.result as string);
-                            const result = validateSceneDocument(raw);
-                            if (validationFailed(result)) {
-                                alert(`Cannot load scene: ${result.error}`);
-                            } else {
-                                deserializeScene(raw as SceneDocument, eng);
+
+                <ShortcutHint />
+
+                {showLoader && (
+                    <LoadingScreen
+                        progress={progress}
+                        done={engineReady}
+                        onFadeOutEnd={() => setShowLoader(false)}
+                    />
+                )}
+                {/* Hidden file input — triggered by Ctrl+O */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".homeverseplan,.json"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const eng = engineRef.current;
+                        if (!eng) { alert("Engine not ready. Please wait a moment and try again."); return; }
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            try {
+                                const raw = JSON.parse(evt.target?.result as string);
+                                const result = validateSceneDocument(raw);
+                                if (validationFailed(result)) {
+                                    alert(`Cannot load scene: ${result.error}`);
+                                } else {
+                                    deserializeScene(raw as SceneDocument, eng);
+                                }
+                            } catch {
+                                alert("Failed to read scene file. Make sure it is a valid .homeverseplan file.");
                             }
-                        } catch {
-                            alert("Failed to read scene file. Make sure it is a valid .homeverseplan file.");
-                        }
-                    };
-                    reader.readAsText(file);
-                    // Reset so the same file can be re-loaded.
-                    e.target.value = "";
-                }}
-            />
-        </div>
+                        };
+                        reader.readAsText(file);
+                        // Reset so the same file can be re-loaded.
+                        e.target.value = "";
+                    }}
+                />
+            </div>
         </EngineContext.Provider>
     );
 }

@@ -1,6 +1,17 @@
+/**
+ * WallPropertiesPanel — panel chỉnh sửa thông số tường được chọn.
+ *
+ * Hiển thị khi có ≥ 1 tường được select trong SelectTool.
+ * Input: thickness (75–300mm), height (2700–4500mm) — mỗi cái có slider + number input.
+ * Output: onApply(thicknessWorld, heightWorld) → host dispatch UPDATE_WALL.
+ *
+ * State: local useState cho thickness/height — sync với initialThickness/Height khi prop đổi.
+ * Đơn vị: UI hiển thị mm, onApply chuyển sang world units (metres) trước khi gọi.
+ * Hỗ trợ chọn nhiều tường: countLabel hiển thị số lượng, Apply áp dụng cho tất cả.
+ */
 import { useEffect, useState } from "react";
 
-// 1 world unit = 1 m = 1000 mm
+/** 1 world unit = 1 m = 1000 mm */
 const MM_PER_WORLD = 1000;
 
 type Props = {

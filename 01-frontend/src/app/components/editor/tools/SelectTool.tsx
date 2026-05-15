@@ -18,15 +18,28 @@ type WallDragOrigin = {
 // ── SelectTool ────────────────────────────────────────────────────────────────
 
 /**
- * Handles all select-mode interaction:
- *  - Single/multi wall selection (click + Shift-click)
- *  - Wall body drag (moves both endpoint nodes together)
- *  - Node endpoint handle drag (MERGE / SPLIT / MOVE)
- *  - Deselect on empty stage click
+ * SelectTool — tool chọn và di chuyển tường trong chế độ select.
+ *
+ * Tính năng:
+ *   - Click wall → chọn đơn; Shift+click → chọn thêm/bỏ chọn
+ *   - Kéo wall body → di chuyển cả 2 node cùng lúc (giữ nguyên độ dài/góc)
+ *   - Kéo endpoint handle → MOVE_NODE + merge nếu snap vào node khác / SPLIT nếu snap vào wall
+ *   - Click vào canvas trống → bỏ chọn tất cả
+ *
+ * Drag wall body:
+ *   wallDragOrigin lưu vị trí ban đầu của 2 node + pointer.
+ *   onDragMove: snaps startNode → tính delta → apply delta lên cả endNode.
+ *   onDragEnd: RESOLVE_INTERSECTIONS + commitTransaction.
+ *
+ * Drag endpoint handle:
+ *   dragBoundFunc: snap trong screen-space trước khi Konva apply position.
+ *   onDragEnd: nếu snap vào node → MERGE_NODE; snap vào wall → SPLIT_WALL; else → MOVE_NODE.
  */
 export class SelectTool implements ToolBase {
     private ctx!: ToolContext;
+    /** Lưu trạng thái khi bắt đầu kéo wall body — cần để tính delta di chuyển. */
     private wallDragOrigin: WallDragOrigin | null = null;
+    /** Lưu vị trí world ban đầu của node khi kéo endpoint handle. */
     private nodeDragOrigin = new Map<number, { wx: number; wz: number }>();
 
     update(ctx: ToolContext): void {

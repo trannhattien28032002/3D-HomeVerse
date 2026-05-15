@@ -15,7 +15,7 @@
 import type { EngineInstance } from "src/engine/engineTypes";
 import { WallNodes } from "src/engine/components/WallNodes";
 import { WallSize } from "src/engine/components/WallSize";
-import type { SceneDocument, SceneNodeRecord, SceneWallRecord } from "./SceneDocument";
+import type { SceneDocument, SceneNodeRecord, SceneWallRecord } from "src/engine/serialization/SceneDocument";
 
 export function serializeScene(engine: EngineInstance): SceneDocument {
     // ── Nodes ─────────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ export function serializeScene(engine: EngineInstance): SceneDocument {
     // wallEntityByWallId is the authoritative wall→entity mapping.
     const walls: SceneWallRecord[] = [];
     for (const [wallId, entityId] of engine.wallEntityByWallId) {
-        const wn   = engine.world.getComponent(entityId, WallNodes);
+        const wn = engine.world.getComponent(entityId, WallNodes);
         const size = engine.world.getComponent(entityId, WallSize);
 
         // Skip entities whose components haven't been attached yet.
@@ -42,11 +42,11 @@ export function serializeScene(engine: EngineInstance): SceneDocument {
         walls.push({
             wallId,
             startNodeId: wn.startNodeId,
-            endNodeId:   wn.endNodeId,
+            endNodeId: wn.endNodeId,
             // thickness is the authoritative value stored on WallNodes
             // (WallSize.thickness may diverge during UPDATE_WALL; WallNodes is the topology source).
             thickness: wn.thickness,
-            height:    size.height,
+            height: size.height,
         });
     }
 

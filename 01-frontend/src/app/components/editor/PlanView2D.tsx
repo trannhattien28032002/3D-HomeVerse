@@ -1,3 +1,36 @@
+/**
+ * PlanView2D — bản vẽ mặt bằng 2D dùng Konva (React canvas library).
+ *
+ * Đây là component lớn nhất, đóng vai trò HOST cho tất cả tương tác người dùng
+ * trong chế độ Floor Plan (tab 2D).
+ *
+ * Trách nhiệm:
+ *   - Render wall polygon, node cap, room fill, dimension, angle annotation
+ *   - Xử lý pan (middle mouse) và zoom (wheel) của Konva Stage
+ *   - Delegate mouse events xuống tool hiện tại (DrawWallTool / SelectTool)
+ *   - Keyboard shortcuts: Delete, Ctrl+A, Escape, Ctrl+Z, Ctrl+Y
+ *   - Hiển thị WallPropertiesPanel khi có tường được chọn
+ *
+ * Kiến trúc Layer Konva (thứ tự từ dưới lên — z-index):
+ *   1. Room fills (listening: select mode)
+ *   2. Room area labels (non-interactive)
+ *   3. Wall outlines/strokes (non-interactive)
+ *   4. Wall fills + tool handlers (listening: select mode)
+ *   5. Dimension annotations (non-interactive)
+ *   6. Angle arc annotations (non-interactive)
+ *   7. Tool overlay (handles, preview, highlights)
+ *   8. Axes XZ (always on top, non-interactive)
+ *
+ * Scale compensation (ss, sh):
+ *   Konva scale toàn bộ canvas khi zoom — text/stroke phải chia ngược lại
+ *   để giữ kích thước visual ổn định khi người dùng zoom in/out.
+ *
+ * State management:
+ *   - nodes/walls/caps/rooms: từ useFloorPlanStore (subscribe ECS snapshot)
+ *   - stageScale/stagePos: local state cho pan/zoom
+ *   - selectedWallIds: local state — shared xuống WallPropertiesPanel + ToolContext
+ *   - toolMode: controlled từ EditorPage hoặc internal (fallback)
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Arc, Arrow, Group, Layer, Line, Rect, Stage, Circle, Text } from "react-konva";
 
@@ -12,24 +45,26 @@ import { SelectTool } from "src/app/components/editor/tools/SelectTool";
 import type { ToolBase, ToolContext } from "src/app/components/editor/tools/ToolBase";
 
 // ============================================================
-// Constants (host-only — zoom, grid, annotation display)
+// Constants (chỉ dùng trong host — không liên quan đến ECS)
 // ============================================================
 
-const GRID_SIZE          = 100;
-const ZOOM_MIN           = 0.1;
-const ZOOM_MAX           = 8;
-const ZOOM_FACTOR        = 1.12;
-const DIM_OFFSET         = Math.round(0.3 * 100); // 300mm in px
-const ANGLE_ARC_RADIUS   = 28;
-const ANNOTATION_SCALE_MIN = 0.35;
-const DIM_HIDE_BELOW     = 0.25;
-const ANGLE_HIDE_BELOW   = 0.40;
-const MIN_DIM_LENGTH_M   = 0.25;
+const GRID_SIZE          = 100;          // px — kích thước ô lưới CSS background
+const ZOOM_MIN           = 0.1;          // scale tối thiểu
+const ZOOM_MAX           = 8;            // scale tối đa
+const ZOOM_FACTOR        = 1.12;         // nhân/chia mỗi bước scroll
+const DIM_OFFSET         = Math.round(0.3 * 100); // 300mm offset vuông góc với tường
+const ANGLE_ARC_RADIUS   = 28;           // px — bán kính arc khi scale = 1
+const ANNOTATION_SCALE_MIN = 0.35;       // clamp dưới cho scale compensation (ss)
+const DIM_HIDE_BELOW     = 0.25;         // ẩn dimension khi zoom quá nhỏ
+const ANGLE_HIDE_BELOW   = 0.40;         // ẩn angle arc khi zoom quá nhỏ
+const MIN_DIM_LENGTH_M   = 0.25;         // ẩn dimension của tường quá ngắn (< 250mm)
 
 // ============================================================
-// Module-level engine helpers (stable references — safe to put in ToolContext)
+// Module-level engine helpers — tham chiếu stable, an toàn đưa vào ToolContext
+// Dùng window.gameEngine thay vì closure để luôn trỏ đúng instance (kể cả sau HMR)
 // ============================================================
 
+/** Gửi command vào engine dispatcher. Warn nếu engine chưa sẵn sàng. */
 function dispatch(cmd: EngineCommand) {
     if (!window.gameEngine) {
         console.warn("[PlanView2D] dispatch called before engine init:", cmd.type);
@@ -38,20 +73,24 @@ function dispatch(cmd: EngineCommand) {
     window.gameEngine.api.dispatch(cmd);
 }
 
+/** Chạy fn() trong một transaction nguyên tử — tất cả dispatch bên trong thành 1 undo entry. */
 function withTransaction(label: string, fn: () => void) {
     const eng = window.gameEngine;
     if (!eng) { fn(); return; }
     eng.api.transaction(label, fn);
 }
 
+/** Mở transaction thủ công — dùng cho drag thao tác nhiều event (onDragStart). */
 function beginTransaction(label: string) {
     window.gameEngine?.api.beginTransaction(label);
 }
 
+/** Đóng transaction và push vào undo stack (onDragEnd). */
 function commitTransaction() {
     window.gameEngine?.api.commitTransaction();
 }
 
+/** Hủy transaction không push vào undo stack (onCancel, Escape). */
 function cancelTransaction() {
     window.gameEngine?.api.cancelTransaction();
 }
@@ -96,12 +135,13 @@ export default function PlanView2D({ toolMode: extToolMode, onToolModeChange }: 
     const [selectedWallIds, setSelectedWallIds] = useState<Set<number>>(new Set());
 
     // ── Tool instances (stable across renders) ────────────────────────────────
+    // useRef đảm bảo tool objects không bị recreate mỗi render — giữ internal state
     const drawWallTool = useRef(new DrawWallTool());
     const selectTool   = useRef(new SelectTool());
     const activeTool: ToolBase = toolMode === "draw" ? drawWallTool.current : selectTool.current;
 
-    // Trigger host re-render when a tool needs to display updated imperative state
-    // (e.g. DrawWallTool sets drawState on first click — no dispatch fires)
+    // requestUpdate: trigger re-render khi tool cập nhật imperative state
+    // (ví dụ: DrawWallTool set drawState sau click đầu — không có dispatch nào fire)
     const [, setToolUpdateSeed] = useState(0);
     const requestUpdate = useCallback(() => setToolUpdateSeed(s => s + 1), []);
 
@@ -145,16 +185,20 @@ export default function PlanView2D({ toolMode: extToolMode, onToolModeChange }: 
     }, [nodes]);
 
     // ── Scale compensation ────────────────────────────────────────────────────
+    // ss(px): trả về px / scale — dùng cho text/stroke/radius để giữ kích thước visual không đổi khi zoom
+    // sh(px): tương tự nhưng không clamp (dùng cho handle radius)
     const eff = Math.max(ANNOTATION_SCALE_MIN, stageScale);
     const ss  = (px: number) => px / eff;
     const sh  = (px: number) => px / stageScale;
 
-    // ── CSS grid aligned with Konva stage transform ───────────────────────────
+    // ── CSS grid background — căn chỉnh với Konva Stage transform ───────────
+    // Tính offset lưới CSS để khớp với Konva origin + pan offset
     const gridSizePx  = GRID_SIZE * stageScale;
     const gridOffsetX = ((originX * stageScale + stagePos.x) % gridSizePx + gridSizePx) % gridSizePx;
     const gridOffsetY = ((originY * stageScale + stagePos.y) % gridSizePx + gridSizePx) % gridSizePx;
 
-    // ── Build and push tool context every render ──────────────────────────────
+    // ── Build ToolContext và push xuống activeTool mỗi render ────────────────
+    // Tool nhận context mới mỗi render → luôn có data mới nhất (không stale closure)
     const toolCtx: ToolContext = {
         nodes, walls, originX, originY,
         stageScale, stageScaleRef, stagePosRef,

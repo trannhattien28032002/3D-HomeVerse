@@ -1,3 +1,19 @@
+/**
+ * SnapshotSystem — cầu nối giữa ECS và React UI.
+ *
+ * Chạy mỗi frame (sau WallGeometrySystem và DimensionSystem).
+ * Thu thập trạng thái scene và emit event "snapshot" nếu có thay đổi.
+ *
+ * Input:  ECS World (wall entities) + NodeRegistry + DimensionSystem.lastDimensions
+ * Output: ECSSnapshot emit qua EngineEvents → useFloorPlanStore → PlanView2D re-render
+ *
+ * Change detection:
+ *   Tạo hash string từ tất cả walls + nodes + caps.
+ *   Nếu hash trùng với frame trước → skip emit (tránh re-render vô ích mỗi 60fps).
+ *
+ * Pipeline vị trí trong system order:
+ *   WallGeometrySystem → DimensionSystem → SnapshotSystem → RenderSystem
+ */
 import { System } from "src/engine/ecs/System";
 import { World } from "src/engine/ecs/World";
 import { Query } from "src/engine/ecs/Query";
@@ -16,7 +32,9 @@ import { EngineEvents, type ECSSnapshot, type NodeSnapshot, type WallSnapshot, t
 export class SnapshotSystem extends System {
     private readonly events: EngineEvents;
     private readonly nodes: NodeRegistry;
+    /** Tham chiếu DimensionSystem để lấy lastDimensions sau khi system kia chạy xong. */
     private readonly dimSystem: DimensionSystem;
+    /** Hash của frame trước — so sánh để skip emit khi không có thay đổi. */
     private lastHash = "";
 
     constructor(events: EngineEvents, nodes: NodeRegistry, dimSystem: DimensionSystem) {

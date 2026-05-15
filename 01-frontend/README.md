@@ -1,73 +1,95 @@
-# React + TypeScript + Vite
+# 3D HomeVerse
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser-based 3D interior design tool with a dual-mode editor: a full 3D viewport and a 2D floor plan editor. Draw walls as a graph of connected nodes, which are extruded in real-time into 3D geometry with miter-joined corners.
 
-Currently, two official plugins are available:
+<!-- GSD:generated -->
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Dual-mode editor** — toggle between 3D orbit view and 2D floor plan drawing
+- **Node-graph wall system** — walls are edges between nodes; miter joints computed automatically
+- **ECS engine** — framework-free TypeScript Entity-Component-System decoupled from React
+- **Room detection** — closed wall polygons are detected and filled as room geometry
+- **Dimension annotations** — real-time length and angle labels on the 2D canvas
+- **Draw / select tools** — draw mode for placing walls, select mode for moving nodes
+- **Physics** — cannon-es collision + Rapier3D integration
+- **HDRI lighting** — studio EXR environment map for realistic 3D shading
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+| Layer | Technology |
+|-------|-----------|
+| UI framework | React 19 + TypeScript |
+| Build tool | Vite 6 |
+| 3D rendering | Three.js 0.183 (OrbitControls, TransformControls, EXRLoader) |
+| 2D editor canvas | React Konva 19 |
+| Physics | cannon-es + @dimforge/rapier3d-compat |
+| State | Zustand 5 |
+| Routing | React Router v7 |
+| Styling | Tailwind CSS v4 |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Quick Start
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### All scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start Vite dev server with HMR |
+| `npm run build` | Type-check + production build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Run ESLint across the project |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Project Structure
+
 ```
+src/
+├── engine/          # Framework-free TypeScript ECS engine
+│   ├── ecs/         # World, Entity, Component, System, Query
+│   ├── components/  # Data-only ECS components (Transform, WallNodes, …)
+│   ├── systems/     # Per-frame systems (WallGeometry, Dimension, Snapshot, …)
+│   ├── commands/    # EngineCommands discriminated union + dispatcher
+│   ├── events/      # EngineEvents pub/sub bus + ECSSnapshot type
+│   ├── game/        # Entity factories (WallFactory, LightFactory, …)
+│   ├── graph/       # NodeRegistry, RoomDetection
+│   ├── setup/       # createEngine, sceneSetup, systemSetup, defaultScene
+│   └── utils/       # Pure geometry helpers
+└── app/             # React UI layer
+    ├── pages/       # EditorPage, ProjectsPage, Plan2DPage, HomePage
+    ├── components/  # Editor chrome: Canvas, PlanView2D, TopNavBar, …
+    ├── store/       # useUIStore (zustand), useFloorPlanStore (snapshot subscriber)
+    ├── routes/      # BrowserRouter + route definitions
+    └── constants/   # designTokens, navigation schema
+```
+
+## Architecture
+
+The codebase is split into two strict layers:
+
+- **`src/engine/`** — pure TypeScript, imports only `three`, `cannon-es`, and `@dimforge/rapier3d-compat`. Never imports from `src/app/`.
+- **`src/app/`** — React components and Zustand stores. Communicates with the engine via:
+  - **Commands** — `window.gameEngine.api.dispatch({ type: 'CMD', ... })`
+  - **Snapshot events** — `window.gameEngine.api.events.on('snapshot', handler)`
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
+
+## Routes
+
+| Path | Page | Description |
+|------|------|-------------|
+| `/` | EditorPage | Main 3D + 2D editor |
+| `/projects` | ProjectsPage | Project list |
+
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, ECS patterns, React↔Engine bridge |
+| [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) | First-run walkthrough |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | How to add components, systems, commands |
+| [docs/TESTING.md](docs/TESTING.md) | Testing strategy and setup |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Vite, TypeScript, ESLint, and engine config |

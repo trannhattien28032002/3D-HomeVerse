@@ -1,3 +1,23 @@
+/**
+ * RoomSystem — phát hiện và render sàn phòng từ wall topology.
+ *
+ * Chạy mỗi frame. Dùng hash-based change detection: chỉ chạy RoomDetection
+ * khi node positions hoặc connections thay đổi.
+ *
+ * Pipeline:
+ *   1. Hash tất cả node (id + x/z + connectedWallIds)
+ *   2. Nếu hash đổi → gọi RoomDetection.findRooms() (Half-Edge DCEL)
+ *   3. Tạo/cập nhật RoomGeometry component cho mỗi phòng được phát hiện
+ *   4. Xóa entity của phòng không còn tồn tại
+ *   5. Rebuild Three.js ShapeGeometry cho floor mesh (y = -0.01 để nằm dưới tường)
+ *
+ * Key: phòng được identify bằng sorted node ID list (order-independent).
+ *      Key này stable dù wall topology bị rebuild.
+ *
+ * Output:
+ *   - RoomGeometry components trong World (cho SnapshotSystem đọc)
+ *   - Floor mesh trong Three.js scene (màu #e2e8f0)
+ */
 import * as THREE from "three";
 import { System } from "src/engine/ecs/System";
 import { World } from "src/engine/ecs/World";
@@ -14,7 +34,9 @@ export class RoomSystem extends System {
     private meshRegistry: MeshRegistry | null;
     private materialRegistry: MaterialRegistry | null;
 
+    /** Hash của frame trước — so sánh để bỏ qua frame không có thay đổi topology. */
     private lastHash: string = "";
+    /** Map từ room key (sorted node IDs) → ECS entity ID. */
     private roomEntities = new Map<string, number>();
 
     constructor(

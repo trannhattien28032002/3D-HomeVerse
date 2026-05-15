@@ -1,40 +1,53 @@
+/**
+ * RoomDetection — phát hiện phòng kín từ wall topology dùng thuật toán Half-Edge DCEL.
+ *
+ * Thuật toán Half-Edge (Doubly-Connected Edge List):
+ *   1. Build Half-Edges: mỗi wall tạo 2 directed edge (A→B và B→A = twin)
+ *   2. Link Twins: each edge trỏ tới twin ngược chiều
+ *   3. Link Next: sắp xếp edge radially tại mỗi node → "next" = edge rẽ trái nhất (CCW)
+ *   4. Traverse Faces: follow next pointer cho đến khi loop đóng
+ *   5. Filter: giữ face có signed area âm (CW trong XZ space = interior room)
+ *              Bỏ face có diện tích < 0.1 m² (artifact nhỏ)
+ *
+ * Tại sao CW = interior:
+ *   Trong không gian XZ (Z tăng xuống dưới màn hình), signed area âm = winding CW
+ *   = face nằm bên trong vòng tường → là phòng thực sự.
+ *   Face dương = outer boundary (vòng bao ngoài) → bị lọc ra.
+ *
+ * Fixes áp dụng so với DCEL chuẩn:
+ *   1. Skip duplicate directed edges tại build time
+ *   2. Per-loop closure detection bằng Set<HalfEdge> thay vì boolean flag
+ *   3. Safety cap maxIter = halfEdges.size ngăn infinite loop trên graph lỗi
+ */
 import { World } from "src/engine/ecs/World";
 import { WallNodes } from "src/engine/components/WallNodes";
 import { WallTag } from "src/engine/components/WallTag";
 import { Query } from "src/engine/ecs/Query";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
-// Represents a directed edge in the planar graph
+/** Directed edge trong planar graph — mỗi wall sinh ra 2 HalfEdge (twin). */
 export interface HalfEdge {
-    source: number; // Node ID
-    target: number; // Node ID
+    source: number; // Node ID điểm đầu
+    target: number; // Node ID điểm cuối
     wallId: number;
-    angle: number;  // Angle from source to target
-    next: HalfEdge | null; // Next half-edge in the face loop
-    twin: HalfEdge | null; // The reverse half-edge
+    angle: number;  // Góc hướng từ source đến target (radians)
+    next: HalfEdge | null; // Edge kế tiếp trong face loop (rẽ trái nhất)
+    twin: HalfEdge | null; // Edge ngược chiều (cùng wall, hướng ngược)
     visited: boolean;
 }
 
 export interface RoomPolygon {
-    nodes: number[]; // Ordered list of node IDs forming the room perimeter
-    points: { x: number; z: number }[]; // World coordinates of the corners
-    area: number; // Absolute square area of the room
+    nodes: number[];                     // Node ID theo thứ tự (ordered perimeter)
+    points: { x: number; z: number }[]; // Tọa độ world-space
+    area: number;                        // Diện tích m² (absolute value)
 }
 
 export class RoomDetection {
     /**
-     * Extracts all valid interior rooms (closed polygons) from the wall graph.
-     * Uses a Half-Edge (DCEL) traversal algorithm.
-     *
-     * Fixes applied vs original:
-     * 1. Duplicate edges (same source→target from overlapping walls) are skipped
-     *    at build time — only the first-seen edge is kept in the DCEL.
-     * 2. Face traversal uses a per-loop Set<HalfEdge> for closure detection,
-     *    plus a global visited Set so edges used in one face are not re-entered
-     *    by another face.  The original `visited: boolean` flag caused valid
-     *    faces to be silently dropped when the DCEL was dense.
-     * 3. A safety iteration cap (maxIter = halfEdges.size) prevents infinite
-     *    loops on malformed graphs.
+     * Tìm tất cả phòng kín trong wall graph.
+     * @param world ECS World — để lấy WallTag + WallNodes components
+     * @param nodeRegistry — nguồn vị trí node
+     * @returns Mảng RoomPolygon đã lọc (chỉ interior, diện tích ≥ 0.1 m²)
      */
     static findRooms(world: World, nodeRegistry: NodeRegistry): RoomPolygon[] {
         const halfEdges    = new Map<string, HalfEdge>();

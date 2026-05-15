@@ -1,3 +1,23 @@
+/**
+ * Điểm khởi tạo duy nhất của engine HomeVerse.
+ *
+ * createEngine() lắp ráp toàn bộ subsystem và trả về EngineInstance.
+ *
+ * Thứ tự khởi động:
+ *   1. Three.js scene / camera / renderer  (sceneSetup)
+ *   2. ECS World + NodeRegistry + EventBus
+ *   3. Systems đăng ký vào World          (systemSetup)
+ *   4. InputSystem lắng nghe phím tắt toàn cục
+ *   5. Đèn ambient + directional mặc định
+ *   6. Dispatcher + UndoHistory
+ *   7. Game loop bắt đầu (requestAnimationFrame)
+ *
+ * Dependency flow:
+ *   Canvas component → createEngine(canvas) → EngineInstance
+ *   EngineInstance được mount vào:
+ *     - window.gameEngine (backward-compat)
+ *     - EngineContext.Provider (React tree)
+ */
 import * as THREE from "three";
 
 import { World } from "src/engine/ecs/World";
@@ -40,7 +60,9 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     createAmbientLight(world, { intensity: 0.5 });
     createDirectionalLight(world, { x: 10, y: 18, z: 10, intensity: 0.9 });
 
+    // wallEntityByWallId: ánh xạ wallId → ECS entityId — dùng để tra entity từ ID logic
     const wallEntityByWallId = new Map<number, number>();
+    // maxWallIdRef: theo dõi wallId lớn nhất đã dùng — mutable ref để dispatcher cập nhật
     const maxWallIdRef = { value: INITIAL_NEXT_WALL_ID - 1 };
 
     // initDefaultScene(world, scene, nodeRegistry, wallEntityByWallId);
@@ -48,10 +70,11 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     const dispatch = createDispatcher({ world, scene, nodeRegistry, wallEntityByWallId, maxWallIdRef, meshRegistry, materialRegistry });
 
     // ── Undo / redo state ─────────────────────────────────────────────────────
-    // instanceRef lets the undo methods reference engineInstance before it exists.
-    // All undo API methods are only ever called from user events (after initialization).
+    // instanceRef: ref vòng — cho phép undo/redo truy cập engineInstance trước khi nó được tạo
+    // (engineInstance được gán vào instanceRef.current cuối hàm createEngine)
     const instanceRef: { current: EngineInstance | null } = { current: null };
     const undoHistory = new UndoHistory();
+    // pendingLabel/pendingSnapshot: giữ state của beginTransaction() cho đến commitTransaction()
     let pendingLabel: string | null = null;
     let pendingSnapshot: SceneDocument | null = null;
 

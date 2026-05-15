@@ -1,17 +1,17 @@
 import * as THREE from "three";
-import { System } from "../ecs/System";
-import { Query } from "../ecs/Query";
-import { World } from "../ecs/World";
+import { System } from "src/engine/ecs/System";
+import { Query } from "src/engine/ecs/Query";
+import { World } from "src/engine/ecs/World";
 
-import { Transform } from "../components/Transform";
-import { Mesh } from "../components/Mesh";
-import { Selectable } from "../components/Selectable";
-import { DynamicBody } from "../components/DynamicBody";
-import { StaticBody } from "../components/StaticBody";
-import { WallNodes } from "../components/WallNodes";
+import { Transform } from "src/engine/components/Transform";
+import { Mesh } from "src/engine/components/Mesh";
+import { Selectable } from "src/engine/components/Selectable";
+import { DynamicBody } from "src/engine/components/DynamicBody";
+import { StaticBody } from "src/engine/components/StaticBody";
+import { WallNodes } from "src/engine/components/WallNodes";
 
 import { TransformControls } from "three/addons/controls/TransformControls.js";
-import { EngineEvents } from "../events/EngineEvents";
+import { EngineEvents } from "src/engine/events/EngineEvents";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 type MeshWithEntity = THREE.Object3D & { __entity?: number };
@@ -84,7 +84,7 @@ export class GizmoSystem extends System {
             this.releaseFramesLeft = 2;
             this.events?.emit("draggingChanged", { entityId: this.draggingEntity, dragging: false });
         });
-        
+
         this.controls.addEventListener("objectChange", () => {
             const object = this.controls.object;
 

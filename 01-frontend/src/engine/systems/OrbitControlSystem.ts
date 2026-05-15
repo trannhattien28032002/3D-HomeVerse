@@ -1,18 +1,37 @@
+/**
+ * OrbitControlSystem — quản lý camera 3D trong SceneView3D.
+ *
+ * Bao gồm:
+ *   - OrbitControls (Three.js) cho pan/rotate bằng chuột
+ *   - Custom zoom: zoom-to-cursor (không dùng OrbitControls.enableZoom)
+ *   - Double-click: pan camera target tới điểm vừa click
+ *   - setView(): animate camera tới preset (plan / perspective / eye-level)
+ *   - rotateBy(): xoay ngang quanh target hiện tại (dùng cho nút rotation bar)
+ *
+ * Animation: dùng cubic ease-out (TRANSITION_DURATION = 0.55s).
+ * Chặn camera dưới MIN_CAMERA_Y sau mỗi controls.update() để tránh xuyên sàn.
+ *
+ * Dependency: camera + renderer được inject từ createEngine/systemSetup.
+ *             Không truy cập ECS World (void world trong update).
+ */
 import * as THREE from "three";
-import { System } from "../ecs/System";
-import { World } from "../ecs/World";
+import { System } from "src/engine/ecs/System";
+import { World } from "src/engine/ecs/World";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { CameraPreset } from "src/engine/engineTypes";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-// Camera never descends below this height — prevents falling through the floor plane.
+// Camera không bao giờ thấp hơn đây — tránh chui qua sàn nhà
 const MIN_CAMERA_Y = 0.5;
 
-// Duration of the smooth camera preset transition in seconds.
+// Thời gian animation khi chuyển preset (giây)
 const TRANSITION_DURATION = 0.55;
 
-// Named camera presets — see camera_system_analysis.md for rationale.
+/**
+ * Định nghĩa các góc nhìn camera. Rationale xem .doc/camera_system_analysis.md.
+ *   plan:        nhìn từ trên xuống (90°) — dùng cho chế độ 2D layout
+ *   perspective: góc 3/4 (~35° elevation) — góc nhìn chính để cảm nhận tỉ lệ
+ *   eye-level:   ngang tầm mắt (1.65m) — walkthrough preview
+ */
 const CAMERA_PRESETS: Record<CameraPreset, { position: THREE.Vector3; target: THREE.Vector3; fov: number }> = {
     // Bird's-eye plan view. Tiny Z offset avoids gimbal lock at exact (0, y, 0).
     plan: {

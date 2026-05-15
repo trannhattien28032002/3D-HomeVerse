@@ -1,6 +1,14 @@
 /**
- * Shared constants and pure utility functions used by all tool classes.
- * No React, no Konva, no ECS — only geometry and snap math.
+ * Shared constants và pure utility functions dùng chung cho tất cả tool.
+ * Không có React, không Konva, không ECS — chỉ là toán hình học và snap logic.
+ *
+ * Snap priority trong snapToNodeOrGrid():
+ *   1. Node snap (trong SNAP_RADIUS / scale)
+ *   2. Wall snap (projection lên đoạn thẳng gần nhất)
+ *   3. Grid snap (làm tròn đến SNAP_SIZE)
+ *
+ * applyAngleSnap(): constrain góc vẽ tường so với các tường đã nối tại anchor node.
+ *   Chỉ kích hoạt khi cursor cách snap angle < ANGLE_SNAP_THRESHOLD_DEG.
  */
 
 import type { Node2D, Wall2D } from "src/app/store/useFloorPlanStore";

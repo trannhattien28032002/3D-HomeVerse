@@ -1,3 +1,18 @@
+/**
+ * EngineEvents — EventBus nội bộ của engine + tất cả snapshot types.
+ *
+ * Event flow:
+ *   ECS Systems (SnapshotSystem) → events.emit("snapshot", data)
+ *   → useFloorPlanStore.on("snapshot") → setSnap → PlanView2D re-render
+ *
+ * ECSSnapshot: trạng thái đầy đủ của scene được emit mỗi frame (khi có thay đổi).
+ *   Bao gồm: nodes, walls, caps, rooms, dimensions, angleDimensions
+ *   UI chỉ subscribe vào "snapshot" — không đọc ECS World trực tiếp.
+ *
+ * lastSnapshot: cache snapshot cuối để component mới mount có thể đọc ngay
+ *   mà không phải chờ frame tiếp theo emit.
+ */
+
 // ============================================================
 // Snapshot types — dữ liệu ECS "chụp" ra cho UI mỗi frame
 // ============================================================

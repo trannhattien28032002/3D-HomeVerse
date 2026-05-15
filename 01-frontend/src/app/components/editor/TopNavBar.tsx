@@ -1,3 +1,9 @@
+/**
+ * TopNavBar — thanh điều hướng trên cùng của editor.
+ * Hiển thị: logo "Tiny Home" | mode label (3D Editor / Floor Plan) | action buttons.
+ * Mode label thay đổi theo prop `mode` — không có state nội bộ.
+ * Action buttons (Screenshot, Grid, Help) hiện chưa có logic — chỉ là UI placeholder.
+ */
 import { T } from "../../constants/designTokens";
 import type { Mode } from "../../constants/navigation";
 

@@ -1,3 +1,15 @@
+/**
+ * BottomNavBar — floating action bar ở dưới cùng màn hình.
+ *
+ * Filter BOTTOM_NAV items theo mode hiện tại (3d / 2d) — chỉ hiện items phù hợp.
+ * Khi click item:
+ *   - setActiveNav(id): cập nhật visual active state
+ *   - item.action(setMode): một số item chuyển mode (tab: 2d↔3d)
+ *   - Trong 2D mode: select → setToolMode2D("select"), build → setToolMode2D("draw")
+ *
+ * Active item có animation: scale shrink + gold glow — dùng inline style transition.
+ * Dividers trong BOTTOM_NAV được render như visual separator (không phải button).
+ */
 import { T } from "../../constants/designTokens";
 import { BOTTOM_NAV } from "../../constants/navigation";
 import type { Mode } from "../../constants/navigation";
