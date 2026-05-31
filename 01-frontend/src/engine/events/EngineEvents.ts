@@ -3,7 +3,7 @@
  *
  * Event flow:
  *   ECS Systems (SnapshotSystem) → events.emit("snapshot", data)
- *   → useFloorPlanStore.on("snapshot") → setSnap → PlanView2D re-render
+ *   → useFloorPlanSnapshot.on("snapshot") → setSnap → PlanView2D re-render
  *
  * ECSSnapshot: trạng thái đầy đủ của scene được emit mỗi frame (khi có thay đổi).
  *   Bao gồm: nodes, walls, caps, rooms, dimensions, angleDimensions
@@ -12,6 +12,7 @@
  * lastSnapshot: cache snapshot cuối để component mới mount có thể đọc ngay
  *   mà không phải chờ frame tiếp theo emit.
  */
+
 
 // ============================================================
 // Snapshot types — dữ liệu ECS "chụp" ra cho UI mỗi frame
@@ -86,6 +87,24 @@ export type AngleDimensionSnapshot = {
     bisectorZ: number;
 };
 
+/**
+ * Snapshot của một món nội thất đã đặt.
+ * Cho phép PlanView2D vẽ furniture top-down mà không đọc ECS trực tiếp.
+ * x/z/rotY từ Transform; width/depth là footprint XZ (mét).
+ * topDownUrl: URL ảnh PNG top-down (nếu có trong catalog), dùng để vẽ hình ảnh thực.
+ */
+export type FurnitureSnapshot = {
+    entityId: number;
+    modelId: string;
+    x: number;  // world-space (metres)
+    z: number;
+    rotY: number; // radians, quay quanh trục Y
+    width: number; // footprint XZ (metres)
+    depth: number;
+    /** Top-down image URL from catalog. Undefined = render gray box fallback. */
+    topDownUrl: string | undefined;
+};
+
 /** Toàn bộ trạng thái scene mà ECS emit mỗi khi có thay đổi */
 export type ECSSnapshot = {
     nodes: NodeSnapshot[];
@@ -98,6 +117,8 @@ export type ECSSnapshot = {
     dimensions: DimensionSnapshot[];
     /** Angle annotations at wall corners */
     angleDimensions: AngleDimensionSnapshot[];
+    /** Placed furniture entities — projected into the 2D plan view */
+    furniture: FurnitureSnapshot[];
 };
 
 // ============================================================
@@ -109,8 +130,18 @@ export type EngineEventMap = {
     entityAdded:     { entityId: number; type?: string };
     entityRemoved:   { entityId: number };
     draggingChanged: { entityId: number | null; dragging: boolean };
+    gizmoModeChanged: { mode: "translate" | "rotate" };
     /** Phát ra mỗi frame khi có node/wall nào thay đổi. */
     snapshot:        ECSSnapshot;
+    placementStarted:   { modelId: string };
+    placementConfirmed: { modelId: string; x: number; z: number };
+    placementCancelled: Record<never, never>;
+    /** Emitted immediately when begin() is called, before the GLB has loaded. */
+    placementLoading:   { modelId: string };
+    /** Emitted once the ghost GLB is ready and visible on the floor plane. */
+    placementReady:     { modelId: string };
+    /** Emitted if the GLB failed to load during placement. */
+    placementError:     { modelId: string; error: string };
 };
 
 type Handler<T> = (payload: T) => void;

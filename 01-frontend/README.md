@@ -12,7 +12,7 @@ A browser-based 3D interior design tool with a dual-mode editor: a full 3D viewp
 - **Room detection** — closed wall polygons are detected and filled as room geometry
 - **Dimension annotations** — real-time length and angle labels on the 2D canvas
 - **Draw / select tools** — draw mode for placing walls, select mode for moving nodes
-- **Physics** — cannon-es collision + Rapier3D integration
+- **Physics** — cannon-es collision detection
 - **HDRI lighting** — studio EXR environment map for realistic 3D shading
 
 ## Tech Stack
@@ -23,7 +23,7 @@ A browser-based 3D interior design tool with a dual-mode editor: a full 3D viewp
 | Build tool | Vite 6 |
 | 3D rendering | Three.js 0.183 (OrbitControls, TransformControls, EXRLoader) |
 | 2D editor canvas | React Konva 19 |
-| Physics | cannon-es + @dimforge/rapier3d-compat |
+| Physics | cannon-es |
 | State | Zustand 5 |
 | Routing | React Router v7 |
 | Styling | Tailwind CSS v4 |
@@ -70,10 +70,10 @@ src/
 
 The codebase is split into two strict layers:
 
-- **`src/engine/`** — pure TypeScript, imports only `three`, `cannon-es`, and `@dimforge/rapier3d-compat`. Never imports from `src/app/`.
+- **`src/engine/`** — pure TypeScript, imports only `three` and `cannon-es`. Never imports from `src/app/`.
 - **`src/app/`** — React components and Zustand stores. Communicates with the engine via:
-  - **Commands** — `window.gameEngine.api.dispatch({ type: 'CMD', ... })`
-  - **Snapshot events** — `window.gameEngine.api.events.on('snapshot', handler)`
+  - **Commands** — `engine.api.dispatch({ type: 'CMD', ... })` (engine from `useEngineOrNull()`)
+  - **Snapshot events** — `engine.api.events.on('snapshot', handler)`
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 

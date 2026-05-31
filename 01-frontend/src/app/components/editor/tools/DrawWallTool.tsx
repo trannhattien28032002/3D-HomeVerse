@@ -1,14 +1,20 @@
 import React from "react";
 import { Circle, Layer, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
+import type Konva from "konva";
 
-import type { Wall2D } from "src/app/store/useFloorPlanStore";
+import type { Wall2D } from "src/app/store/useFloorPlanSnapshot";
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import {
     toWorldX, toWorldZ,
     snapToNodeOrGrid, applyAngleSnap,
-    WALL_THICKNESS, MIN_WALL_PX, PX_PER_WORLD, HANDLE_HIDE_BELOW,
+    WALL_THICKNESS, WALL_THICKNESS_M, MIN_WALL_PX, HANDLE_HIDE_BELOW,
 } from "./toolUtils";
+import { wallSegmentPolygon, collidesWithFurniture } from "./collision2D";
+
+/** Màu preview tường: bình thường vs khi cắt qua nội thất. */
+const PREVIEW_STROKE_OK = "#7c5800";
+const PREVIEW_STROKE_BAD = "#c81e1e";
 
 // ── Internal state type ───────────────────────────────────────────────────────
 
@@ -41,8 +47,10 @@ export class DrawWallTool implements ToolBase {
     private ctx!: ToolContext;
     private drawState: DrawState | null = null;
     private mousePos: { x: number; y: number } | null = null;
+    /** true khi đoạn đang vẽ cắt qua nội thất → preview đỏ, chặn commit. */
+    private colliding = false;
     /** Ref trực tiếp tới Konva Line node — update imperatively không qua React. */
-    private previewLineNode: { points: (pts: number[]) => void } | null = null;
+    private previewLineNode: Konva.Line | null = null;
 
     update(ctx: ToolContext): void {
         this.ctx = ctx;
@@ -52,13 +60,13 @@ export class DrawWallTool implements ToolBase {
 
     onStageClick(e: KonvaEventObject<MouseEvent>): void {
         if (e.evt.button !== 0) return;
-        const { nodes, walls, originX, originY, stageScaleRef, nextNodeId, nextWallId, dispatch, withTransaction } = this.ctx;
+        const { nodes, walls, nodeById, originX, originY, stageScaleRef, nextNodeId, nextWallId, dispatch, withTransaction } = this.ctx;
 
         const ptr = e.target.getStage()?.getRelativePointerPosition();
         if (!ptr) return;
 
         const { pos: rawPos, snappedNodeId, snappedWallId } = snapToNodeOrGrid(
-            ptr, nodes, walls, originX, originY, this.drawState?.startNodeId, stageScaleRef.current,
+            ptr, nodes, walls, originX, originY, this.drawState?.startNodeId, stageScaleRef.current, nodeById,
         );
         const pos = (this.drawState?.startNodeCommitted && snappedNodeId === null && snappedWallId === null)
             ? applyAngleSnap(rawPos, this.drawState.startNodeId, nodes, walls)
@@ -93,6 +101,13 @@ export class DrawWallTool implements ToolBase {
         const len = Math.hypot(pos.x - this.drawState.startPos.x, pos.y - this.drawState.startPos.y);
         if (len < MIN_WALL_PX) return;
 
+        // Chặn commit khi đoạn cắt qua nội thất — giữ startNode để người dùng đổi hướng.
+        if (this.segmentHitsFurniture(this.drawState.startPos, pos)) {
+            this.colliding = true;
+            this.ctx.requestUpdate();
+            return;
+        }
+
         let endNodeId = -1;
         let newWallId = -1;
 
@@ -113,7 +128,7 @@ export class DrawWallTool implements ToolBase {
             }
 
             newWallId = nextWallId();
-            dispatch({ type: "ADD_WALL", wallId: newWallId, startNodeId: this.drawState!.startNodeId, endNodeId, thickness: Math.max(0.01, WALL_THICKNESS / PX_PER_WORLD) });
+            dispatch({ type: "ADD_WALL", wallId: newWallId, startNodeId: this.drawState!.startNodeId, endNodeId, thickness: Math.max(0.01, WALL_THICKNESS_M) });
             dispatch({ type: "RESOLVE_INTERSECTIONS", wallId: newWallId });
         });
 
@@ -123,17 +138,22 @@ export class DrawWallTool implements ToolBase {
     }
 
     onStageMouseMove(e: KonvaEventObject<MouseEvent>): void {
-        const { nodes, walls, originX, originY, stageScaleRef } = this.ctx;
+        const { nodes, walls, nodeById, originX, originY, stageScaleRef } = this.ctx;
         const ptr = e.target.getStage()?.getRelativePointerPosition();
         if (!ptr) return;
 
-        const snapResult = snapToNodeOrGrid(ptr, nodes, walls, originX, originY, this.drawState?.startNodeId, stageScaleRef.current);
+        const snapResult = snapToNodeOrGrid(ptr, nodes, walls, originX, originY, this.drawState?.startNodeId, stageScaleRef.current, nodeById);
         let finalPos = snapResult.pos;
         if (this.drawState?.startNodeCommitted && snapResult.snappedNodeId === null && snapResult.snappedWallId === null) {
-            finalPos = applyAngleSnap(finalPos, this.drawState.startNodeId, nodes, walls);
+            finalPos = applyAngleSnap(finalPos, this.drawState.startNodeId, nodes, walls, nodeById);
         }
 
         this.mousePos = finalPos;
+
+        // Va chạm: đoạn đang vẽ (OBB dày WALL_THICKNESS) có cắt nội thất nào không.
+        this.colliding = this.drawState
+            ? this.segmentHitsFurniture(this.drawState.startPos, finalPos)
+            : false;
 
         // Imperative update — updates the canvas without triggering a React re-render
         if (this.previewLineNode && this.drawState) {
@@ -141,13 +161,21 @@ export class DrawWallTool implements ToolBase {
                 this.drawState.startPos.x, this.drawState.startPos.y,
                 finalPos.x, finalPos.y,
             ]);
+            this.previewLineNode.stroke(this.colliding ? PREVIEW_STROKE_BAD : PREVIEW_STROKE_OK);
         }
+    }
+
+    /** true nếu OBB của đoạn tường start→end cắt qua bất kỳ nội thất nào. */
+    private segmentHitsFurniture(start: { x: number; y: number }, end: { x: number; y: number }): boolean {
+        const poly = wallSegmentPolygon(start, end, WALL_THICKNESS);
+        return collidesWithFurniture(poly, this.ctx.furniture);
     }
 
     onStageContextMenu(e: KonvaEventObject<MouseEvent>): void {
         e.evt.preventDefault();
         this.drawState = null;
         this.mousePos = null;
+        this.colliding = false;
         this.ctx.requestUpdate();
     }
 
@@ -155,6 +183,7 @@ export class DrawWallTool implements ToolBase {
         this.ctx.cancelTransaction();
         this.drawState = null;
         this.mousePos = null;
+        this.colliding = false;
         this.previewLineNode = null;
         this.ctx.requestUpdate();
     }
@@ -175,13 +204,13 @@ export class DrawWallTool implements ToolBase {
                 <Layer listening={false}>
                     {ds && (
                         <Line
-                            ref={(node: any) => { this.previewLineNode = node; }}
+                            ref={(node: Konva.Line | null) => { this.previewLineNode = node; }}
                             points={[
                                 ds.startPos.x, ds.startPos.y,
                                 mp?.x ?? ds.startPos.x,
                                 mp?.y ?? ds.startPos.y,
                             ]}
-                            stroke="#7c5800"
+                            stroke={this.colliding ? PREVIEW_STROKE_BAD : PREVIEW_STROKE_OK}
                             strokeWidth={WALL_THICKNESS}
                             opacity={0.38}
                             lineCap="square"
@@ -215,6 +244,7 @@ export class DrawWallTool implements ToolBase {
     deactivate(): void {
         this.drawState = null;
         this.mousePos = null;
+        this.colliding = false;
         this.previewLineNode = null;
     }
 }

@@ -7,9 +7,8 @@ import { StaticBody } from "src/engine/components/StaticBody";
 import { WallSize } from "src/engine/components/WallSize";
 import { WallTag } from "src/engine/components/WallTag";
 import { Selectable } from "src/engine/components/Selectable";
-import { SnapToGrid } from "src/engine/components/SnapToGrid";
-import { AutoAlign } from "src/engine/components/AutoAlign";
 import { WallNodes } from "src/engine/components/WallNodes";
+import { WorldSpaceMesh } from "src/engine/components/WorldSpaceMesh";
 import { World } from "src/engine/ecs/World";
 import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
 import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
@@ -68,8 +67,7 @@ export function createWall(
     world.addComponent(entity, new WallSize({ length, height, thickness }));
     world.addComponent(entity, new WallNodes(startNodeId, endNodeId, thickness));
     world.addComponent(entity, new Selectable());
-    world.addComponent(entity, new SnapToGrid({ enabled: true, size: 0.1, axes: "xz" }));
-    world.addComponent(entity, new AutoAlign({ enabled: true, axes: "xz", tolerance: 0.2 }));
+    world.addComponent(entity, new WorldSpaceMesh());
 
     if (wallId !== undefined) {
         world.addComponent(entity, new WallTag(wallId));

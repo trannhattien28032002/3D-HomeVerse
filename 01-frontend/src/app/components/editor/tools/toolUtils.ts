@@ -11,7 +11,7 @@
  *   Chỉ kích hoạt khi cursor cách snap angle < ANGLE_SNAP_THRESHOLD_DEG.
  */
 
-import type { Node2D, Wall2D } from "src/app/store/useFloorPlanStore";
+import type { Node2D, Wall2D } from "src/app/store/useFloorPlanSnapshot";
 
 // ── Shared constants ──────────────────────────────────────────────────────────
 
@@ -24,8 +24,10 @@ export const SNAP_SIZE = 10;
 /** Node/wall snap radius in screen pixels (scale-compensated at runtime) */
 export const SNAP_RADIUS = 16;
 
-/** Wall thickness in px (150mm default at 100px/m) */
-export const WALL_THICKNESS = 0.15 * PX_PER_WORLD;
+/** Wall thickness in metres */
+export const WALL_THICKNESS_M = 0.15;
+/** Wall thickness in px (150mm at 100px/m) */
+export const WALL_THICKNESS = WALL_THICKNESS_M * PX_PER_WORLD;
 
 /** Minimum wall length in px before a wall is committed */
 export const MIN_WALL_PX = 5;
@@ -56,6 +58,9 @@ export type Px = { x: number; y: number };
 /**
  * Snaps a raw canvas position to the nearest node, wall midpoint, or grid.
  * Returns the snapped position and what was snapped to (for downstream logic).
+ *
+ * nodeById is a Map<id, Node2D> used for O(1) lookups during wall-snap projection,
+ * replacing the previous O(M×N) nodes.find() calls per wall per mouse-move.
  */
 export function snapToNodeOrGrid(
     raw: Px,
@@ -65,6 +70,7 @@ export function snapToNodeOrGrid(
     originY: number,
     excludeNodeId?: number,
     scale = 1,
+    nodeById?: Map<number, Node2D>,
 ): { pos: Px; snappedNodeId: number | null; snappedWallId: number | null } {
     const snapRadius = SNAP_RADIUS / scale;
 
@@ -84,8 +90,9 @@ export function snapToNodeOrGrid(
     let bestWallDist = Infinity;
 
     for (const w of walls) {
-        const start = nodes.find(n => n.id === w.startNodeId);
-        const end   = nodes.find(n => n.id === w.endNodeId);
+        // Use the O(1) map when available, fall back to O(N) find for callers that don't pass it.
+        const start = nodeById ? nodeById.get(w.startNodeId) : nodes.find(n => n.id === w.startNodeId);
+        const end   = nodeById ? nodeById.get(w.endNodeId)   : nodes.find(n => n.id === w.endNodeId);
         if (!start || !end) continue;
         if (start.id === excludeNodeId || end.id === excludeNodeId) continue;
 
@@ -132,8 +139,9 @@ export function applyAngleSnap(
     anchorNodeId: number,
     nodes: Node2D[],
     walls: Wall2D[],
+    nodeById?: Map<number, Node2D>,
 ): Px {
-    const anchor = nodes.find(n => n.id === anchorNodeId);
+    const anchor = nodeById ? nodeById.get(anchorNodeId) : nodes.find(n => n.id === anchorNodeId);
     if (!anchor) return pos;
 
     const dx = pos.x - anchor.x;
@@ -150,7 +158,7 @@ export function applyAngleSnap(
 
     for (const w of refWalls) {
         const otherId = w.startNodeId === anchorNodeId ? w.endNodeId : w.startNodeId;
-        const other   = nodes.find(n => n.id === otherId);
+        const other   = nodeById ? nodeById.get(otherId) : nodes.find(n => n.id === otherId);
         if (!other) continue;
 
         const refAngle = Math.atan2(other.y - anchor.y, other.x - anchor.x);

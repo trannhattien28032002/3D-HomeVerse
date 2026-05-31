@@ -1,0 +1,116 @@
+import { pool } from '../../shared/db/client';
+import { withTransaction } from '../../shared/db/transaction';
+import { ForbiddenError } from '../../shared/errors/ForbiddenError';
+import { NotFoundError } from '../../shared/errors/NotFoundError';
+import { AppError } from '../../shared/errors/AppError';
+import * as repo from './projects.repository';
+import { copyProjectObjects } from '../scenes/scenes.repository';
+import type { ProjectMeta, CreateProjectInput, UpdateProjectMetaInput } from './projects.types';
+import type { ShareContext } from '../../shared/types/shareContext';
+
+export async function listProjects(
+  userId: string,
+  query: { cursor?: string; limit: number; sort: 'updatedAt' | 'createdAt' | 'name' }
+): Promise<{ data: ProjectMeta[]; nextCursor: string | null }> {
+  let cursor: ReturnType<typeof repo.decodeCursor> = null;
+  if (query.cursor) {
+    cursor = repo.decodeCursor(query.cursor);
+    if (!cursor) {
+      throw new AppError('Invalid cursor', 400, 'BAD_REQUEST');
+    }
+  }
+
+  const rows = await repo.listByOwner(pool, userId, cursor, query.limit, query.sort);
+  const hasMore = rows.length > query.limit;
+  const data = hasMore ? rows.slice(0, query.limit) : rows;
+
+  let nextCursor: string | null = null;
+  if (hasMore) {
+    const last = data[data.length - 1];
+    const cursorVal = query.sort === 'name' ? last.name : (last.updatedAt ?? last.createdAt);
+    nextCursor = repo.encodeCursor(cursorVal as Date | string, last.id);
+  }
+
+  return { data, nextCursor };
+}
+
+export async function createProject(
+  userId: string,
+  input: CreateProjectInput
+): Promise<ProjectMeta> {
+  return repo.create(pool, userId, input);
+}
+
+export async function getProject(
+  userId: string,
+  projectId: string,
+  shareContext?: ShareContext
+): Promise<ProjectMeta> {
+  const project = await repo.findById(pool, projectId);
+  if (!project) throw new NotFoundError('Project not found');
+
+  if (project.ownerId === userId) return project;
+
+  // Allow if a valid share context exists for this project.
+  if (shareContext && shareContext.projectId === projectId) {
+    return project;
+  }
+
+  throw new ForbiddenError('You do not have access to this project');
+}
+
+export async function updateProject(
+  userId: string,
+  projectId: string,
+  input: UpdateProjectMetaInput
+): Promise<ProjectMeta> {
+  const project = await repo.findById(pool, projectId);
+  if (!project) throw new NotFoundError('Project not found');
+  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can update this project');
+
+  return repo.updateMeta(pool, projectId, input);
+}
+
+export async function deleteProject(userId: string, projectId: string): Promise<void> {
+  const project = await repo.findById(pool, projectId);
+  if (!project) throw new NotFoundError('Project not found');
+  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can delete this project');
+
+  await repo.softDelete(pool, projectId);
+}
+
+export async function restoreProject(
+  userId: string,
+  projectId: string
+): Promise<ProjectMeta> {
+  const project = await repo.findByIdIncludingDeleted(pool, projectId);
+  if (!project) throw new NotFoundError('Project not found');
+  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can restore this project');
+
+  return repo.restore(pool, projectId);
+}
+
+export async function duplicateProject(
+  userId: string,
+  sourceId: string
+): Promise<{ id: string; name: string }> {
+  // Verify source project is accessible to this user.
+  const source = await repo.findById(pool, sourceId);
+  if (!source) throw new NotFoundError('Source project not found');
+  if (source.ownerId !== userId) throw new ForbiddenError('Only the owner can duplicate this project');
+
+  return withTransaction(pool, async (client) => {
+    // Step 1: copy the project row.
+    const newId = await repo.duplicateProjectRow(client, sourceId, userId);
+
+    // Step 2: copy project_objects into the new project (Phase 4 complete).
+    await copyProjectObjects(client, sourceId, newId);
+
+    // Fetch the new project name to return it.
+    const { rows } = await client.query<{ name: string }>(
+      'SELECT name FROM public.projects WHERE id = $1',
+      [newId]
+    );
+    return { id: newId, name: rows[0]?.name ?? '' };
+  });
+}

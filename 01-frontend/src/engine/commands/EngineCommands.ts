@@ -63,5 +63,29 @@ export type EngineCommand =
      * Giá trị tính bằng world units. WallGeometrySystem sẽ rebuild mesh trên frame kế tiếp.
      */
     | { type: "UPDATE_WALL"; wallId: number; thickness?: number; height?: number }
+
+    /**
+     * Đặt một furniture entity vĩnh viễn vào scene tại vị trí (x, z).
+     * Dispatched bởi FurniturePlacementSystem khi user left-click để confirm.
+     */
+    | { type: "PLACE_FURNITURE"; modelId: string; x: number; z: number; rotY: number }
+
+    /**
+     * Di chuyển furniture entity đến vị trí mới (x, z) trong 2D floor plan.
+     * Dispatcher kiểm tra va chạm — nếu bị chặn, entity giữ nguyên vị trí cũ.
+     */
+    | { type: "MOVE_FURNITURE"; entityId: number; x: number; z: number }
+
+    /**
+     * Xoay furniture entity đến góc rotY mới (radians, quanh trục Y).
+     * Dispatcher kiểm tra va chạm — nếu bị chặn, entity giữ nguyên góc cũ.
+     */
+    | { type: "ROTATE_FURNITURE"; entityId: number; rotY: number }
+
+    /**
+     * Xóa vĩnh viễn furniture entity khỏi scene.
+     * Giải phóng GLB root (ModelRegistry) và mesh legacy (MeshRegistry nếu có).
+     */
+    | { type: "DELETE_FURNITURE"; entityId: number }
 ;
 

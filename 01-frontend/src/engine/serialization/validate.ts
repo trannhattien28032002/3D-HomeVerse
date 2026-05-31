@@ -10,7 +10,10 @@
  *  - all wall node references exist in the node set
  *  - no duplicate node or wall IDs
  *  - coordinate and dimension sanity (finite, thickness/height > 0)
+ *  - furniture entries (if present) have valid modelId, finite x/z/rotY
  */
+
+import { getCatalogItem } from "src/engine/game/FurnitureCatalog";
 
 export type ValidationResult =
     | { ok: true }
@@ -131,6 +134,31 @@ export function validateSceneDocument(raw: unknown): ValidationResult {
             return { ok: false, error: `Duplicate wallId: ${w["wallId"]}.` };
         }
         wallIds.add(w["wallId"] as number);
+    }
+
+    // ── Furniture (optional) ──────────────────────────────────────────────────
+    if (doc["furniture"] !== undefined) {
+        if (!Array.isArray(doc["furniture"])) {
+            return { ok: false, error: '"furniture" must be an array if present.' };
+        }
+        for (let i = 0; i < doc["furniture"].length; i++) {
+            const f = doc["furniture"][i] as Record<string, unknown>;
+            if (typeof f["modelId"] !== "string" || f["modelId"] === "") {
+                return { ok: false, error: `furniture[${i}].modelId must be a non-empty string.` };
+            }
+            if (!getCatalogItem(f["modelId"] as string)) {
+                return { ok: false, error: `furniture[${i}].modelId "${f["modelId"]}" is not a known catalog item.` };
+            }
+            if (!isFiniteNumber(f["x"])) {
+                return { ok: false, error: `furniture[${i}].x must be a finite number.` };
+            }
+            if (!isFiniteNumber(f["z"])) {
+                return { ok: false, error: `furniture[${i}].z must be a finite number.` };
+            }
+            if (!isFiniteNumber(f["rotY"])) {
+                return { ok: false, error: `furniture[${i}].rotY must be a finite number.` };
+            }
+        }
     }
 
     return { ok: true };

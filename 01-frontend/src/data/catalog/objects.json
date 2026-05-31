@@ -1,0 +1,196 @@
+{
+  "version": 2,
+  "objects": [
+    {
+      "id": "bath-01",
+      "name": "Modern Bath",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/bath-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/bath-01-thumbnail.png",
+      "boundingBox": {
+        "width": 1.8,
+        "depth": 0.8,
+        "height": 0.2
+      },
+      "collisionBox": {
+        "width": 1.8,
+        "depth": 0.8
+      },
+      "topDown": {
+        "imageUrl": "/topdown/bathroom/bath-01-2D.png"
+      },
+      "materialSlots": [
+        {
+          "id": "body",
+          "label": "Bathtub Body",
+          "allowedCategories": [
+            "ceramic",
+            "stone"
+          ]
+        },
+        {
+          "id": "tap",
+          "label": "Tap",
+          "allowedCategories": [
+            "metal"
+          ]
+        },
+        {
+          "id": "drain",
+          "label": "Drain Stopper",
+          "allowedCategories": [
+            "metal"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bath",
+          "materialName": "Bathtub",
+          "slotId": "body"
+        },
+        {
+          "meshName": "Bath",
+          "materialName": "Tap",
+          "slotId": "tap"
+        },
+        {
+          "meshName": "Bath",
+          "materialName": "Drain",
+          "slotId": "drain"
+        }
+      ]
+    },
+    {
+      "id": "shower-door-01",
+      "name": "Shower Door",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/shower-door-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/shower-door-01-thumbnail.png",
+      "boundingBox": {
+        "width": 1.8,
+        "depth": 0.8,
+        "height": 0.2
+      },
+      "collisionBox": {
+        "width": 1.8,
+        "depth": 0.8
+      },
+      "topDown": {
+        "imageUrl": "/topdown/bathroom/shower-door-01-2D.png"
+      },
+      "materialSlots": [
+        {
+          "id": "body",
+          "label": "Glass Door",
+          "allowedCategories": [
+            "glass"
+          ]
+        },
+        {
+          "id": "handle",
+          "label": "Handle",
+          "allowedCategories": [
+            "metal"
+          ]
+        },
+        {
+          "id": "drain",
+          "label": "Drain Stopper",
+          "allowedCategories": [
+            "metal"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Shower Door",
+          "materialName": "Glass",
+          "slotId": "body"
+        },
+        {
+          "meshName": "Shower Door",
+          "materialName": "Tap",
+          "slotId": "tap"
+        },
+        {
+          "meshName": "Shower Door",
+          "materialName": "Drain",
+          "slotId": "drain"
+        }
+      ]
+    },
+    {
+      "id": "bed-single-01",
+      "name": "Bed single",
+      "category": "bed",
+      "modelUrl": "/models/beds/bed-01.glb",
+      "thumbnailUrl": "/thumbnails/beds/bed-01-thumbnail.png",
+      "boundingBox": {
+        "width": 1.8,
+        "depth": 0.9,
+        "height": 0.75
+      },
+      "collisionBox": {
+        "width": 1.8,
+        "depth": 0.9
+      },
+      "topDown": {
+        "imageUrl": "/topdown/beds/bed-01-2D.png"
+      },
+      "defaultRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "tags": [
+        "oak",
+        "wood",
+        "dining"
+      ],
+      "materialSlots": [
+        {
+          "id": "bedstead",
+          "label": "Bedstead",
+          "allowedCategories": [
+            "wood",
+            "metal"
+          ]
+        },
+        {
+          "id": "fellow",
+          "label": "Fellow",
+          "allowedCategories": [
+            "blanket",
+            "pillow"
+          ]
+        },
+        {
+          "id": "blanket",
+          "label": "Blanket",
+          "allowedCategories": [
+            "blanket",
+            "pillow"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bed single",
+          "materialName": "Bedstead",
+          "slotId": "bedstead"
+        },
+        {
+          "meshName": "Bed single",
+          "materialName": "Fellow",
+          "slotId": "fellow"
+        },
+        {
+          "meshName": "Bed single",
+          "materialName": "Blanket",
+          "slotId": "blanket"
+        }
+      ]
+    }
+  ]
+}

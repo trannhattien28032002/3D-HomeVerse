@@ -23,16 +23,25 @@ export class World {
     private components = new Map<ComponentClass<Component>, Map<number, Component>>();
     private systems: System[] = [];
 
+    /**
+     * Monotonically-increasing counter — incremented on every structural mutation
+     * (createEntity, destroyEntity, addComponent, removeComponent).
+     * SnapshotSystem reads this to skip the snapshot build when nothing changed.
+     */
+    public revision = 0;
+
     /** Tạo entity mới — chỉ trả về ID, chưa có component nào. */
     createEntity(): number {
         const id = this.nextEntityId++;
         this.entities.add(id);
+        this.revision++;
         return id;
     }
 
     /** Xóa entity và tất cả component của nó khỏi mọi ComponentMap. */
     destroyEntity(entity: number): void {
         this.entities.delete(entity);
+        this.revision++;
 
         for (const componentMap of this.components.values()) {
             componentMap.delete(entity);
@@ -48,11 +57,13 @@ export class World {
         }
 
         this.components.get(type)?.set(entity, component);
+        this.revision++;
     }
 
     /** Gỡ component khỏi entity (ví dụ: xóa WallPolygon để trigger rebuild). */
     removeComponent<T extends Component>(entity: number, componentType: ComponentClass<T>): void {
         this.components.get(componentType)?.delete(entity);
+        this.revision++;
     }
 
     /** Lấy component theo type — trả về undefined nếu entity không có component đó. */
@@ -63,6 +74,32 @@ export class World {
     /** Kiểm tra entity có component cụ thể không — dùng để lọc trong Query. */
     hasComponent<T extends Component>(entity: number, componentType: ComponentClass<T>): boolean {
         return this.components.get(componentType)?.has(entity) ?? false;
+    }
+
+    /**
+     * Increments revision without a structural ECS change.
+     * Call this when mutable data outside the component store changes
+     * (e.g. NodeRegistry.move mutates node positions in-place).
+     */
+    markDirty(): void {
+        this.revision++;
+    }
+
+    /**
+     * Returns an iterator over entities that have the given component type.
+     * Query uses this to iterate only the smallest candidate set instead of all entities.
+     */
+    getEntitiesWithComponent<T extends Component>(componentType: ComponentClass<T>): IterableIterator<number> {
+        const map = this.components.get(componentType);
+        return map ? map.keys() : [][Symbol.iterator]();
+    }
+
+    /**
+     * Returns the number of entities that carry the given component type.
+     * Query uses this to pick the most selective filter (smallest set).
+     */
+    getComponentCount<T extends Component>(componentType: ComponentClass<T>): number {
+        return this.components.get(componentType)?.size ?? 0;
     }
 
     /** Lấy iterator tất cả entity ID đang tồn tại — Query dùng để filter. */

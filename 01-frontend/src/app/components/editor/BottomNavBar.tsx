@@ -1,28 +1,20 @@
-/**
- * BottomNavBar — floating action bar ở dưới cùng màn hình.
- *
- * Filter BOTTOM_NAV items theo mode hiện tại (3d / 2d) — chỉ hiện items phù hợp.
- * Khi click item:
- *   - setActiveNav(id): cập nhật visual active state
- *   - item.action(setMode): một số item chuyển mode (tab: 2d↔3d)
- *   - Trong 2D mode: select → setToolMode2D("select"), build → setToolMode2D("draw")
- *
- * Active item có animation: scale shrink + gold glow — dùng inline style transition.
- * Dividers trong BOTTOM_NAV được render như visual separator (không phải button).
- */
 import { T } from "../../constants/designTokens";
 import { BOTTOM_NAV } from "../../constants/navigation";
 import type { Mode } from "../../constants/navigation";
+import type { EngineApi } from "src/engine/engineTypes";
 
 type Props = {
     mode: Mode;
     activeNav: string;
-    setActiveNav: (id: string) => void;
     setMode: (m: Mode) => void;
     setToolMode2D: (m: "select" | "draw") => void;
+    engine: EngineApi | null;
+    onDecorClick?: () => void;
+    gizmoMode?: "translate" | "rotate";
+    onGizmoModeChange?: (m: "translate" | "rotate") => void;
 };
 
-export default function BottomNavBar({ mode, activeNav, setActiveNav, setMode, setToolMode2D }: Props) {
+export default function BottomNavBar({ mode, activeNav, setMode, setToolMode2D, engine, onDecorClick, gizmoMode = "translate", onGizmoModeChange }: Props) {
     const visibleItems = BOTTOM_NAV.filter(item => item.modes.includes(mode));
 
     return (
@@ -57,11 +49,17 @@ export default function BottomNavBar({ mode, activeNav, setActiveNav, setMode, s
                         id={`nav-${item.id}`}
                         aria-label={item.label}
                         onClick={() => {
-                            setActiveNav(item.id);
-                            if (item.action) item.action(setMode);
+                            if (item.id === "decor") {
+                                onDecorClick?.();
+                            } else {
+                                if (item.action) item.action(setMode, engine);
+                            }
                             if (mode === "2d") {
                                 if (item.id === "select") setToolMode2D("select");
-                                if (item.id === "build")  setToolMode2D("draw");
+                                if (item.id === "build") setToolMode2D("draw");
+                            }
+                            if (item.id === "rotate" || item.id === "translate") {
+                                onGizmoModeChange?.(item.id as "rotate" | "translate");
                             }
                         }}
                         style={{

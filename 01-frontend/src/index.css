@@ -36,6 +36,19 @@
   --color-inverse-surface: #31312b;
   --color-inverse-on-surface: #f4f0e7;
   --color-inverse-primary: #ffbb16;
+  --color-primary-fixed: #ffdea6;
+  --color-primary-fixed-dim: #ffbb16;
+  --color-on-primary-fixed: #271900;
+  --color-on-primary-fixed-variant: #5e4200;
+  --color-secondary-fixed: #caecbc;
+  --color-secondary-fixed-dim: #afd0a1;
+  --color-on-secondary-fixed: #062104;
+  --color-on-secondary-fixed-variant: #324e2a;
+  --color-tertiary-fixed: #ffdad8;
+  --color-tertiary-fixed-dim: #ffb3b0;
+  --color-on-tertiary-fixed: #410006;
+  --color-on-tertiary-fixed-variant: #832428;
+  --color-on-background: #1c1c17;
 
   /* === Font Families === */
   --font-headline-xl: "Cinzel", serif;
@@ -72,6 +85,12 @@
   --spacing-gutter: 24px;
   --spacing-margin-desktop: 40px;
   --spacing-margin-mobile: 16px;
+  --spacing-unit: 8px;
+
+  /* === Border Radius === */
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
 }
 
 html,
@@ -97,4 +116,61 @@ body {
 
 .glow-hover:hover {
   box-shadow: 0 0 15px rgba(248, 180, 0, 0.4);
+}
+
+/* === Decor Catalog open/close animation === */
+@keyframes decor-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes decor-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes decor-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes decor-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+@keyframes decor-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.decor-backdrop-anim {
+  animation: decor-backdrop-in 220ms ease-out both;
+}
+.decor-backdrop-anim-out {
+  animation: decor-backdrop-out 200ms ease-in both;
+}
+.decor-panel-anim {
+  animation: decor-panel-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center 40%;
+}
+.decor-panel-anim-out {
+  animation: decor-panel-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
+  transform-origin: center 40%;
+}
+.decor-item-anim {
+  animation: decor-item-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
