@@ -43,6 +43,19 @@ export type SceneWallRecord = {
     height: number;
 };
 
+// ── Furniture record ───────────────────────────────────────────────────────────
+
+export type SceneFurnitureRecord = {
+    /** Catalog model ID — must match a key in FurnitureCatalog. */
+    modelId: string;
+    /** World-space X position (metres). */
+    x: number;
+    /** World-space Z position (metres). */
+    z: number;
+    /** Yaw rotation in radians around world-Y axis. */
+    rotY: number;
+};
+
 // ── Document root ─────────────────────────────────────────────────────────────
 
 export type SceneDocument = {
@@ -50,6 +63,8 @@ export type SceneDocument = {
     version: 1;
     nodes: SceneNodeRecord[];
     walls: SceneWallRecord[];
+    /** Optional — omitted in old saves (treated as empty list on load). */
+    furniture?: SceneFurnitureRecord[];
 };
 
 // ── Future-proofing ───────────────────────────────────────────────────────────

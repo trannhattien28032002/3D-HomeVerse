@@ -1,30 +1,3 @@
-/**
- * EditorPage — trang chính của ứng dụng HomeVerse, điều phối toàn bộ editor.
- *
- * Trách nhiệm:
- *   - Khởi tạo và cung cấp EngineContext cho toàn bộ React tree
- *   - Quản lý mode (3d ↔ 2d) và toolMode2D (select / draw)
- *   - Xử lý keyboard shortcuts: Ctrl+S (save), Ctrl+O (load)
- *   - Lắng nghe custom DOM events từ InputSystem: tinyhome:nav, tinyhome:toggleMode
- *   - Loading screen animation trong khi engine khởi động
- *   - Viewport resize → sync vào useUIStore
- *
- * Layout:
- *   TopNavBar (56px, fixed top)
- *   ├── SceneView3D  (display: mode===3d, full viewport)
- *   └── PlanView2D   (display: mode===2d, full viewport)
- *   BottomNavBar (floating, bottom center)
- *   BuildPanel   (chỉ trong 2D mode)
- *   LoadingScreen (overlay, ẩn sau engine ready + fade out)
- *
- * State flow engine:
- *   SceneView3D.onEngineCreated → setEngine → EngineContext.Provider value
- *   → useFloorPlanStore, useEngine() trong children nhận được engine
- *
- * File format: .homeverseplan (JSON, SceneDocument v1)
- *   Ctrl+S → serializeScene → Blob download
- *   Ctrl+O → FileReader → validateSceneDocument → deserializeScene
- */
 import { useEffect, useRef, useState } from "react";
 import { serializeScene, deserializeScene, validateSceneDocument, validationFailed } from "src/engine/serialization";
 import type { SceneDocument } from "src/engine/serialization";
@@ -36,19 +9,26 @@ import BottomNavBar from "src/app/components/editor/BottomNavBar";
 import BuildPanel from "src/app/components/editor/BuildPanel";
 import SceneView3D from "src/app/components/editor/SceneView3D";
 import PlanView2D from "src/app/components/editor/PlanView2D";
-import ShortcutHint from "src/app/components/editor/ShortcutHint";
+import DecorCatalog from "src/app/components/editor/DecorCatalog";
+import PlacementHint from "src/app/components/editor/PlacementHint";
 import { useUIStore } from "src/app/store/useUIStore";
+import { useEditorShortcuts } from "src/app/hooks/useEditorShortcuts";
 import type { Mode } from "src/app/constants/navigation";
 
 export default function EditorPage() {
     const [mode, setMode] = useState<Mode>("3d");
-    const [activeNav, setActiveNav] = useState("select");
-    const [toolMode2D, setToolMode2D] = useState<"select" | "draw">("select");
+    const [isPlacing, setIsPlacing] = useState(false);
+    // Có 2 state chính của Gizmo: Translate và Rotate (Không có Scale)
+    const [gizmoMode, setGizmoMode] = useState<"translate" | "rotate">("translate");
     const syncViewport = useUIStore((state) => state.syncViewport);
-
-    // engine: null cho đến khi Canvas.onEngineCreated fire (sau render đầu tiên)
+    const isDecorCatalogOpen = useUIStore((state) => state.isDecorCatalogOpen);
+    const closeDecorCatalog = useUIStore((state) => state.closeDecorCatalog);
+    const toggleDecorCatalog = useUIStore((state) => state.toggleDecorCatalog);
+    const beginPlacement2D = useUIStore((state) => state.beginPlacement2D);
+    const activeTool2D = useUIStore((state) => state.activeTool2D);
+    const setTool2D = useUIStore((state) => state.setTool2D);
+    const activeNav = activeTool2D === "placing" ? "decor" : activeTool2D === "draw" ? "build" : "select";
     const [engine, setEngine] = useState<EngineInstance | null>(null);
-    // engineRef: stable ref để Ctrl+S/Ctrl+O handler không capture stale closure
     const engineRef = useRef<EngineInstance | null>(null);
     useEffect(() => { engineRef.current = engine; }, [engine]);
 
@@ -70,60 +50,60 @@ export default function EditorPage() {
 
     useEffect(() => {
         syncViewport(window.innerWidth, window.innerHeight);
-        const onResize = () => syncViewport(window.innerWidth, window.innerHeight);
+        let timer: ReturnType<typeof setTimeout>;
+        const onResize = () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => syncViewport(window.innerWidth, window.innerHeight), 150);
+        };
         window.addEventListener("resize", onResize);
-        return () => window.removeEventListener("resize", onResize);
+        return () => { window.removeEventListener("resize", onResize); clearTimeout(timer); };
     }, [syncViewport]);
 
+    // ── Gizmo mode sync ──────────────────────────────────────────────────────
     useEffect(() => {
-        const onNav = (e: CustomEvent<{ id: string }>) => {
-            const { id } = e.detail;
-            setActiveNav(id);
-            if (id === "build") {
-                setMode("2d");
-                setToolMode2D("draw");
-            } else if (id === "select") {
-                setToolMode2D("select");
-            }
-        };
-        const onToggleMode = () => setMode(m => m === "3d" ? "2d" : "3d");
+        if (!engine) return;
+        const off = engine.api.events.on("gizmoModeChanged", ({ mode }) => setGizmoMode(mode));
+        return off;
+    }, [engine]);
 
-        window.addEventListener("tinyhome:nav", onNav);
-        window.addEventListener("tinyhome:toggleMode", onToggleMode);
-        return () => {
-            window.removeEventListener("tinyhome:nav", onNav);
-            window.removeEventListener("tinyhome:toggleMode", onToggleMode);
-        };
-    }, []);
-
-    // ── Save / Load keyboard shortcuts ──────────────────────────────────────
+    // ── Placement events ─────────────────────────────────────────────────────
     useEffect(() => {
-        function onKeyDown(e: KeyboardEvent) {
-            if (!e.ctrlKey && !e.metaKey) return; // ctrlKey là window và metaKey là MacOS
+        if (!engine) return;
+        const off1 = engine.api.events.on("placementStarted", () => setIsPlacing(true));
+        const off2 = engine.api.events.on("placementConfirmed", () => setIsPlacing(false));
+        const off3 = engine.api.events.on("placementCancelled", () => setIsPlacing(false));
+        return () => { off1(); off2(); off3(); };
+    }, [engine]);
 
-            if (e.key === "s") {
-                e.preventDefault();
-                const eng = engineRef.current;
-                if (!eng) return;
-                const doc = serializeScene(eng);
-                const json = JSON.stringify(doc, null, 2);
-                const blob = new Blob([json], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "scene.homeverseplan";
-                a.click();
-                URL.revokeObjectURL(url);
-            }
+    // ── Save / Load handlers ────────────────────────────────────────────────
+    // engineRef giữ instance mới nhất → handler không capture stale closure.
+    const handleSave = () => {
+        const eng = engineRef.current;
+        if (!eng) return;
+        const doc = serializeScene(eng);
+        const json = JSON.stringify(doc, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "scene.homeverseplan";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    
+    const handleLoad = () => fileInputRef.current?.click();
 
-            if (e.key === "o") {
-                e.preventDefault();
-                fileInputRef.current?.click();
-            }
-        }
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
-    }, []); // engineRef is stable — no dependency needed
+    // ── Phím tắt toàn cục ─────────────────────────────────────────────────────
+    useEditorShortcuts({
+        engine,
+        mode,
+        setMode,
+        setTool2D,
+        isPlacing,
+        toggleDecorCatalog,
+        onSave: handleSave,
+        onLoad: handleLoad,
+    });
 
     return (
         <EngineContext.Provider value={engine}>
@@ -141,13 +121,7 @@ export default function EditorPage() {
                         />
                     </div>
                     <div style={{ display: mode === "2d" ? "block" : "none", width: "100%", height: "100%" }}>
-                        <PlanView2D
-                            toolMode={mode === "2d" ? toolMode2D : undefined}
-                            onToolModeChange={m => {
-                                setToolMode2D(m);
-                                setActiveNav(m === "draw" ? "build" : "select");
-                            }}
-                        />
+                        <PlanView2D />
                     </div>
                 </div>
 
@@ -156,13 +130,25 @@ export default function EditorPage() {
                 <BottomNavBar
                     mode={mode}
                     activeNav={activeNav}
-                    setActiveNav={setActiveNav}
                     setMode={setMode}
-                    setToolMode2D={setToolMode2D}
+                    setToolMode2D={setTool2D}
+                    engine={engine?.api ?? null}
+                    onDecorClick={toggleDecorCatalog}
+                    gizmoMode={gizmoMode}
+                    onGizmoModeChange={(m) => engine?.api.setGizmoMode(m)}
                 />
 
-                <ShortcutHint />
+                <DecorCatalog
+                    isOpen={isDecorCatalogOpen}
+                    onClose={closeDecorCatalog}
+                    onSelect={(id) => {
+                        closeDecorCatalog();
+                        if (mode === "3d") engine?.api.beginPlacement(id);
+                        else beginPlacement2D(id);
+                    }}
+                />
 
+                {isPlacing && <PlacementHint />}
                 {showLoader && (
                     <LoadingScreen
                         progress={progress}
@@ -196,7 +182,6 @@ export default function EditorPage() {
                             }
                         };
                         reader.readAsText(file);
-                        // Reset so the same file can be re-loaded.
                         e.target.value = "";
                     }}
                 />

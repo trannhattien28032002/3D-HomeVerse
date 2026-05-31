@@ -18,7 +18,7 @@
 import type React from "react";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-import type { Node2D, Wall2D } from "src/app/store/useFloorPlanStore";
+import type { Node2D, Wall2D, Furniture2D } from "src/app/store/useFloorPlanSnapshot";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 
 /** Props mà tool trả về cho mỗi wall Konva shape — spread trực tiếp vào <Line>. */
@@ -43,6 +43,7 @@ export type WallHandlers = {
 export type ToolContext = {
     nodes: Node2D[];
     walls: Wall2D[];
+    furniture: Furniture2D[];                     // nội thất đã đặt (px) — dùng cho 2D collision
     originX: number;                              // viewport center px
     originY: number;
     stageScale: number;                           // current zoom level

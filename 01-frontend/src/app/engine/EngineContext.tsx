@@ -9,9 +9,6 @@
  * Tại sao value ban đầu là null:
  *   Engine được tạo trong useEffect của Canvas (sau render đầu tiên).
  *   Các component như PlanView2D cần render trước khi engine ready → phải handle null.
- *
- * window.gameEngine: backward-compat + debug via DevTools.
- *   useEngineOrNull() fallback về đây nếu context chưa có engine.
  */
 import { createContext, useContext } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
@@ -19,12 +16,11 @@ import type { EngineInstance } from "src/engine/engineTypes";
 export const EngineContext = createContext<EngineInstance | null>(null);
 
 /**
- * Hook an toàn — trả về null nếu engine chưa sẵn sàng.
- * Dùng trong component có thể render trước engine (PlanView2D, useFloorPlanStore).
+ * Hook an toàn — trả về null nếu engine chưa sẵn sàng hoặc không có Provider.
+ * Dùng trong component có thể render trước engine (PlanView2D, useFloorPlanSnapshot).
  */
 export function useEngineOrNull(): EngineInstance | null {
-    const ctx = useContext(EngineContext);
-    return ctx ?? window.gameEngine ?? null;
+    return useContext(EngineContext);
 }
 
 /**

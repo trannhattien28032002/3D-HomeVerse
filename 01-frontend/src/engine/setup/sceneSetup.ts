@@ -9,11 +9,16 @@ export type SceneBundle = {
 
 export function createScene(canvas: HTMLCanvasElement): SceneBundle {
     const scene = new THREE.Scene();
-    scene.add(new THREE.AxesHelper(5));
+    const axesHelper = new THREE.AxesHelper(100);
+    axesHelper.renderOrder = 2;
+    scene.add(axesHelper);
     // 50m extent, 100 divisions → 0.5m per cell.
     // A standard double bed (1.4m × 2m) occupies ~3×4 cells; a room (5m × 4m) is 10×8 cells.
     // This does not affect world units, snapping, or dimensions — purely visual density.
-    scene.add(new THREE.GridHelper(50, 100, 0xb0a090, 0xd0c8bc));
+    const gridHelper = new THREE.GridHelper(50, 100, 0xb0a090, 0xd0c8bc);
+    gridHelper.position.y = -0.001;
+    gridHelper.renderOrder = 1;
+    scene.add(gridHelper);
     // Fog pulled back so it doesn't clip rooms at 20m; still softens the background.
     scene.fog = new THREE.Fog(0xf0f0f0, 40, 80);
     scene.background = new THREE.Color(0xf0f0f0);

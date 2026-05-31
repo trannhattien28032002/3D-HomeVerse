@@ -4,7 +4,7 @@ import { System } from "src/engine/ecs/System";
 import { Query } from "src/engine/ecs/Query";
 import { Transform } from "src/engine/components/Transform";
 import { Mesh } from "src/engine/components/Mesh";
-import { WallNodes } from "src/engine/components/WallNodes";
+import { WorldSpaceMesh } from "src/engine/components/WorldSpaceMesh";
 import { World } from "src/engine/ecs/World";
 
 export class RenderSystem extends System {
@@ -31,14 +31,14 @@ export class RenderSystem extends System {
             const transform = world.getComponent(entity, Transform)!;
             const meshComp = world.getComponent(entity, Mesh)!;
             const mesh = meshComp.mesh;
-            const isWall = world.hasComponent(entity, WallNodes);
+            const isWorldSpace = world.hasComponent(entity, WorldSpaceMesh);
 
-            if (isWall) {
+            if (isWorldSpace) {
                 mesh.position.set(0, transform.y, 0);
                 mesh.rotation.set(0, 0, 0);
             } else {
                 mesh.position.set(transform.x, transform.y, transform.z);
-                mesh.rotation.y = transform.rotY;
+                mesh.quaternion.set(transform.qx, transform.qy, transform.qz, transform.qw);
             }
         }
 

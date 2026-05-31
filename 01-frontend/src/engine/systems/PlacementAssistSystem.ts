@@ -18,6 +18,7 @@ export class PlacementAssistSystem extends System {
     private sHx: number[] = [];
     private sHy: number[] = [];
     private sHz: number[] = [];
+    private sRotY: number[] = [];
     private sId: number[] = [];
 
     update(world: World): void {
@@ -46,6 +47,7 @@ export class PlacementAssistSystem extends System {
             this.sHx.length = sCount;
             this.sHy.length = sCount;
             this.sHz.length = sCount;
+            this.sRotY.length = sCount;
             this.sId.length = sCount;
         }
 
@@ -60,6 +62,7 @@ export class PlacementAssistSystem extends System {
             this.sHx[i] = cB.width;  // half extents
             this.sHy[i] = cB.height;
             this.sHz[i] = cB.depth;
+            this.sRotY[i] = tB.rotY ?? 0;
         }
 
         const overlapsOn = (aCenter: number, aHalf: number, bCenter: number, bHalf: number) =>
@@ -91,6 +94,8 @@ export class PlacementAssistSystem extends System {
 
             const align = world.getComponent(d, AutoAlign);
             if (!align?.enabled || sCount === 0) continue;
+            // AABB overlap checks are not OBB-aware — skip AutoAlign when dragged entity is rotated.
+            if (Math.abs(tA.rotY ?? 0) > 1e-4) continue;
 
             const hAx = cA.width;
             const hAy = cA.height;
@@ -105,6 +110,7 @@ export class PlacementAssistSystem extends System {
                 let bestX = tA.x;
                 for (let i = 0; i < sCount; i++) {
                     if (this.sId[i] === d) continue;
+                    if (Math.abs(this.sRotY[i]) > 1e-4) continue;
                     if (!overlapsOn(tA.y, hAy, this.sCy[i], this.sHy[i])) continue;
                     if (!overlapsOn(tA.z, hAz, this.sCz[i], this.sHz[i])) continue;
 
@@ -129,6 +135,7 @@ export class PlacementAssistSystem extends System {
                 let bestZ = tA.z;
                 for (let i = 0; i < sCount; i++) {
                     if (this.sId[i] === d) continue;
+                    if (Math.abs(this.sRotY[i]) > 1e-4) continue;
                     if (!overlapsOn(tA.y, hAy, this.sCy[i], this.sHy[i])) continue;
                     if (!overlapsOn(tA.x, hAx, this.sCx[i], this.sHx[i])) continue;
 

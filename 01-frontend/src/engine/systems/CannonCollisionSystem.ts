@@ -10,26 +10,21 @@ import { Transform } from 'src/engine/components/Transform';
 import { ColliderAABB } from 'src/engine/components/ColliderAABB';
 import { StaticBody } from 'src/engine/components/StaticBody';
 import { DynamicBody } from 'src/engine/components/DynamicBody';
+import { Grounded } from 'src/engine/components/Grounded';
 
-const MOVE_THRESHOLD_SQ = 1e-8; // 0.1mm²
+import {
+    type StaticEntry,
+    type DynamicEntry,
+    createStaticBody,
+    syncStaticEntry,
+    updateProbeShape,
+    gcStaticBodies,
+    gcDynamicEntries,
+    sweepCCD,
+} from 'src/engine/systems/cannonBodyFactory';
+
 const _cannonPos = new CANNON.Vec3();
 const _cannonQuat = new CANNON.Quaternion();
-
-function rotYToCannonQuat(rotY: number, out: CANNON.Quaternion): void {
-    const half = (rotY ?? 0) / 2;
-    out.set(0, Math.sin(half), 0, Math.cos(half));
-}
-
-interface StaticEntry {
-    body: CANNON.Body;
-    syncedPos: { x: number; y: number; z: number };
-    syncedRotY: number;
-    syncedSize: { w: number; h: number; d: number };
-}
-
-interface DynamicEntry {
-    safePos: Vector3;
-}
 
 export class CannonCollisionSystem extends System {
     public readonly physicsWorld: CANNON.World;
@@ -50,14 +45,24 @@ export class CannonCollisionSystem extends System {
     }
 
     update(world: World): void {
-        const staticEids = Query.entitiesWith(world, Transform, ColliderAABB, StaticBody);
+        // The floor is a StaticBody with a huge thin collider. It must NOT participate in
+        // furniture overlap tests — otherwise items sitting flush on the ground (rugs, lamps)
+        // read as permanently colliding. Exclude any Grounded entity from the physics world.
+        const staticEids = Query.entitiesWith(world, Transform, ColliderAABB, StaticBody)
+            .filter(id => !world.hasComponent(id, Grounded));
         const dynamicEids = Query.entitiesWith(world, Transform, ColliderAABB, DynamicBody);
 
-        this.gcStatic(staticEids);
-        this.gcDynamic(dynamicEids);
+        gcStaticBodies(this.staticEntries, staticEids, this.physicsWorld);
+        gcDynamicEntries(this.dynamicEntries, dynamicEids);
 
         for (const id of staticEids) {
-            this.syncStaticBody(world, id);
+            const t = world.getComponent(id, Transform)!;
+            const c = world.getComponent(id, ColliderAABB)!;
+            if (!this.staticEntries.has(id)) {
+                this.staticEntries.set(id, createStaticBody(t, c, this.physicsWorld));
+            } else {
+                syncStaticEntry(this.staticEntries.get(id)!, t, c);
+            }
         }
 
         for (const id of dynamicEids) {
@@ -65,62 +70,23 @@ export class CannonCollisionSystem extends System {
             const c = world.getComponent(id, ColliderAABB)!;
 
             if (!this.dynamicEntries.has(id)) {
-                this.dynamicEntries.set(id, {
-                    safePos: new Vector3(t.x, t.y, t.z),
-                });
+                this.dynamicEntries.set(id, { safePos: new Vector3(t.x, t.y, t.z) });
             }
             const { safePos } = this.dynamicEntries.get(id)!;
 
-            const rotY = t.rotY ?? 0;
-            const dx = t.x - safePos.x;
-            const dy = t.y - safePos.y;
-            const dz = t.z - safePos.z;
-            const distSq = dx * dx + dy * dy + dz * dz;
+            const { qx, qy, qz, qw } = t;
+            const dx = t.x - safePos.x, dy = t.y - safePos.y, dz = t.z - safePos.z;
 
-            if (distSq > 0) {
-                const dist = Math.sqrt(distSq);
-                const minExtent = Math.min(c.width, c.height, c.depth);
-                const stepSize = Math.max(0.05, minExtent * 0.5);
-                const steps = Math.min(100, Math.ceil(dist / stepSize));
-
-                let lastValidX = safePos.x;
-                let lastValidY = safePos.y;
-                let lastValidZ = safePos.z;
-
+            if (dx * dx + dy * dy + dz * dz > 0) {
                 this.prepareProbe(c);
-
-                for (let i = 1; i <= steps; i++) {
-                    const frac = i / steps;
-                    const testX = safePos.x + dx * frac;
-                    const testY = safePos.y + dy * frac;
-                    const testZ = safePos.z + dz * frac;
-
-                    if (this.testOverlap(testX, testY, testZ, rotY, id)) {
-                        let t0 = (i - 1) / steps;
-                        let t1 = frac;
-                        for (let j = 0; j < 4; j++) {
-                            const tm = (t0 + t1) / 2;
-                            if (this.testOverlap(safePos.x + dx * tm, safePos.y + dy * tm, safePos.z + dz * tm, rotY, id)) {
-                                t1 = tm;
-                            } else {
-                                t0 = tm;
-                            }
-                        }
-                        lastValidX = safePos.x + dx * t0;
-                        lastValidY = safePos.y + dy * t0;
-                        lastValidZ = safePos.z + dz * t0;
-                        break;
-                    } else {
-                        lastValidX = testX;
-                        lastValidY = testY;
-                        lastValidZ = testZ;
-                    }
-                }
-
-                t.x = lastValidX;
-                t.y = lastValidY;
-                t.z = lastValidZ;
-                safePos.set(lastValidX, lastValidY, lastValidZ);
+                const clamped = sweepCCD(
+                    { x: safePos.x, y: safePos.y, z: safePos.z },
+                    { x: t.x, y: t.y, z: t.z },
+                    c,
+                    (x, y, z) => this.testOverlap(x, y, z, qx, qy, qz, qw, id),
+                );
+                t.x = clamped.x; t.y = clamped.y; t.z = clamped.z;
+                safePos.set(clamped.x, clamped.y, clamped.z);
             }
         }
     }
@@ -137,63 +103,26 @@ export class CannonCollisionSystem extends System {
         if (!t || !c) return null;
 
         const entry = this.dynamicEntries.get(entityId);
-        const rotY = t.rotY ?? 0;
+        const { qx, qy, qz, qw } = t;
         const safeX = entry?.safePos.x ?? t.x;
         const safeY = entry?.safePos.y ?? t.y;
         const safeZ = entry?.safePos.z ?? t.z;
 
-        const dx = targetX - safeX;
-        const dy = targetY - safeY;
-        const dz = targetZ - safeZ;
-        const distSq = dx * dx + dy * dy + dz * dz;
-
-        if (distSq === 0) return new Vector3(targetX, targetY, targetZ);
-
-        const dist = Math.sqrt(distSq);
-        const minExtent = Math.min(c.width, c.height, c.depth);
-        const stepSize = Math.max(0.05, minExtent * 0.5);
-        const steps = Math.min(100, Math.ceil(dist / stepSize));
-
-        let lastValidX = safeX;
-        let lastValidY = safeY;
-        let lastValidZ = safeZ;
-
         this.prepareProbe(c);
 
-        const initiallyOverlapping = this.testOverlap(safeX, safeY, safeZ, rotY, entityId);
+        const initiallyOverlapping = this.testOverlap(safeX, safeY, safeZ, qx, qy, qz, qw, entityId);
         if (initiallyOverlapping) {
+            console.warn('[Cannon] initiallyOverlapping bypass for entity', entityId, 'at', safeX, safeY, safeZ);
             return new Vector3(targetX, targetY, targetZ);
         }
 
-        for (let i = 1; i <= steps; i++) {
-            const frac = i / steps;
-            const testX = safeX + dx * frac;
-            const testY = safeY + dy * frac;
-            const testZ = safeZ + dz * frac;
-
-            if (this.testOverlap(testX, testY, testZ, rotY, entityId)) {
-                let t0 = (i - 1) / steps;
-                let t1 = frac;
-                for (let j = 0; j < 4; j++) {
-                    const tm = (t0 + t1) / 2;
-                    if (this.testOverlap(safeX + dx * tm, safeY + dy * tm, safeZ + dz * tm, rotY, entityId)) {
-                        t1 = tm;
-                    } else {
-                        t0 = tm;
-                    }
-                }
-                lastValidX = safeX + dx * t0;
-                lastValidY = safeY + dy * t0;
-                lastValidZ = safeZ + dz * t0;
-                break;
-            } else {
-                lastValidX = testX;
-                lastValidY = testY;
-                lastValidZ = testZ;
-            }
-        }
-
-        return new Vector3(lastValidX, lastValidY, lastValidZ);
+        const clamped = sweepCCD(
+            { x: safeX, y: safeY, z: safeZ },
+            { x: targetX, y: targetY, z: targetZ },
+            c,
+            (x, y, z) => this.testOverlap(x, y, z, qx, qy, qz, qw, entityId),
+        );
+        return new Vector3(clamped.x, clamped.y, clamped.z);
     }
 
     public wouldCollide(
@@ -208,7 +137,7 @@ export class CannonCollisionSystem extends System {
         if (!t || !c) return false;
 
         this.prepareProbe(c);
-        return this.testOverlap(targetX, targetY, targetZ, t.rotY ?? 0, entityId);
+        return this.testOverlap(targetX, targetY, targetZ, t.qx, t.qy, t.qz, t.qw, entityId);
     }
 
     public wouldCollideCustom(
@@ -217,25 +146,24 @@ export class CannonCollisionSystem extends System {
         targetZ: number,
         width: number,
         depth: number,
-        rotY: number,
+        height: number,
+        qx: number,
+        qy: number,
+        qz: number,
+        qw: number,
         ignoreEntityId: number = -1
     ): boolean {
         const shrink = 0.002;
         const hw = Math.max(0.01, width / 2 - shrink);
-        const hh = Math.max(0.01, 1 / 2 - shrink);
+        const hh = Math.max(0.01, height / 2 - shrink);
         const hd = Math.max(0.01, depth / 2 - shrink);
+        updateProbeShape(this.probeBody, hw, hh, hd);
+        return this.testOverlap(targetX, targetY, targetZ, qx, qy, qz, qw, ignoreEntityId);
+    }
 
-        if (this.probeBody.shapes.length === 0) {
-            const shape = new CANNON.Box(new CANNON.Vec3(hw, hh, hd));
-            this.probeBody.addShape(shape);
-        } else {
-            const shape = this.probeBody.shapes[0] as CANNON.Box;
-            shape.halfExtents.set(hw, hh, hd);
-            shape.updateConvexPolyhedronRepresentation();
-            shape.updateBoundingSphereRadius();
-        }
-
-        return this.testOverlap(targetX, targetY, targetZ, rotY, ignoreEntityId);
+    public setSafePos(entityId: number, x: number, y: number, z: number): void {
+        const entry = this.dynamicEntries.get(entityId);
+        if (entry) entry.safePos.set(x, y, z);
     }
 
     public dispose(): void {
@@ -249,28 +177,21 @@ export class CannonCollisionSystem extends System {
 
     private prepareProbe(c: ColliderAABB): void {
         const shrink = 0.002;
-        const hw = Math.max(0.01, c.width - shrink);
-        const hh = Math.max(0.01, c.height - shrink);
-        const hd = Math.max(0.01, c.depth - shrink);
-
-        if (this.probeBody.shapes.length === 0) {
-            const shape = new CANNON.Box(new CANNON.Vec3(hw, hh, hd));
-            this.probeBody.addShape(shape);
-        } else {
-            const shape = this.probeBody.shapes[0] as CANNON.Box;
-            shape.halfExtents.set(hw, hh, hd);
-            shape.updateConvexPolyhedronRepresentation();
-            shape.updateBoundingSphereRadius();
-        }
+        updateProbeShape(
+            this.probeBody,
+            Math.max(0.01, c.width - shrink),
+            Math.max(0.01, c.height - shrink),
+            Math.max(0.01, c.depth - shrink),
+        );
     }
 
     private testOverlap(
         x: number, y: number, z: number,
-        rotY: number,
+        qx: number, qy: number, qz: number, qw: number,
         ignoreEntityId: number = -1,
     ): boolean {
         _cannonPos.set(x, y, z);
-        rotYToCannonQuat(rotY, _cannonQuat);
+        _cannonQuat.set(qx, qy, qz, qw);
         this.probeBody.position.copy(_cannonPos);
         this.probeBody.quaternion.copy(_cannonQuat);
         this.probeBody.updateBoundingRadius();
@@ -336,77 +257,5 @@ export class CannonCollisionSystem extends System {
             aabb1.lowerBound.z <= aabb2.upperBound.z &&
             aabb1.upperBound.z >= aabb2.lowerBound.z
         );
-    }
-
-    private syncStaticBody(world: World, id: number): void {
-        const t = world.getComponent(id, Transform)!;
-        const c = world.getComponent(id, ColliderAABB)!;
-
-        if (!this.staticEntries.has(id)) {
-            // Tạo mới
-            const shape = new CANNON.Box(
-                new CANNON.Vec3(c.width, c.height, c.depth)
-            );
-            const body = new CANNON.Body({ mass: 0, shape });
-
-            rotYToCannonQuat(t.rotY ?? 0, _cannonQuat);
-            body.position.set(t.x, t.y, t.z);
-            body.quaternion.copy(_cannonQuat);
-            body.updateBoundingRadius();
-            body.updateAABB();
-
-            this.physicsWorld.addBody(body);
-            this.staticEntries.set(id, {
-                body,
-                syncedPos: { x: t.x, y: t.y, z: t.z },
-                syncedRotY: t.rotY ?? 0,
-                syncedSize: { w: c.width, h: c.height, d: c.depth },
-            });
-            return;
-        }
-
-        const entry = this.staticEntries.get(id)!;
-        const sp = entry.syncedPos;
-        const ss = entry.syncedSize;
-        const dx = t.x - sp.x, dy = t.y - sp.y, dz = t.z - sp.z;
-        const dRot = Math.abs((t.rotY ?? 0) - entry.syncedRotY);
-
-        const sizeChanged = ss.w !== c.width || ss.h !== c.height || ss.d !== c.depth;
-
-        if (sizeChanged) {
-            const shape = entry.body.shapes[0] as CANNON.Box;
-            shape.halfExtents.set(c.width, c.height, c.depth);
-            shape.updateConvexPolyhedronRepresentation();
-            shape.updateBoundingSphereRadius();
-            ss.w = c.width; ss.h = c.height; ss.d = c.depth;
-        }
-
-        if (dx * dx + dy * dy + dz * dz > MOVE_THRESHOLD_SQ || dRot > 1e-4 || sizeChanged) {
-            rotYToCannonQuat(t.rotY ?? 0, _cannonQuat);
-            entry.body.position.set(t.x, t.y, t.z);
-            entry.body.quaternion.copy(_cannonQuat);
-            entry.body.updateBoundingRadius();
-            entry.body.updateAABB();
-
-            sp.x = t.x; sp.y = t.y; sp.z = t.z;
-            entry.syncedRotY = t.rotY ?? 0;
-        }
-    }
-
-    private gcStatic(alive: number[]): void {
-        const aliveSet = new Set(alive);
-        for (const [id, entry] of this.staticEntries) {
-            if (!aliveSet.has(id)) {
-                this.physicsWorld.removeBody(entry.body);
-                this.staticEntries.delete(id);
-            }
-        }
-    }
-
-    private gcDynamic(alive: number[]): void {
-        const aliveSet = new Set(alive);
-        for (const id of this.dynamicEntries.keys()) {
-            if (!aliveSet.has(id)) this.dynamicEntries.delete(id);
-        }
     }
 }

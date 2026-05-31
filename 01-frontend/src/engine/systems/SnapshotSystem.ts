@@ -5,11 +5,11 @@
  * Thu thập trạng thái scene và emit event "snapshot" nếu có thay đổi.
  *
  * Input:  ECS World (wall entities) + NodeRegistry + DimensionSystem.lastDimensions
- * Output: ECSSnapshot emit qua EngineEvents → useFloorPlanStore → PlanView2D re-render
+ * Output: ECSSnapshot emit qua EngineEvents → useFloorPlanSnapshot → PlanView2D re-render
  *
  * Change detection:
- *   Tạo hash string từ tất cả walls + nodes + caps.
- *   Nếu hash trùng với frame trước → skip emit (tránh re-render vô ích mỗi 60fps).
+ *   Reads World.revision — incremented by every structural ECS mutation.
+ *   If revision matches _lastRevision, skips the entire build and emit (O(1) per frame when idle).
  *
  * Pipeline vị trí trong system order:
  *   WallGeometrySystem → DimensionSystem → SnapshotSystem → RenderSystem
@@ -24,18 +24,21 @@ import { WallNodes } from "src/engine/components/WallNodes";
 import { WallPolygon } from "src/engine/components/WallPolygon";
 import { Transform } from "src/engine/components/Transform";
 import { RoomGeometry } from "src/engine/components/RoomGeometry";
+import { FurnitureTag } from "src/engine/components/FurnitureTag";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import { DimensionSystem } from "src/engine/systems/DimensionSystem";
+import { getTopDownUrl } from "src/engine/game/FurnitureCatalog";
+import { getEntityFootprint2D } from "src/engine/game/getFootprint";
 
-import { EngineEvents, type ECSSnapshot, type NodeSnapshot, type WallSnapshot, type NodeCapSnapshot, type RoomSnapshot } from "src/engine/events/EngineEvents";
+import { EngineEvents, type ECSSnapshot, type NodeSnapshot, type WallSnapshot, type NodeCapSnapshot, type RoomSnapshot, type FurnitureSnapshot } from "src/engine/events/EngineEvents";
 
 export class SnapshotSystem extends System {
     private readonly events: EngineEvents;
     private readonly nodes: NodeRegistry;
     /** Tham chiếu DimensionSystem để lấy lastDimensions sau khi system kia chạy xong. */
     private readonly dimSystem: DimensionSystem;
-    /** Hash của frame trước — so sánh để skip emit khi không có thay đổi. */
-    private lastHash = "";
+    /** World.revision from the last emitted snapshot — skip rebuild when unchanged. */
+    private _lastRevision = -1;
 
     constructor(events: EngineEvents, nodes: NodeRegistry, dimSystem: DimensionSystem) {
         super();
@@ -45,6 +48,8 @@ export class SnapshotSystem extends System {
     }
 
     update(world: World): void {
+        if (world.revision === this._lastRevision) return;
+
         const entities = Query.entitiesWith(world, WallTag, WallNodes, WallSize, Transform);
 
         const walls: WallSnapshot[] = [];
@@ -72,29 +77,12 @@ export class SnapshotSystem extends System {
             nodeSnapshots.push({ id: n.id, x: n.x, z: n.z });
         }
 
-        const wallHash = walls
-            .map(w =>
-                `${w.wallId}:n${w.startNodeId}-n${w.endNodeId}|t${w.thickness.toFixed(3)}|h${w.height.toFixed(3)}|cx${w.cx.toFixed(3)},${w.cz.toFixed(3)}` +
-                (w.polygon ? `|poly${w.polygon.map(p => `${p.x.toFixed(2)},${p.z.toFixed(2)}`).join(";")}` : "")
-            )
-            .join("|");
-
-        const nodeHash = nodeSnapshots
-            .map(n => `${n.id}:${n.x.toFixed(4)},${n.z.toFixed(4)}`)
-            .join("|");
-
         const caps: NodeCapSnapshot[] = [];
         for (const [nodeId, pts] of this.nodes.nodeCaps) {
             caps.push({ nodeId, polygon: pts });
         }
 
-        const capHash = caps
-            .map(c => `cap${c.nodeId}:${c.polygon.map(p => `${p.x.toFixed(2)},${p.z.toFixed(2)}`).join(";")}`)
-            .join("|");
-
-        const hash = wallHash + "##" + nodeHash + "##" + capHash;
-        if (hash === this.lastHash) return;
-        this.lastHash = hash;
+        this._lastRevision = world.revision;
 
         const rooms: RoomSnapshot[] = [];
         const roomEntities = Query.entitiesWith(world, RoomGeometry);
@@ -107,7 +95,27 @@ export class SnapshotSystem extends System {
             });
         }
 
-        const snapshot: ECSSnapshot = { nodes: nodeSnapshots, walls, caps, rooms, dimensions: this.dimSystem.lastDimensions, angleDimensions: this.dimSystem.lastAngleDimensions };
+        const furniture: FurnitureSnapshot[] = [];
+        const furnitureEntities = Query.entitiesWith(world, FurnitureTag, Transform);
+        for (const e of furnitureEntities) {
+            const tag = world.getComponent(e, FurnitureTag)!;
+            const t = world.getComponent(e, Transform)!;
+            // Single source: getEntityFootprint2D đọc live ColliderAABB (đã set ở spawn-time
+            // bằng priority chain — tier 1 _col mesh / 2 JSON / 3 visual AABB), fallback catalog.
+            const fp = getEntityFootprint2D(world, e, tag.modelId);
+            furniture.push({
+                entityId: e,
+                modelId: tag.modelId,
+                x: t.x,
+                z: t.z,
+                rotY: t.rotY,
+                width: fp.width,
+                depth: fp.depth,
+                topDownUrl: getTopDownUrl(tag.modelId),
+            });
+        }
+
+        const snapshot: ECSSnapshot = { nodes: nodeSnapshots, walls, caps, rooms, dimensions: this.dimSystem.lastDimensions, angleDimensions: this.dimSystem.lastAngleDimensions, furniture };
         this.events.emit("snapshot", snapshot);
     }
 }

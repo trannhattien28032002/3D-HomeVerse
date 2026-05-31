@@ -24,11 +24,20 @@
 
 import type { EngineInstance } from "src/engine/engineTypes";
 import type { SceneDocument } from "./SceneDocument";
+import { FurnitureTag } from "src/engine/components/FurnitureTag";
+import { Query } from "src/engine/ecs/Query";
 
 export function deserializeScene(doc: SceneDocument, engine: EngineInstance): void {
     const dispatch = engine.api.dispatch;
 
     // ── 1. Clear existing scene ───────────────────────────────────────────────
+    // Remove all furniture first (snapshot entity ids before iterating — world
+    // is mutated by each DELETE_FURNITURE dispatch).
+    const existingFurniture = [...Query.entitiesWith(engine.world, FurnitureTag)];
+    for (const entityId of existingFurniture) {
+        dispatch({ type: "DELETE_FURNITURE", entityId });
+    }
+
     // Snapshot the wall IDs first — the Map is mutated by each REMOVE_WALL dispatch.
     const existingWallIds = [...engine.wallEntityByWallId.keys()];
     for (const wallId of existingWallIds) {
@@ -57,5 +66,12 @@ export function deserializeScene(doc: SceneDocument, engine: EngineInstance): vo
         if (Math.abs(wall.height - 3.2) > 1e-4) {
             dispatch({ type: "UPDATE_WALL", wallId: wall.wallId, height: wall.height });
         }
+    }
+
+    // ── 4. Restore furniture ──────────────────────────────────────────────────
+    // PLACE_FURNITURE is fire-and-forget (async GLB load). Furniture appears after
+    // the GLB promise resolves — typically instant on repeat loads due to loader cache.
+    for (const f of (doc.furniture ?? [])) {
+        dispatch({ type: "PLACE_FURNITURE", modelId: f.modelId, x: f.x, z: f.z, rotY: f.rotY });
     }
 }

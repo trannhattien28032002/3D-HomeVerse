@@ -15,7 +15,10 @@
 import type { EngineInstance } from "src/engine/engineTypes";
 import { WallNodes } from "src/engine/components/WallNodes";
 import { WallSize } from "src/engine/components/WallSize";
-import type { SceneDocument, SceneNodeRecord, SceneWallRecord } from "src/engine/serialization/SceneDocument";
+import { FurnitureTag } from "src/engine/components/FurnitureTag";
+import { Transform } from "src/engine/components/Transform";
+import { Query } from "src/engine/ecs/Query";
+import type { SceneDocument, SceneNodeRecord, SceneWallRecord, SceneFurnitureRecord } from "src/engine/serialization/SceneDocument";
 
 export function serializeScene(engine: EngineInstance): SceneDocument {
     // ── Nodes ─────────────────────────────────────────────────────────────────
@@ -43,12 +46,18 @@ export function serializeScene(engine: EngineInstance): SceneDocument {
             wallId,
             startNodeId: wn.startNodeId,
             endNodeId: wn.endNodeId,
-            // thickness is the authoritative value stored on WallNodes
-            // (WallSize.thickness may diverge during UPDATE_WALL; WallNodes is the topology source).
-            thickness: wn.thickness,
+            thickness: wn.thickness, // WallNodes is sole owner; WallSize no longer stores thickness
             height: size.height,
         });
     }
 
-    return { version: 1, nodes, walls };
+    // ── Furniture ─────────────────────────────────────────────────────────────
+    const furniture: SceneFurnitureRecord[] = [];
+    for (const e of Query.entitiesWith(engine.world, FurnitureTag, Transform)) {
+        const tag = engine.world.getComponent(e, FurnitureTag)!;
+        const t   = engine.world.getComponent(e, Transform)!;
+        furniture.push({ modelId: tag.modelId, x: t.x, z: t.z, rotY: t.rotY });
+    }
+
+    return { version: 1, nodes, walls, furniture };
 }

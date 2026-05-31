@@ -30,6 +30,8 @@ export type EngineApi = {
     setView: (preset: CameraPreset) => void;
     /** Xoay camera ngang angleDeg độ quanh điểm nhìn hiện tại. */
     rotateView: (angleDeg: number) => void;
+    /** Chuyển gizmo 3D giữa translate (di chuyển) và rotate (xoay). No-op khi đang drag. */
+    setGizmoMode: (mode: "translate" | "rotate") => void;
     // ── Transaction + Undo ──────────────────────────────────────────────────
     /** Gom tất cả dispatch() bên trong fn() thành một entry undo duy nhất. */
     transaction: (label: string, fn: () => void) => void;
@@ -43,6 +45,10 @@ export type EngineApi = {
     redo: () => void;
     canUndo: () => boolean;
     canRedo: () => boolean;
+    /** Enter ghost-preview placement mode for the given model. */
+    beginPlacement: (modelId: string) => void;
+    /** Cancel active placement (if any) and remove the ghost. */
+    cancelPlacement: () => void;
 };
 
 /**
