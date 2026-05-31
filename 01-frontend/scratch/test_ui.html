@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tiny Home Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&amp;family=Nunito+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#832428",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb3b0",
+                        "surface": "#fdf9f0",
+                        "on-primary-fixed-variant": "#5e4200",
+                        "tertiary-container": "#ffa9a6",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#d5c4ac",
+                        "inverse-primary": "#ffbb16",
+                        "primary": "#7c5800",
+                        "on-surface": "#1c1c17",
+                        "secondary-fixed-dim": "#afd0a1",
+                        "on-background": "#1c1c17",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#31312b",
+                        "surface-dim": "#dddad1",
+                        "tertiary": "#a23c3e",
+                        "on-surface-variant": "#504532",
+                        "secondary-container": "#caecbc",
+                        "background": "#fdf9f0",
+                        "on-primary-fixed": "#271900",
+                        "on-secondary-fixed-variant": "#324e2a",
+                        "error": "#ba1a1a",
+                        "secondary": "#496640",
+                        "on-primary-container": "#674900",
+                        "on-secondary-fixed": "#062104",
+                        "primary-container": "#f8b400",
+                        "inverse-on-surface": "#f4f0e7",
+                        "on-tertiary-fixed": "#410006",
+                        "surface-variant": "#e6e2d9",
+                        "on-tertiary-container": "#8c2c2f",
+                        "on-secondary-container": "#4f6c45",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f7f3ea",
+                        "surface-container-high": "#ece8df",
+                        "surface-container": "#f1eee5",
+                        "surface-container-highest": "#e6e2d9",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#ffdea6",
+                        "tertiary-fixed": "#ffdad8",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#ffbb16",
+                        "surface-bright": "#fdf9f0",
+                        "secondary-fixed": "#caecbc",
+                        "surface-tint": "#7c5800",
+                        "outline": "#837560"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Cinzel"],
+                        "body-sm": ["Nunito Sans"],
+                        "body-lg": ["Nunito Sans"],
+                        "headline-sm": ["Cinzel"],
+                        "label-sm": ["Nunito Sans"],
+                        "headline-xl": ["Cinzel"],
+                        "body-md": ["Nunito Sans"],
+                        "label-lg": ["Nunito Sans"],
+                        "headline-lg": ["Cinzel"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(253, 249, 240, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 222, 166, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen w-screen overflow-hidden flex flex-col relative">
+<!-- Diorama Background -->
+<div class="absolute inset-0 z-0 bg-cover bg-center" data-alt="A beautifully crafted, high-end 3D isometric diorama of a cozy timber cottage sitting in a sun-drenched meadow. Vibrant lavender fields surround the handcrafted wooden structure, creating a sense of warmth and discovery. The lighting mimics high noon, casting soft, magical glows across the handcrafted-ethereal scene. The color palette emphasizes warm creams, sun gold, and natural greens, matching a premium, artisanal digital space aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCZzqlJhcvB0eLBLHABe0WJvGZZbOMP7pdXw4C2ZS8_bKmReRh4si2UAFw3ZtBS_4CAzHJ2tR8R4Rb-WbgNHzgw87d3-D9bNnp1LwIQXTo4bPhvE-sdicxQKr0OojVv1WWw1AMNnQtwdD49dP8wfPgTB7HBG1Rr6iGZ0IDKkFXTtZo3DQBInGOGANiJQE0qT_LOwGsUw5lNFqtshWbtt9GhjKKAnR5Sg7RWg7iEFTu4cZNpnndJdrGzcPect83Yrx43WetJvkxPKuN7');">
+<!-- Overlay to ensure UI readability while keeping the bright feel -->
+<div class="absolute inset-0 bg-gradient-to-b from-surface/20 to-transparent"></div>
+</div>
+<!-- TopNavBar -->
+<nav class="bg-surface/60 dark:bg-inverse-surface/60 backdrop-blur-xl flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-unit h-16 border-b border-surface-variant/30 shadow-[0_0_15px_rgba(248,180,0,0.15)] z-10 docked full-width top-0">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim font-bold tracking-tight">Tiny Home</span>
+</div>
+<div class="hidden md:flex items-center space-x-6">
+<!-- Navigation Links usually here, but omitted as per 'No sidebars or environment settings' intent, keeping focus on canvas -->
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-surface-variant">
+<button aria-label="Camera" class="hover:bg-primary-container/20 hover:text-primary transition-all duration-300 p-2 rounded-full focus:outline-none">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">photo_camera</span>
+</button>
+<button aria-label="Grid" class="hover:bg-primary-container/20 hover:text-primary transition-all duration-300 p-2 rounded-full focus:outline-none">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">grid_on</span>
+</button>
+<button aria-label="Help" class="hover:bg-primary-container/20 hover:text-primary transition-all duration-300 p-2 rounded-full focus:outline-none">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+</button>
+</div>
+</nav>
+<!-- Canvas Area (Empty space to let the background shine) -->
+<main class="flex-grow relative z-0 pointer-events-none">
+<!-- Interactive elements within the 3D scene would go here, pointer-events-auto for them -->
+</main>
+<!-- BottomNavBar -->
+<div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 bg-surface-container/80 dark:bg-inverse-surface/80 backdrop-blur-2xl border border-primary-container/30 shadow-[0_8px_32px_rgba(124,88,0,0.2)] rounded-full mx-auto mb-margin-mobile w-fit max-w-[95%] overflow-x-auto no-scrollbar">
+<!-- Select -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">select_all</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">Select</span>
+</button>
+<!-- Multi -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">ads_click</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">Multi</span>
+</button>
+<!-- Build (Active) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-3 shadow-[0_0_12px_rgba(248,180,0,0.4)] scale-90 transition-all duration-150 min-w-[64px] focus:outline-none">
+<span class="material-symbols-outlined mb-1 text-primary" style="font-variation-settings: 'FILL' 1;">construction</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap font-bold">Build</span>
+</button>
+<!-- Decor -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">chair</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">Decor</span>
+</button>
+<!-- Color -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">texture</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">Color</span>
+</button>
+<div class="w-px h-8 bg-outline-variant/50 mx-1"></div>
+<!-- Left -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">rotate_left</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">Left</span>
+</button>
+<!-- Right -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">rotate_right</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">Right</span>
+</button>
+<!-- Top -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">vertical_align_top</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">Top</span>
+</button>
+<div class="w-px h-8 bg-outline-variant/50 mx-1"></div>
+<!-- 2D -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">view_quilt</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">2D</span>
+</button>
+<!-- 3D -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant p-3 hover:bg-primary-fixed/30 hover:scale-110 transition-all duration-300 min-w-[64px] rounded-xl focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">view_in_ar</span>
+<span class="font-label-sm text-label-sm whitespace-nowrap">3D</span>
+</button>
+</div>
+</body></html>

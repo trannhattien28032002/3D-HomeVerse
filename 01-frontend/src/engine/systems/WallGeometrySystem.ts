@@ -1,24 +1,46 @@
+/**
+ * WallGeometrySystem — tính toán geometry miter cho tất cả tường.
+ *
+ * Chạy mỗi frame. Chỉ rebuild khi WallPolygon bị xóa (change signal) hoặc
+ * khi node position thay đổi.
+ *
+ * Thuật toán miter:
+ *   1. Với mỗi node, gom tất cả wall đính vào (WallAtNode[])
+ *   2. Sắp xếp radially theo góc
+ *   3. computeMiters(): tính điểm giao (leftPoint, rightPoint) tại mỗi góc tường
+ *      - Nếu góc đủ nhọn và khoảng cách trong giới hạn → miter (điểm nhọn)
+ *      - Ngược lại → bevel (cắt vát)
+ *   4. Cập nhật WallPolygon (4 điểm XZ) cho mỗi wall
+ *   5. Rebuild Three.js ExtrudeGeometry từ polygon + height
+ *   6. Cap mesh tại junction ≥ 3 tường
+ *
+ * Cache: nodeCache lưu miterPoints theo hash (pos + walls) để tránh tính lại.
+ * Output: WallPolygon component + Three.js mesh được cập nhật trong scene.
+ */
 import * as THREE from "three";
 
-import { System } from "../ecs/System";
-import { World } from "../ecs/World";
-import { Query } from "../ecs/Query";
+import { System } from "src/engine/ecs/System";
+import { World } from "src/engine/ecs/World";
+import { Query } from "src/engine/ecs/Query";
 
-import { WallNodes } from "../components/WallNodes";
-import { WallSize } from "../components/WallSize";
-import { WallPolygon, type Point2D } from "../components/WallPolygon";
-import { Mesh } from "../components/Mesh";
-import { Transform } from "../components/Transform";
-import { ColliderAABB } from "../components/ColliderAABB";
-import { NodeRegistry } from "../graph/NodeRegistry";
+import { WallNodes } from "src/engine/components/WallNodes";
+import { WallSize } from "src/engine/components/WallSize";
+import { WallPolygon, type Point2D } from "src/engine/components/WallPolygon";
+import { Mesh } from "src/engine/components/Mesh";
+import { Transform } from "src/engine/components/Transform";
+import { ColliderAABB } from "src/engine/components/ColliderAABB";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
+import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
+import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
 
+/** Thông tin về một tường tại một node — dùng để tính miter. */
 type WallAtNode = {
     entity: number;
-    nx: number; nz: number;
+    nx: number; nz: number;     // unit vector hướng ra khỏi node (dọc theo tường)
     thickness: number;
-    angle: number;
-    leftNx: number; leftNz: number;
-    rightNx: number; rightNz: number;
+    angle: number;              // góc từ node (radians) — dùng để sort radially
+    leftNx: number; leftNz: number;   // normal trái (vuông góc với nx/nz)
+    rightNx: number; rightNz: number; // normal phải
 };
 
 function computePair(
@@ -46,8 +68,6 @@ function computePair(
             z: nodePos.z + a * n1z + b * n2z,
         };
     }
-    console.log("inter ", inter?.x, inter?.z)
-
     const cross = w1.nx * w2.nz - w1.nz * w2.nx;
     const isOuter = cross < -1e-5;
     const MITER_LIMIT = 2.5;
@@ -57,8 +77,6 @@ function computePair(
 
     if (isOuter && inter) {
         const miterLength = Math.hypot(inter.x - nodePos.x, inter.z - nodePos.z);
-        console.log("miterLength ", miterLength)
-        console.log("maxDist ", maxDist)
         if (miterLength <= maxDist) {
             useMiter = true;
         }
@@ -71,22 +89,16 @@ function computePair(
     const p1: Point2D = { x: nodePos.x + n1x * h1, z: nodePos.z + n1z * h1 };
     const p2: Point2D = { x: nodePos.x + n2x * h2, z: nodePos.z + n2z * h2 };
 
-    console.log("p1 ", p1.x, p1.z)
-    console.log("p2 ", p2.x, p2.z)
     let bevel1 = p1;
     let bevel2 = p2;
 
     if (!parallel && inter) {
-        // Project `inter` onto each wall direction FROM nodePos (not from p1/p2)
-        // This gives the along-wall distance at which the bevel point sits
         const t1Raw = (inter.x - nodePos.x) * w1.nx + (inter.z - nodePos.z) * w1.nz;
         const t2Raw = (inter.x - nodePos.x) * w2.nx + (inter.z - nodePos.z) * w2.nz;
 
-        // Clamp to [0, maxDist] — bevel cannot go past the miter limit, and never behind the node
         const t1 = Math.min(Math.max(t1Raw, 0), maxDist);
         const t2 = Math.min(Math.max(t2Raw, 0), maxDist);
 
-        // Rebuild bevel point = nodePos + (along-wall offset) + (lateral normal offset)
         bevel1 = { x: nodePos.x + t1 * w1.nx + n1x * h1, z: nodePos.z + t1 * w1.nz + n1z * h1 };
         bevel2 = { x: nodePos.x + t2 * w2.nx + n2x * h2, z: nodePos.z + t2 * w2.nz + n2z * h2 };
     }
@@ -128,52 +140,47 @@ function computeMiters(
         const w1 = sorted[i];
         const w2 = sorted[(i + 1) % sorted.length];
 
-        // Detect parallel / near-parallel (same or opposite direction)
         let angleDiff = w2.angle - w1.angle;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
 
         if (Math.abs(Math.abs(angleDiff) - Math.PI) < 1e-3) {
-            // Straight continuation: walls are collinear — use simple offset
             const h1 = w1.thickness / 2;
             const p1: Point2D = { x: nodePos.x + w1.leftNx * h1, z: nodePos.z + w1.leftNz * h1 };
             if (!miterPoints.has(w1.entity)) miterPoints.set(w1.entity, { leftPoint: { x: 0, z: 0 }, rightPoint: { x: 0, z: 0 } });
             if (!miterPoints.has(w2.entity)) miterPoints.set(w2.entity, { leftPoint: { x: 0, z: 0 }, rightPoint: { x: 0, z: 0 } });
             miterPoints.get(w1.entity)!.leftPoint = p1;
             miterPoints.get(w2.entity)!.rightPoint = p1;
-            console.log(miterPoints.get(w1.entity)!.leftPoint);
-            console.log(miterPoints.get(w2.entity)!.rightPoint);
             capPoints.push(p1);
             continue;
         }
 
-        // Compute miter or bevel
         const sharedPoint = computePair(nodePos, w1, w2, miterPoints);
-        console.log(sharedPoint);
         if (sharedPoint !== null) {
-            // Miter: assign shared corner to both walls
             if (!miterPoints.has(w1.entity)) miterPoints.set(w1.entity, { leftPoint: { x: 0, z: 0 }, rightPoint: { x: 0, z: 0 } });
             if (!miterPoints.has(w2.entity)) miterPoints.set(w2.entity, { leftPoint: { x: 0, z: 0 }, rightPoint: { x: 0, z: 0 } });
             miterPoints.get(w1.entity)!.leftPoint = sharedPoint;
             miterPoints.get(w2.entity)!.rightPoint = sharedPoint;
             capPoints.push(sharedPoint);
         } else {
-            // Bevel: push both points to ensure cap polygon covers the bevel gap
             const pLeft = miterPoints.get(w1.entity)!.leftPoint;
             const pRight = miterPoints.get(w2.entity)!.rightPoint;
             capPoints.push(pLeft, pRight);
         }
     }
 
-    // A valid polygon needs at least 3 points. Beveling a 2-wall corner generates 3 points!
     const capPolygon = capPoints.length >= 3 ? capPoints : [];
     return { miterPoints, capPolygon };
 }
 
 export class WallGeometrySystem extends System {
     private readonly nodeReg: NodeRegistry;
-    private capMeshes = new Map<number, { mesh: THREE.Mesh; mat: THREE.Material; poly: Point2D[]; height: number }>(); // capMeshes lưu các mesh của góc tường
-    private scene: THREE.Scene | null = null;
+    private readonly meshRegistry: MeshRegistry;
+    private readonly materialRegistry: MaterialRegistry;
+    private scene: THREE.Scene;
+
+    /** Change-detection metadata for cap meshes (actual meshes live in MeshRegistry). */
+    private capMeta = new Map<number, { poly: Point2D[]; height: number }>();
 
     private nodeCache = new Map<number, {
         hash: string;
@@ -181,25 +188,23 @@ export class WallGeometrySystem extends System {
         capPolygon: Point2D[];
     }>();
 
-    constructor(nodes: NodeRegistry, scene?: THREE.Scene) {
+    constructor(nodes: NodeRegistry, scene: THREE.Scene, meshRegistry: MeshRegistry, materialRegistry: MaterialRegistry) {
         super();
         this.nodeReg = nodes;
-        this.scene = scene ?? null;
+        this.scene = scene;
+        this.meshRegistry = meshRegistry;
+        this.materialRegistry = materialRegistry;
     }
 
     update(world: World): void {
         const wallEntities = Query.entitiesWith(world, WallNodes, WallSize);
-        // Reset cache geometry
-        this.nodeReg.nodeCaps.clear(); // nodeCaps lưu các node tọa độ x, z của góc tường
+        this.nodeReg.nodeCaps.clear();
+
         if (wallEntities.length === 0) {
-            if (this.scene) {
-                for (const { mesh, mat } of this.capMeshes.values()) {
-                    this.scene.remove(mesh);
-                    mesh.geometry.dispose();
-                    mat.dispose();
-                }
-                this.capMeshes.clear();
+            for (const nodeId of [...this.capMeta.keys()]) {
+                this.meshRegistry.dispose(`cap-${nodeId}`);
             }
+            this.capMeta.clear();
             return;
         }
 
@@ -216,7 +221,6 @@ export class WallGeometrySystem extends System {
             const len = Math.hypot(dx, dz);
             if (len < 1e-6) continue;
 
-            // Chuẩn hóa vector hướng
             const ux = dx / len, uz = dz / len;
 
             if (!nodeWalls.has(wn.startNodeId)) nodeWalls.set(wn.startNodeId, []);
@@ -237,6 +241,7 @@ export class WallGeometrySystem extends System {
                 rightNx: -uz, rightNz: ux,
             });
         }
+
         type MR = { startLeft?: Point2D; startRight?: Point2D; endLeft?: Point2D; endRight?: Point2D };
         const miterResult = new Map<number, MR>();
         for (const e of wallEntities) miterResult.set(e, {});
@@ -275,27 +280,23 @@ export class WallGeometrySystem extends System {
                 }
             }
 
-            if (this.scene) {
-                let maxHeight = 1;
-                for (const cw of cwList) {
-                    const size = world.getComponent(cw.entity, WallSize);
-                    if (size && size.height > maxHeight) maxHeight = size.height;
-                }
-                this.updateCapMesh(nodeId, computed.capPolygon, maxHeight);
+            let maxHeight = 1;
+            for (const cw of cwList) {
+                const size = world.getComponent(cw.entity, WallSize);
+                if (size && size.height > maxHeight) maxHeight = size.height;
             }
+            this.updateCapMesh(nodeId, computed.capPolygon, maxHeight);
         }
 
         for (const nodeId of this.nodeCache.keys()) {
             if (!nodeWalls.has(nodeId)) this.nodeCache.delete(nodeId);
         }
-        if (this.scene) {
-            for (const [nodeId, { mesh, mat }] of this.capMeshes) {
-                if (!this.nodeReg.nodeCaps.has(nodeId)) {
-                    this.scene.remove(mesh);
-                    mesh.geometry.dispose();
-                    mat.dispose();
-                    this.capMeshes.delete(nodeId);
-                }
+
+        // Remove cap meshes for nodes that are no longer junction caps
+        for (const nodeId of [...this.capMeta.keys()]) {
+            if (!this.nodeReg.nodeCaps.has(nodeId)) {
+                this.meshRegistry.dispose(`cap-${nodeId}`);
+                this.capMeta.delete(nodeId);
             }
         }
 
@@ -354,28 +355,29 @@ export class WallGeometrySystem extends System {
     }
 
     private updateCapMesh(nodeId: number, capPolygon: Point2D[], height: number): void {
-        if (!this.scene) return;
         if (capPolygon.length < 3) {
-            const old = this.capMeshes.get(nodeId);
-            if (old) {
-                this.scene.remove(old.mesh);
-                old.mesh.geometry.dispose();
-                old.mat.dispose();
-                this.capMeshes.delete(nodeId);
+            if (this.meshRegistry.has(`cap-${nodeId}`)) {
+                this.meshRegistry.dispose(`cap-${nodeId}`);
+                this.capMeta.delete(nodeId);
             }
             return;
         }
 
-        const existing = this.capMeshes.get(nodeId);
-        const changed = !existing || existing.height !== height || existing.poly.length !== capPolygon.length || (() => {
-            for (let i = 0; i < capPolygon.length; i++) {
-                if (
-                    Math.abs(existing.poly[i].x - capPolygon[i].x) > 1e-5 ||
-                    Math.abs(existing.poly[i].z - capPolygon[i].z) > 1e-5
-                ) return true;
-            }
-            return false;
-        })();
+        const existingMeta = this.capMeta.get(nodeId);
+        const existingMesh = this.meshRegistry.get(`cap-${nodeId}`);
+
+        const changed = !existingMeta || !existingMesh ||
+            existingMeta.height !== height ||
+            existingMeta.poly.length !== capPolygon.length ||
+            (() => {
+                for (let i = 0; i < capPolygon.length; i++) {
+                    if (
+                        Math.abs(existingMeta.poly[i].x - capPolygon[i].x) > 1e-5 ||
+                        Math.abs(existingMeta.poly[i].z - capPolygon[i].z) > 1e-5
+                    ) return true;
+                }
+                return false;
+            })();
 
         if (!changed) return;
 
@@ -391,31 +393,28 @@ export class WallGeometrySystem extends System {
         geo.rotateX(-Math.PI / 2);
         geo.translate(0, -Y, 0);
 
-        if (existing) {
-            existing.mesh.geometry.dispose();
-            existing.mesh.geometry = geo;
-            existing.mesh.position.set(0, Y, 0);
-            existing.poly = [...capPolygon];
-            existing.height = height;
+        if (existingMesh) {
+            existingMesh.geometry.dispose();
+            existingMesh.geometry = geo;
+            existingMesh.position.set(0, Y, 0);
         } else {
-            const mat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0, roughness: 0.9 });
+            const mat = this.materialRegistry.get({ color: 0xcccccc, metalness: 0, roughness: 0.9 });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(0, Y, 0);
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             this.scene.add(mesh);
-            this.capMeshes.set(nodeId, { mesh, mat, poly: [...capPolygon], height });
+            this.meshRegistry.register(`cap-${nodeId}`, mesh);
         }
+
+        this.capMeta.set(nodeId, { poly: [...capPolygon], height });
     }
 
     dispose(): void {
-        if (!this.scene) return;
-        for (const { mesh, mat } of this.capMeshes.values()) {
-            this.scene.remove(mesh);
-            mesh.geometry.dispose();
-            mat.dispose();
-        }
-        this.capMeshes.clear();
+        // Cap meshes are owned by meshRegistry — engine.dispose() calls disposeAll().
+        // Just clear local metadata.
+        this.capMeta.clear();
+        this.nodeCache.clear();
     }
 
     private rebuildWallMesh(

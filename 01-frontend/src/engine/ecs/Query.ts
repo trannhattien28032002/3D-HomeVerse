@@ -1,5 +1,5 @@
-import { World } from "./World";
-import { Component } from "./Component";
+import { World } from "src/engine/ecs/World";
+import { Component } from "src/engine/ecs/Component";
 
 export type ComponentClass<T extends Component> = abstract new (...args: never[]) => T;
 

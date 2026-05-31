@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import { Transform } from "../components/Transform";
-import { Mesh } from "../components/Mesh";
-import { StaticBody } from "../components/StaticBody";
-import { ColliderAABB } from "../components/ColliderAABB";
-import { Grounded } from "../components/Grounded";
-import { World } from "../ecs/World";
+import { Transform } from "src/engine/components/Transform";
+import { Mesh } from "src/engine/components/Mesh";
+import { StaticBody } from "src/engine/components/StaticBody";
+import { ColliderAABB } from "src/engine/components/ColliderAABB";
+import { Grounded } from "src/engine/components/Grounded";
+import { World } from "src/engine/ecs/World";
 
 export function createGround(world: World, scene: THREE.Scene) {
     const entity = world.createEntity();

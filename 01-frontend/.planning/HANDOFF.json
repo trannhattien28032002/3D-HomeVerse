@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-13T19:19:05.604Z",
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "context_type": "default",
+  "active_workflow": "/gsd-map-codebase",
+  "parent_workflow": "/gsd-new-project (paused to run map-codebase first per brownfield offer)",
+  "completed_tasks": [
+    {"id": 1, "name": "/gsd-new-project init.new-project SDK query", "status": "done"},
+    {"id": 2, "name": "Brownfield detection — existing React/TS code in 01-frontend confirmed", "status": "done"},
+    {"id": 3, "name": "User selected 'Map codebase first' via AskUserQuestion", "status": "done"},
+    {"id": 4, "name": "/gsd-map-codebase invoked, init.map-codebase SDK query", "status": "done"},
+    {"id": 5, "name": "Created .planning/codebase/ directory", "status": "done"},
+    {"id": 6, "name": "Spawned 4 parallel gsd-codebase-mapper agents (tech, arch, quality, concerns)", "status": "done"},
+    {"id": 7, "name": "First-pass results: quality + concerns wrote files; tech + arch exited without writing", "status": "done"},
+    {"id": 8, "name": "Re-spawned tech mapper — wrote STACK.md (116 lines), INTEGRATIONS.md (63 lines)", "status": "done"},
+    {"id": 9, "name": "First-pass quality mapper wrote CONVENTIONS.md (334 lines), TESTING.md (202 lines)", "status": "done"},
+    {"id": 10, "name": "First-pass concerns mapper wrote CONCERNS.md (199 lines)", "status": "done"},
+    {"id": 11, "name": "Re-spawned architecture mapper", "status": "in_progress", "progress": "Agent launched in background after first attempt exited without writing files. Pause invoked before completion notification arrived."}
+  ],
+  "remaining_tasks": [
+    {"id": 12, "name": "Verify ARCHITECTURE.md and STRUCTURE.md exist (architecture mapper retry may or may not have completed)", "status": "not_started"},
+    {"id": 13, "name": "If missing, re-spawn architecture mapper a second time", "status": "not_started"},
+    {"id": 14, "name": "Run secret scan on .planning/codebase/*.md", "status": "not_started"},
+    {"id": 15, "name": "Commit codebase map: gsd-sdk query commit 'docs: map existing codebase'", "status": "not_started"},
+    {"id": 16, "name": "Present offer_next summary, end /gsd-map-codebase workflow", "status": "not_started"},
+    {"id": 17, "name": "Resume /gsd-new-project (run as fresh invocation; brownfield now has a codebase map)", "status": "not_started"}
+  ],
+  "blockers": [
+    {
+      "description": "Architecture mapper agent was running in background when pause was invoked. Files ARCHITECTURE.md and STRUCTURE.md may or may not be written by the time work resumes.",
+      "type": "external",
+      "workaround": "On resume, first ls .planning/codebase/ — if both files exist, continue. If missing, re-spawn the gsd-codebase-mapper with focus=arch."
+    },
+    {
+      "description": "Hooks at ~/.claude/settings.json use PowerShell '& \"path\"' syntax but Claude Code executes them via bash. PostToolUse hooks emit noise; PreToolUse Write/Edit hooks (gsd-prompt-guard.js, gsd-read-guard.js, gsd-workflow-guard.js) actively BLOCK Write/Edit tools.",
+      "type": "technical",
+      "workaround": "Strip the leading '& ' from every hook command in settings.json. 'node \"path\"' works in both bash and pwsh. Same for 'bash \"path\"'. Required to unblock Write/Edit before /gsd-new-project resumes."
+    }
+  ],
+  "human_actions_pending": [
+    {
+      "action": "REQUIRED: Fix hook commands in ~/.claude/settings.json — strip the leading '& ' prefix from all 9 hook commands. They use PowerShell syntax but execute under bash, which parses '&' as background-job and errors. PreToolUse Write/Edit hooks BLOCK file writes, so this must be fixed before resume.",
+      "context": "Affected commands: SessionStart (gsd-check-update.js, gsd-session-state.sh), PostToolUse (gsd-context-monitor.js, gsd-read-injection-scanner.js, gsd-phase-boundary.sh), PreToolUse (gsd-prompt-guard.js, gsd-read-guard.js, gsd-workflow-guard.js, gsd-validate-commit.sh), statusLine (gsd-statusline.js). Replace e.g. '& \"C:/Program Files/nodejs/node.exe\" \"C:/Users/.../foo.js\"' with '\"C:/Program Files/nodejs/node.exe\" \"C:/Users/.../foo.js\"' (drop the '& ').",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {"decision": "Run /gsd-map-codebase before /gsd-new-project", "rationale": "init.new-project reported needs_codebase_map=true; user selected 'Map codebase first (Recommended)'.", "phase": null},
+    {"decision": "Use sonnet model for all 4 mapper agents", "rationale": "init.map-codebase returned mapper_model=sonnet (workflow default).", "phase": null},
+    {"decision": "Re-spawn tech + arch mappers when first pass exited without writing files", "rationale": "Agents reported preamble but disk showed no output. Retry prompts emphasized 'WRITE FIRST, explore minimally' and supplied known orientation hints to reduce token-budget risk.", "phase": null}
+  ],
+  "uncommitted_files": [
+    ".planning/codebase/STACK.md",
+    ".planning/codebase/INTEGRATIONS.md",
+    ".planning/codebase/CONCERNS.md",
+    ".planning/codebase/CONVENTIONS.md",
+    ".planning/codebase/TESTING.md"
+  ],
+  "next_action": "1. Fix the PowerShell-syntax hooks in ~/.claude/settings.json (drop leading '& '). 2. ls .planning/codebase/ to check whether ARCHITECTURE.md and STRUCTURE.md materialized. 3. If yes: scan_for_secrets + commit. If no: re-spawn architecture mapper.",
+  "context_notes": "Mid-codebase-map for a brownfield React/TypeScript 3D interior design app (HomeVerse) with a custom ECS engine. Working dir is 01-frontend/ subdirectory; the actual git repo is at the parent C:/Projects/3D Interior Design v1.0/3D-HomeVerse (init.new-project's has_git=false was misleading — git IS initialized at parent level). Branch is feature/tntien/draw2d_v1 with substantial uncommitted changes (in-flight 2D draw feature)."
+}

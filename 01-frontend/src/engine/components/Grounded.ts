@@ -1,4 +1,4 @@
-import { Component } from "../ecs/Component.ts";
+import { Component } from "src/engine/ecs/Component.ts";
 
 export class Grounded extends Component {
     isGrounded: boolean;

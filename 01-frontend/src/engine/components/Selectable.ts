@@ -1,4 +1,4 @@
-import { Component } from "../ecs/Component";
+import { Component } from "src/engine/ecs/Component";
 
 export class Selectable extends Component {
     selected: boolean;

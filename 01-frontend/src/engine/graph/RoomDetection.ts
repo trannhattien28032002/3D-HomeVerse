@@ -1,166 +1,175 @@
-import { World } from "../ecs/World";
-import { WallNodes } from "../components/WallNodes";
-import { WallTag } from "../components/WallTag";
-import { Query } from "../ecs/Query";
-import { NodeRegistry } from "./NodeRegistry";
+/**
+ * RoomDetection — phát hiện phòng kín từ wall topology dùng thuật toán Half-Edge DCEL.
+ *
+ * Thuật toán Half-Edge (Doubly-Connected Edge List):
+ *   1. Build Half-Edges: mỗi wall tạo 2 directed edge (A→B và B→A = twin)
+ *   2. Link Twins: each edge trỏ tới twin ngược chiều
+ *   3. Link Next: sắp xếp edge radially tại mỗi node → "next" = edge rẽ trái nhất (CCW)
+ *   4. Traverse Faces: follow next pointer cho đến khi loop đóng
+ *   5. Filter: giữ face có signed area âm (CW trong XZ space = interior room)
+ *              Bỏ face có diện tích < 0.1 m² (artifact nhỏ)
+ *
+ * Tại sao CW = interior:
+ *   Trong không gian XZ (Z tăng xuống dưới màn hình), signed area âm = winding CW
+ *   = face nằm bên trong vòng tường → là phòng thực sự.
+ *   Face dương = outer boundary (vòng bao ngoài) → bị lọc ra.
+ *
+ * Fixes áp dụng so với DCEL chuẩn:
+ *   1. Skip duplicate directed edges tại build time
+ *   2. Per-loop closure detection bằng Set<HalfEdge> thay vì boolean flag
+ *   3. Safety cap maxIter = halfEdges.size ngăn infinite loop trên graph lỗi
+ */
+import { World } from "src/engine/ecs/World";
+import { WallNodes } from "src/engine/components/WallNodes";
+import { WallTag } from "src/engine/components/WallTag";
+import { Query } from "src/engine/ecs/Query";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
-// Represents a directed edge in the planar graph
+/** Directed edge trong planar graph — mỗi wall sinh ra 2 HalfEdge (twin). */
 export interface HalfEdge {
-    source: number; // Node ID
-    target: number; // Node ID
+    source: number; // Node ID điểm đầu
+    target: number; // Node ID điểm cuối
     wallId: number;
-    angle: number;  // Angle from source to target
-    next: HalfEdge | null; // Next half-edge in the face loop
-    twin: HalfEdge | null; // The reverse half-edge
+    angle: number;  // Góc hướng từ source đến target (radians)
+    next: HalfEdge | null; // Edge kế tiếp trong face loop (rẽ trái nhất)
+    twin: HalfEdge | null; // Edge ngược chiều (cùng wall, hướng ngược)
     visited: boolean;
 }
 
 export interface RoomPolygon {
-    nodes: number[]; // Ordered list of node IDs forming the room perimeter
-    points: { x: number; z: number }[]; // World coordinates of the corners
-    area: number; // Absolute square area of the room
+    nodes: number[];                     // Node ID theo thứ tự (ordered perimeter)
+    points: { x: number; z: number }[]; // Tọa độ world-space
+    area: number;                        // Diện tích m² (absolute value)
 }
 
 export class RoomDetection {
     /**
-     * Extracts all valid interior rooms (closed polygons) from the wall graph.
-     * Uses a Half-Edge (DCEL) traversal algorithm.
-     * 
-     * @param world The ECS world to query WallNodes
-     * @param nodeRegistry The registry containing all nodes and connectivity
-     * @returns A list of detected rooms with their polygonal boundaries
+     * Tìm tất cả phòng kín trong wall graph.
+     * @param world ECS World — để lấy WallTag + WallNodes components
+     * @param nodeRegistry — nguồn vị trí node
+     * @returns Mảng RoomPolygon đã lọc (chỉ interior, diện tích ≥ 0.1 m²)
      */
     static findRooms(world: World, nodeRegistry: NodeRegistry): RoomPolygon[] {
-        const halfEdges = new Map<string, HalfEdge>();
+        const halfEdges    = new Map<string, HalfEdge>();
         const outgoingEdges = new Map<number, HalfEdge[]>();
 
-        // Pre-map wallId to nodes since wallId != entityId
-        const wallToNodes = new Map<number, {start: number, end: number}>();
+        // Pre-map wallId → { start, end } node IDs
+        const wallToNodes = new Map<number, { start: number; end: number }>();
         for (const e of Query.entitiesWith(world, WallTag, WallNodes)) {
             const tag = world.getComponent(e, WallTag)!;
-            const wn = world.getComponent(e, WallNodes)!;
+            const wn  = world.getComponent(e, WallNodes)!;
             wallToNodes.set(tag.wallId, { start: wn.startNodeId, end: wn.endNodeId });
         }
 
-        // 1. Build Half-Edges for each connected wall
+        // ── Step 1: Build Half-Edges ───────────────────────────────────────────
         for (const node of nodeRegistry.all()) {
-            outgoingEdges.set(node.id, []);
-            
+            if (!outgoingEdges.has(node.id)) outgoingEdges.set(node.id, []);
+
             for (const wallId of node.connectedWallIds) {
                 const wn = wallToNodes.get(wallId);
                 if (!wn) continue;
-                
-                const targetId = wn.start === node.id ? wn.end : wn.start;
+
+                const targetId   = wn.start === node.id ? wn.end : wn.start;
                 const targetNode = nodeRegistry.get(targetId);
                 if (!targetNode) continue;
 
-                // Calculate angle from source to target in XZ plane
+                const key = `${node.id}-${targetId}`;
+
+                // FIX 1: skip duplicate directed edges (overlapping walls share nodes)
+                if (halfEdges.has(key)) continue;
+
                 const dx = targetNode.x - node.x;
                 const dz = targetNode.z - node.z;
-                const angle = Math.atan2(dz, dx);
 
-                const halfEdge: HalfEdge = {
-                    source: node.id,
-                    target: targetId,
-                    wallId: wallId,
-                    angle: angle,
-                    next: null,
-                    twin: null,
-                    visited: false
+                const he: HalfEdge = {
+                    source:  node.id,
+                    target:  targetId,
+                    wallId,
+                    angle:   Math.atan2(dz, dx),
+                    next:    null,
+                    twin:    null,
+                    visited: false,
                 };
 
-                const key = `${node.id}-${targetId}`;
-                halfEdges.set(key, halfEdge);
-                outgoingEdges.get(node.id)!.push(halfEdge);
+                halfEdges.set(key, he);
+                outgoingEdges.get(node.id)!.push(he);
             }
         }
 
-        // 2. Link Twins (Reverse Edges)
+        // ── Step 2: Link Twins ─────────────────────────────────────────────────
         for (const he of halfEdges.values()) {
-            const twinKey = `${he.target}-${he.source}`;
-            he.twin = halfEdges.get(twinKey) || null;
+            he.twin = halfEdges.get(`${he.target}-${he.source}`) ?? null;
         }
 
-        // 3. Sort Outgoing Edges Radially and Link "Next"
-        for (const [nodeId, edges] of outgoingEdges) {
-            // Sort ascending by angle. In a Y-down (Z-down) coordinate system,
-            // this effectively orders the edges clockwise visually.
+        // ── Step 3: Sort Radially and Link "Next" ──────────────────────────────
+        for (const [, edges] of outgoingEdges) {
             edges.sort((a, b) => a.angle - b.angle);
 
-            // The "next" edge to take when arriving at this node via a half-edge
-            // is the one immediately following the arriving edge's twin.
             for (let i = 0; i < edges.length; i++) {
-                const currentOut = edges[i];
-                const incoming = currentOut.twin;
+                const incoming = edges[i].twin;
                 if (!incoming) continue;
-                
-                // Make the sharpest left turn possible to trace interior faces
-                const nextIndex = (i + 1) % edges.length;
-                incoming.next = edges[nextIndex];
+                // Sharpest left turn = next CCW edge from the twin's source
+                incoming.next = edges[(i + 1) % edges.length];
             }
         }
 
-        // 4. Traverse to Find Faces
+        // ── Step 4: Traverse Faces ─────────────────────────────────────────────
+        // FIX 2: global visited prevents re-entering edges already assigned to a face.
+        //        Per-loop closure detection uses a Set<HalfEdge> so it is independent
+        //        of globalVisited and cannot be confused by other faces.
+        const globalVisited = new Set<HalfEdge>();
+        const maxIter       = halfEdges.size + 2; // safety cap
         const faces: RoomPolygon[] = [];
 
-        for (const he of halfEdges.values()) {
-            if (he.visited || !he.next) continue;
+        for (const startEdge of halfEdges.values()) {
+            if (globalVisited.has(startEdge) || !startEdge.next) continue;
 
-            // Trace the loop
-            const loopNodes: number[] = [];
+            const loopNodes:  number[]                   = [];
             const loopPoints: { x: number; z: number }[] = [];
-            let current = he;
-            let isClosed = false;
+            const loopSet     = new Set<HalfEdge>();
+            let   current     = startEdge;
+            let   isClosed    = false;
+            let   iter        = 0;
 
-            do {
-                current.visited = true;
-                loopNodes.push(current.source);
-                const n = nodeRegistry.get(current.source)!;
-                loopPoints.push({ x: n.x, z: n.z });
-                
-                current = current.next;
-                if (current === he) {
-                    isClosed = true;
+            while (iter++ < maxIter) {
+                if (loopSet.has(current)) {
+                    isClosed = current === startEdge;
                     break;
                 }
-            } while (current && !current.visited);
 
-            // A valid polygon must have at least 3 distinct nodes
-            if (isClosed && loopNodes.length >= 3) {
-                // Calculate signed area using the Shoelace formula
-                let signedArea = 0;
-                for (let i = 0; i < loopPoints.length; i++) {
-                    const p1 = loopPoints[i];
-                    const p2 = loopPoints[(i + 1) % loopPoints.length];
-                    signedArea += (p1.x * p2.z - p2.x * p1.z);
-                }
-                signedArea = signedArea / 2;
+                loopSet.add(current);
+                globalVisited.add(current);
 
-                faces.push({
-                    nodes: loopNodes,
-                    points: loopPoints,
-                    area: signedArea
-                });
+                loopNodes.push(current.source);
+                const n = nodeRegistry.get(current.source);
+                if (!n) break;
+                loopPoints.push({ x: n.x, z: n.z });
+
+                if (!current.next) break;
+                current = current.next;
             }
+
+            if (!isClosed || loopNodes.length < 3) continue;
+
+            // Shoelace signed area (negative = CCW in Z-down = interior room)
+            let signedArea = 0;
+            for (let i = 0; i < loopPoints.length; i++) {
+                const p1 = loopPoints[i];
+                const p2 = loopPoints[(i + 1) % loopPoints.length];
+                signedArea += p1.x * p2.z - p2.x * p1.z;
+            }
+            signedArea /= 2;
+
+            faces.push({ nodes: loopNodes, points: loopPoints, area: signedArea });
         }
 
-        console.log(`[RoomDetection] Detected ${faces.length} raw faces.`);
-        faces.forEach((f, i) => console.log(`  Face ${i}: area=${f.area}, nodes=${f.nodes.join(',')}`));
-
-        // 5. Filter Invalid Faces
-        // Based on our radial sorting and Z-down coordinate system, our traversal 
-        // will always trace interior rooms in a Counter-Clockwise direction (Negative Signed Area)
-        // and the single infinite outer boundary in a Clockwise direction (Positive Signed Area).
-        // Dangling walls form degenerate loops with Area = 0.
-        // Thus, keeping only faces with area < -0.01 perfectly isolates valid rooms.
-        
-        const validRooms = faces
-            .filter(f => f.area < -0.01) // strict less than zero to filter out floating-point noise and zero-area dangling walls
-            .map(f => ({
-                ...f,
-                area: Math.abs(f.area) // return absolute area for UI consumption
-            }));
-
-        return validRooms;
+        // ── Step 5: Filter ─────────────────────────────────────────────────────
+        // Interior rooms → negative signed area (CW in XZ/Z-down space).
+        // Outer boundary → positive. Dangling / degenerate → ~0.
+        // Sliver threshold: ignore artifacts smaller than 0.1 m² (≈ 316mm × 316mm).
+        const MIN_ROOM_AREA_M2 = 0.1;
+        return faces
+            .filter(f => f.area < -MIN_ROOM_AREA_M2)
+            .map(f => ({ ...f, area: Math.abs(f.area) }));
     }
 }

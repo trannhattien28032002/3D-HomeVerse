@@ -1,26 +1,47 @@
-import { System } from "../ecs/System";
-import { World } from "../ecs/World";
-import { Query } from "../ecs/Query";
+/**
+ * SnapshotSystem — cầu nối giữa ECS và React UI.
+ *
+ * Chạy mỗi frame (sau WallGeometrySystem và DimensionSystem).
+ * Thu thập trạng thái scene và emit event "snapshot" nếu có thay đổi.
+ *
+ * Input:  ECS World (wall entities) + NodeRegistry + DimensionSystem.lastDimensions
+ * Output: ECSSnapshot emit qua EngineEvents → useFloorPlanStore → PlanView2D re-render
+ *
+ * Change detection:
+ *   Tạo hash string từ tất cả walls + nodes + caps.
+ *   Nếu hash trùng với frame trước → skip emit (tránh re-render vô ích mỗi 60fps).
+ *
+ * Pipeline vị trí trong system order:
+ *   WallGeometrySystem → DimensionSystem → SnapshotSystem → RenderSystem
+ */
+import { System } from "src/engine/ecs/System";
+import { World } from "src/engine/ecs/World";
+import { Query } from "src/engine/ecs/Query";
 
-import { WallTag } from "../components/WallTag";
-import { WallSize } from "../components/WallSize";
-import { WallNodes } from "../components/WallNodes";
-import { WallPolygon } from "../components/WallPolygon";
-import { Transform } from "../components/Transform";
-import { RoomGeometry } from "../components/RoomGeometry";
-import { NodeRegistry } from "../graph/NodeRegistry";
+import { WallTag } from "src/engine/components/WallTag";
+import { WallSize } from "src/engine/components/WallSize";
+import { WallNodes } from "src/engine/components/WallNodes";
+import { WallPolygon } from "src/engine/components/WallPolygon";
+import { Transform } from "src/engine/components/Transform";
+import { RoomGeometry } from "src/engine/components/RoomGeometry";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
+import { DimensionSystem } from "src/engine/systems/DimensionSystem";
 
-import { EngineEvents, type ECSSnapshot, type NodeSnapshot, type WallSnapshot, type NodeCapSnapshot, type RoomSnapshot } from "../events/EngineEvents";
+import { EngineEvents, type ECSSnapshot, type NodeSnapshot, type WallSnapshot, type NodeCapSnapshot, type RoomSnapshot } from "src/engine/events/EngineEvents";
 
 export class SnapshotSystem extends System {
     private readonly events: EngineEvents;
     private readonly nodes: NodeRegistry;
+    /** Tham chiếu DimensionSystem để lấy lastDimensions sau khi system kia chạy xong. */
+    private readonly dimSystem: DimensionSystem;
+    /** Hash của frame trước — so sánh để skip emit khi không có thay đổi. */
     private lastHash = "";
 
-    constructor(events: EngineEvents, nodes: NodeRegistry) {
+    constructor(events: EngineEvents, nodes: NodeRegistry, dimSystem: DimensionSystem) {
         super();
         this.events = events;
         this.nodes = nodes;
+        this.dimSystem = dimSystem;
     }
 
     update(world: World): void {
@@ -28,9 +49,10 @@ export class SnapshotSystem extends System {
 
         const walls: WallSnapshot[] = [];
         for (const e of entities) {
-            const tag  = world.getComponent(e, WallTag)!;
-            const wn   = world.getComponent(e, WallNodes)!;
-            const t    = world.getComponent(e, Transform)!;
+            const tag = world.getComponent(e, WallTag)!;
+            const wn = world.getComponent(e, WallNodes)!;
+            const size = world.getComponent(e, WallSize)!;
+            const t = world.getComponent(e, Transform)!;
             const poly = world.getComponent(e, WallPolygon);
 
             walls.push({
@@ -38,6 +60,7 @@ export class SnapshotSystem extends System {
                 startNodeId: wn.startNodeId,
                 endNodeId: wn.endNodeId,
                 thickness: wn.thickness,
+                height: size.height,
                 cx: t.x,
                 cz: t.z,
                 polygon: poly ? poly.points.map(p => ({ x: p.x, z: p.z })) : undefined,
@@ -51,7 +74,7 @@ export class SnapshotSystem extends System {
 
         const wallHash = walls
             .map(w =>
-                `${w.wallId}:n${w.startNodeId}-n${w.endNodeId}|cx${w.cx.toFixed(3)},${w.cz.toFixed(3)}` +
+                `${w.wallId}:n${w.startNodeId}-n${w.endNodeId}|t${w.thickness.toFixed(3)}|h${w.height.toFixed(3)}|cx${w.cx.toFixed(3)},${w.cz.toFixed(3)}` +
                 (w.polygon ? `|poly${w.polygon.map(p => `${p.x.toFixed(2)},${p.z.toFixed(2)}`).join(";")}` : "")
             )
             .join("|");
@@ -84,7 +107,7 @@ export class SnapshotSystem extends System {
             });
         }
 
-        const snapshot: ECSSnapshot = { nodes: nodeSnapshots, walls, caps, rooms };
+        const snapshot: ECSSnapshot = { nodes: nodeSnapshots, walls, caps, rooms, dimensions: this.dimSystem.lastDimensions, angleDimensions: this.dimSystem.lastAngleDimensions };
         this.events.emit("snapshot", snapshot);
     }
 }

@@ -1,7 +1,7 @@
-import { Transform } from "../components/Transform.js";
-import { AmbientLightComponent } from "../components/AmbientLightComponent.js";
-import { DirectionalLightComponent } from "../components/DirectionalLightComponent.js";
-import type { World } from "../ecs/World.js";
+import { Transform } from "src/engine/components/Transform.js";
+import { AmbientLightComponent } from "src/engine/components/AmbientLightComponent.js";
+import { DirectionalLightComponent } from "src/engine/components/DirectionalLightComponent.js";
+import type { World } from "src/engine/ecs/World.js";
 
 export function createAmbientLight(world: World,
     {color = 0xffffff, intensity = 0.35} = {}) {

@@ -1,9 +1,21 @@
+/**
+ * useUIStore — Zustand store cho UI state toàn cục (không liên quan đến ECS).
+ *
+ * Lưu:
+ *   - isSidebarOpen: trạng thái sidebar (hiện chưa dùng)
+ *   - viewportWidth/Height: kích thước window — PlanView2D dùng để tính offset origin
+ *   - getAndIncrementNextWallId(): counter wallId cho UI (độc lập với maxWallIdRef engine)
+ *
+ * Tại sao cần syncViewport:
+ *   PlanView2D cần biết viewport size để tính origin offset (ox = vpW/2, oy = vpH/2).
+ *   useUIStore tập trung hóa resize logic — chỉ 1 listener window.resize trong EditorPage.
+ *
+ * getAndIncrementNextWallId: closure private trong store — không expose raw counter.
+ *   Tránh race condition khi nhiều dispatch xảy ra trong cùng transaction.
+ */
 import { create } from "zustand";
 
-/**
- * ID tiếp theo khi tạo tường mới.
- * Phải = số lượng DEFAULT_WALLS trong engine.ts + 1.
- */
+/** Phải đồng bộ với số DEFAULT_WALLS trong engine.ts + 1. */
 const INITIAL_NEXT_WALL_ID = 4;
 
 type UIState = {

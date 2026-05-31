@@ -1,4 +1,4 @@
-import { Component } from "../ecs/Component.js";
+import { Component } from "src/engine/ecs/Component.js";
 
 export class DirectionalLightComponent extends Component {
     color: number;
@@ -16,7 +16,9 @@ export class DirectionalLightComponent extends Component {
         // Shadow settings
         this.castShadow = true;
         this.shadowMapSize = 2048;
-        this.shadowCameraSize = 8;
+        // Size 8 → shadow orthographic camera covers only 16×16m; a standard house is 10–15m wide.
+        // Size 25 → covers 50×50m, enough for any residential floor plan.
+        this.shadowCameraSize = 25;
         this.shadowBias = -0.0002;
     }
 }
