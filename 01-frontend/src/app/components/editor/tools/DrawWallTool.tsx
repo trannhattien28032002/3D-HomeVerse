@@ -3,10 +3,9 @@ import { Circle, Layer, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type Konva from "konva";
 
-import type { Wall2D } from "src/app/store/useFloorPlanSnapshot";
+import type { Wall2D } from "src/app/plan2d/types";
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import {
-    toWorldX, toWorldZ,
     snapToNodeOrGrid, applyAngleSnap,
     WALL_THICKNESS, WALL_THICKNESS_M, MIN_WALL_PX, HANDLE_HIDE_BELOW,
 } from "./toolUtils";
@@ -19,7 +18,7 @@ const PREVIEW_STROKE_BAD = "#c81e1e";
 // ── Internal state type ───────────────────────────────────────────────────────
 
 type DrawState = {
-    startNodeId: number;
+    startNodeId: string;
     startPos: { x: number; y: number };
     startNodeCommitted: boolean;
 };
@@ -60,13 +59,13 @@ export class DrawWallTool implements ToolBase {
 
     onStageClick(e: KonvaEventObject<MouseEvent>): void {
         if (e.evt.button !== 0) return;
-        const { nodes, walls, nodeById, originX, originY, stageScaleRef, nextNodeId, nextWallId, dispatch, withTransaction } = this.ctx;
+        const { nodes, walls, nodeById, transform, stageScaleRef, nextNodeId, nextWallId, dispatch, withTransaction } = this.ctx;
 
         const ptr = e.target.getStage()?.getRelativePointerPosition();
         if (!ptr) return;
 
         const { pos: rawPos, snappedNodeId, snappedWallId } = snapToNodeOrGrid(
-            ptr, nodes, walls, originX, originY, this.drawState?.startNodeId, stageScaleRef.current, nodeById,
+            ptr, nodes, walls, transform.originX, transform.originY, this.drawState?.startNodeId, stageScaleRef.current, nodeById,
         );
         const pos = (this.drawState?.startNodeCommitted && snappedNodeId === null && snappedWallId === null)
             ? applyAngleSnap(rawPos, this.drawState.startNodeId, nodes, walls)
@@ -74,7 +73,7 @@ export class DrawWallTool implements ToolBase {
 
         // ── First click — establish draw start ────────────────────────────────
         if (!this.drawState) {
-            let nodeId: number;
+            let nodeId: string;
             let startNodeCommitted: boolean;
 
             if (snappedNodeId !== null) {
@@ -84,7 +83,7 @@ export class DrawWallTool implements ToolBase {
                 nodeId = nextNodeId();
                 const capturedWallId = snappedWallId;
                 withTransaction("split wall at start", () => {
-                    dispatch({ type: "SPLIT_WALL", originalWallId: capturedWallId, newWallId: nextWallId(), newNodeId: nodeId, x: toWorldX(pos.x, originX), z: toWorldZ(pos.y, originY) });
+                    dispatch({ type: "SPLIT_WALL", originalWallId: capturedWallId, newWallId: nextWallId(), newNodeId: nodeId, x: transform.toWorldX(pos.x), z: transform.toWorldZ(pos.y) });
                 });
                 startNodeCommitted = true;
             } else {
@@ -108,12 +107,12 @@ export class DrawWallTool implements ToolBase {
             return;
         }
 
-        let endNodeId = -1;
-        let newWallId = -1;
+        let endNodeId = "";
+        let newWallId = "";
 
         withTransaction("draw wall", () => {
             if (!this.drawState!.startNodeCommitted) {
-                dispatch({ type: "ENSURE_NODE", nodeId: this.drawState!.startNodeId, x: toWorldX(this.drawState!.startPos.x, originX), z: toWorldZ(this.drawState!.startPos.y, originY) });
+                dispatch({ type: "ENSURE_NODE", nodeId: this.drawState!.startNodeId, x: transform.toWorldX(this.drawState!.startPos.x), z: transform.toWorldZ(this.drawState!.startPos.y) });
             }
 
             if (snappedNodeId !== null) {
@@ -121,10 +120,10 @@ export class DrawWallTool implements ToolBase {
             } else if (snappedWallId !== null) {
                 endNodeId = nextNodeId();
                 const capturedWallId = snappedWallId;
-                dispatch({ type: "SPLIT_WALL", originalWallId: capturedWallId, newWallId: nextWallId(), newNodeId: endNodeId, x: toWorldX(pos.x, originX), z: toWorldZ(pos.y, originY) });
+                dispatch({ type: "SPLIT_WALL", originalWallId: capturedWallId, newWallId: nextWallId(), newNodeId: endNodeId, x: transform.toWorldX(pos.x), z: transform.toWorldZ(pos.y) });
             } else {
                 endNodeId = nextNodeId();
-                dispatch({ type: "ENSURE_NODE", nodeId: endNodeId, x: toWorldX(pos.x, originX), z: toWorldZ(pos.y, originY) });
+                dispatch({ type: "ENSURE_NODE", nodeId: endNodeId, x: transform.toWorldX(pos.x), z: transform.toWorldZ(pos.y) });
             }
 
             newWallId = nextWallId();
@@ -138,11 +137,11 @@ export class DrawWallTool implements ToolBase {
     }
 
     onStageMouseMove(e: KonvaEventObject<MouseEvent>): void {
-        const { nodes, walls, nodeById, originX, originY, stageScaleRef } = this.ctx;
+        const { nodes, walls, nodeById, transform, stageScaleRef } = this.ctx;
         const ptr = e.target.getStage()?.getRelativePointerPosition();
         if (!ptr) return;
 
-        const snapResult = snapToNodeOrGrid(ptr, nodes, walls, originX, originY, this.drawState?.startNodeId, stageScaleRef.current, nodeById);
+        const snapResult = snapToNodeOrGrid(ptr, nodes, walls, transform.originX, transform.originY, this.drawState?.startNodeId, stageScaleRef.current, nodeById);
         let finalPos = snapResult.pos;
         if (this.drawState?.startNodeCommitted && snapResult.snappedNodeId === null && snapResult.snappedWallId === null) {
             finalPos = applyAngleSnap(finalPos, this.drawState.startNodeId, nodes, walls, nodeById);

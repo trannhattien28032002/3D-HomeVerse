@@ -44,8 +44,6 @@ export type ToolContext = {
     furniture: Furniture2D[];                     // nội thất đã đặt (px) — dùng cho 2D collision
     /** Coordinate transform — single source for world↔canvas conversion (R5). */
     transform: PlanTransform;
-    originX: number;                              // viewport center px — alias cho transform.originX
-    originY: number;                              // viewport center px — alias cho transform.originY
     stageScale: number;                           // current zoom level
     stageScaleRef: { current: number };           // ref để đọc trong event handler (không stale)
     stagePosRef: { current: { x: number; y: number } }; // pan offset ref

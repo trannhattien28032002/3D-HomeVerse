@@ -3,7 +3,6 @@ import { Group, Layer, Rect } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
-import { toWorldX, toWorldZ, PX_PER_WORLD } from "./toolUtils";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
 import { occupancyLane } from "src/shared/geometry/wallMount";
@@ -63,8 +62,8 @@ export class WallPlacementTool implements ToolBase {
      * Dùng chung `projectToNearestWall` với FurnitureLayer (kéo cửa) — không fork toán chiếu.
      */
     private computeGhost(worldX: number, worldZ: number): void {
-        const { walls, nodeById, originX, originY } = this.ctx;
-        const proj = projectToNearestWall(walls, nodeById, worldX, worldZ, originX, originY, this.footprintWidth, undefined, undefined, resolveWallItemDims(this.modelId!));
+        const { walls, nodeById, transform } = this.ctx;
+        const proj = projectToNearestWall(walls, nodeById, worldX, worldZ, transform, this.footprintWidth, undefined, undefined, resolveWallItemDims(this.modelId!));
         if (!proj) { this.ghost = null; this.colliding = false; return; }
 
         const occ = buildOpeningOccupancy(this.ctx.furniture, proj.hostWallId, proj.wallLen);
@@ -82,7 +81,7 @@ export class WallPlacementTool implements ToolBase {
         const stage = e.target.getStage();
         const ptr = stage?.getRelativePointerPosition();
         if (!ptr) return;
-        this.computeGhost(toWorldX(ptr.x, this.ctx.originX), toWorldZ(ptr.y, this.ctx.originY));
+        this.computeGhost(this.ctx.transform.toWorldX(ptr.x), this.ctx.transform.toWorldZ(ptr.y));
         this.ctx.requestUpdate();
     }
 
@@ -91,7 +90,7 @@ export class WallPlacementTool implements ToolBase {
         e.cancelBubble = true;
         if (!this.ghost) {
             const ptr = e.target.getStage()?.getRelativePointerPosition();
-            if (ptr) this.computeGhost(toWorldX(ptr.x, this.ctx.originX), toWorldZ(ptr.y, this.ctx.originY));
+            if (ptr) this.computeGhost(this.ctx.transform.toWorldX(ptr.x), this.ctx.transform.toWorldZ(ptr.y));
         }
         if (!this.ghost) return;
         if (this.colliding) { this.ctx.requestUpdate(); return; }
@@ -126,9 +125,9 @@ export class WallPlacementTool implements ToolBase {
 
     renderOverlay(): React.ReactNode {
         if (!this.modelId || !this.ghost) return null;
-        const { ss } = this.ctx;
+        const { transform, ss } = this.ctx;
         const { cx, cy, angleDeg } = this.ghost;
-        const w = this.footprintWidth * PX_PER_WORLD;
+        const w = transform.toPxDim(this.footprintWidth);
         // Depth hiển thị cố định 8px để ghost dễ thấy trên tim tường.
         const d = ss(8);
         const bad = this.colliding;

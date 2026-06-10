@@ -29,6 +29,7 @@ import { Group, Layer, Line, Rect, Text } from "react-konva";
 import { ensureImage, getLoadedImage, subscribeImages } from "src/app/components/editor/furnitureImages";
 import { TopDownSprite } from "src/app/components/editor/furnitureSprite";
 import { useFurnitureDrag } from "./useFurnitureDrag";
+import type { PlanTransform } from "src/app/plan2d/PlanTransform";
 import type { Furniture2D, Wall2D, Node2D } from "src/app/plan2d/types";
 import type { WallSegment } from "src/shared/geometry/alignment";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
@@ -48,8 +49,7 @@ type Props = {
     /** Ghi inverse undo cho MOVE_WALL_ITEM (R3). */
     recordWallItemMoveUndo: (entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) => void;
     dispatch: (cmd: EngineCommand) => void;
-    originX: number;
-    originY: number;
+    transform: PlanTransform;
     /** Tường (world-space mét) để wall-snap khi kéo. */
     wallSegments: WallSegment[];
     /** Tường px-space + nodeById để chiếu wall-item (cửa) lên tim tường khi kéo. */
@@ -88,7 +88,7 @@ function renderBody(f: Furniture2D, ss: (px: number) => number) {
 function FurnitureLayerInner({
     furniture, isSelectMode, selectedFurnitureId, setSelectedFurnitureId,
     setSelectedWallIds, dragTransactionOpenRef, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo,
-    dispatch, originX, originY, wallSegments,
+    dispatch, transform, wallSegments,
     walls, nodeById, furnitureNodeRefs, ss,
 }: Props) {
     const [, setImageVersion] = useState(0);
@@ -100,7 +100,7 @@ function FurnitureLayerInner({
 
     // ── Drag logic (R7: moved to useFurnitureDrag hook) ──────────────────────
     const { onDragStart, onDragMove, onDragEnd, onTransformEnd, guideRef, collideRef } = useFurnitureDrag({
-        furniture, originX, originY, wallSegments, walls, nodeById,
+        furniture, transform, wallSegments, walls, nodeById,
         dragTransactionOpenRef, setSelectedWallIds,
         dispatch, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo,
     });

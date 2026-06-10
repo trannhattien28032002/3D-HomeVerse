@@ -21,7 +21,7 @@ import type { MutableRefObject, Dispatch, SetStateAction } from "react";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-import { PX_PER_WORLD, konvaDegToThreeRotY, threeRotYToKonvaDeg } from "src/shared/math/coords";
+import { konvaDegToThreeRotY, threeRotYToKonvaDeg } from "src/shared/math/coords";
 import { snapAngleRad } from "src/shared/constants/placement";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import { obbCorners, collidesWithWalls, collidesWithFurniture } from "src/app/components/editor/tools/collision2D";
@@ -30,6 +30,7 @@ import { projectToNearestWall, buildOpeningOccupancy } from "./wallItemDrag2D";
 import { buildOccupiedRanges, occupiedOverlaps } from "src/engine/utils/wallOccupancy";
 import { occupancyLane } from "src/shared/geometry/wallMount";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
+import type { PlanTransform } from "src/app/plan2d/PlanTransform";
 import type { Furniture2D, Wall2D, Node2D } from "src/app/plan2d/types";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 
@@ -45,8 +46,7 @@ export type FurnitureDragHandlers = {
 
 type Params = {
     furniture: Furniture2D[];
-    originX: number;
-    originY: number;
+    transform: PlanTransform;
     wallSegments: WallSegment[];
     walls: Wall2D[];
     nodeById: Map<string, Node2D>;
@@ -65,7 +65,7 @@ type Params = {
  * mà FurnitureLayer cần gắn vào Konva nodes tương ứng.
  */
 export function useFurnitureDrag({
-    furniture, originX, originY,
+    furniture, transform,
     wallSegments, walls, nodeById,
     dragTransactionOpenRef,
     setSelectedWallIds,
@@ -112,8 +112,8 @@ export function useFurnitureDrag({
         if (guides.length > 0) {
             const g = guides[0];
             line.points([
-                g.x1 * PX_PER_WORLD + originX, g.z1 * PX_PER_WORLD + originY,
-                g.x2 * PX_PER_WORLD + originX, g.z2 * PX_PER_WORLD + originY,
+                transform.toPxX(g.x1), transform.toPxY(g.z1),
+                transform.toPxX(g.x2), transform.toPxY(g.z2),
             ]);
             line.visible(true);
         } else {
@@ -131,10 +131,10 @@ export function useFurnitureDrag({
      */
     function projectWallItem(node: Konva.Group, f: Furniture2D): void {
         const pos = node.position();
-        const worldX = (pos.x - originX) / PX_PER_WORLD;
-        const worldZ = (pos.y - originY) / PX_PER_WORLD;
-        const footprintWidth = (f.cutWidthPx ?? f.width) / PX_PER_WORLD;
-        const proj = projectToNearestWall(walls, nodeById, worldX, worldZ, originX, originY, footprintWidth, f.wallSide ?? 1, f.hostWallId, resolveWallItemDims(f.modelId));
+        const worldX = transform.toWorldX(pos.x);
+        const worldZ = transform.toWorldZ(pos.y);
+        const footprintWidth = (f.cutWidthPx ?? f.width) / transform.scale;
+        const proj = projectToNearestWall(walls, nodeById, worldX, worldZ, transform, footprintWidth, f.wallSide ?? 1, f.hostWallId, resolveWallItemDims(f.modelId));
         if (!proj) {
             pendingWallMoveRef.current = null;
             showCollide({ cx: pos.x, cy: pos.y, rotDeg: node.rotation() }, f);
@@ -165,16 +165,16 @@ export function useFurnitureDrag({
     function applyFurnitureDrag(node: Konva.Group, f: Furniture2D): { x: number; z: number } {
         const pos = node.position();
         const r = resolveAlignment({
-            cx: (pos.x - originX) / PX_PER_WORLD,
-            cz: (pos.y - originY) / PX_PER_WORLD,
-            hw: f.width / (2 * PX_PER_WORLD),
-            hd: f.depth / (2 * PX_PER_WORLD),
+            cx: transform.toWorldX(pos.x),
+            cz: transform.toWorldZ(pos.y),
+            hw: f.width / (2 * transform.scale),
+            hd: f.depth / (2 * transform.scale),
             rotY: konvaDegToThreeRotY(f.rotDeg),
             walls: wallSegments,
-            neighbors: neighborBoxesRef.current ?? buildFurnitureBoxes2D(furniture, originX, originY, f.entityId),
+            neighbors: neighborBoxesRef.current ?? buildFurnitureBoxes2D(furniture, transform, f.entityId),
         });
-        const intendedX = r.x * PX_PER_WORLD + originX;
-        const intendedY = r.z * PX_PER_WORLD + originY;
+        const intendedX = transform.toPxX(r.x);
+        const intendedY = transform.toPxY(r.z);
 
         const poly = obbCorners(intendedX, intendedY, f.width, f.depth, f.rotDeg);
         const colliding = collidesWithWalls(poly, walls) || collidesWithFurniture(poly, furniture, f.entityId);
@@ -190,7 +190,7 @@ export function useFurnitureDrag({
         node.position(safe);
         showCollide({ cx: intendedX, cy: intendedY, rotDeg: f.rotDeg }, f);
         renderGuide([]);
-        return { x: (safe.x - originX) / PX_PER_WORLD, z: (safe.y - originY) / PX_PER_WORLD };
+        return { x: transform.toWorldX(safe.x), z: transform.toWorldZ(safe.y) };
     }
 
     // ── Exported drag handlers ───────────────────────────────────────────────
@@ -206,9 +206,9 @@ export function useFurnitureDrag({
             }
             dragFromPosRef.current = null;
         } else {
-            dragFromPosRef.current = { x: (f.x - originX) / PX_PER_WORLD, z: (f.y - originY) / PX_PER_WORLD };
+            dragFromPosRef.current = { x: transform.toWorldX(f.x), z: transform.toWorldZ(f.y) };
             dragFromWallRef.current = null;
-            neighborBoxesRef.current = buildFurnitureBoxes2D(furniture, originX, originY, f.entityId);
+            neighborBoxesRef.current = buildFurnitureBoxes2D(furniture, transform, f.entityId);
         }
         dragTransactionOpenRef.current = true;
     }

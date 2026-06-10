@@ -1,13 +1,14 @@
 import { Arrow, Circle, Layer, Text } from "react-konva";
 import type { ToolBase } from "src/app/components/editor/tools/ToolBase";
+import type { PlanTransform } from "src/app/plan2d/PlanTransform";
 
 type Props = {
     activeTool: ToolBase;
-    originX: number;
-    originY: number;
+    transform: PlanTransform;
 };
 
-export function OverlayLayer({ activeTool, originX, originY }: Props) {
+export function OverlayLayer({ activeTool, transform }: Props) {
+    const { originX, originY } = transform;
     return (
         <>
             {activeTool.renderOverlay()}

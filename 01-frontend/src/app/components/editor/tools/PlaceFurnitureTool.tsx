@@ -3,7 +3,6 @@ import { Group, Layer, Line, Rect } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
-import { toWorldX, toWorldZ, PX_PER_WORLD } from "./toolUtils";
 import { obbCorners, collidesWithFurniture, collidesWithWalls } from "./collision2D";
 import { getFootprint2D, getTopDownUrl } from "src/engine/catalog/FurnitureCatalog";
 import { ensureImage, getLoadedImage } from "src/app/components/editor/furnitureImages";
@@ -63,11 +62,11 @@ export class PlaceFurnitureTool implements ToolBase {
     /** Cập nhật cờ va chạm theo vị trí ghost hiện tại (OBB ghost vs tường + nội thất). */
     private recomputeCollision(): void {
         if (!this.ghost) { this.colliding = false; return; }
-        const { originX, originY, furniture, walls } = this.ctx;
-        const cx = this.ghost.x * PX_PER_WORLD + originX;
-        const cy = this.ghost.z * PX_PER_WORLD + originY;
-        const w = this.footprint.width * PX_PER_WORLD;
-        const d = this.footprint.depth * PX_PER_WORLD;
+        const { transform, furniture, walls } = this.ctx;
+        const cx = transform.toPxX(this.ghost.x);
+        const cy = transform.toPxY(this.ghost.z);
+        const w = transform.toPxDim(this.footprint.width);
+        const d = transform.toPxDim(this.footprint.depth);
         // Ghost mới luôn đặt rotY = 0 → OBB không xoay.
         const poly = obbCorners(cx, cy, w, d, 0);
         this.colliding = collidesWithFurniture(poly, furniture) || collidesWithWalls(poly, walls);
@@ -75,8 +74,9 @@ export class PlaceFurnitureTool implements ToolBase {
 
     /** Snap ghost theo nguồn chân lý chung (edge + wall) từ điểm world. */
     private computeGhost(worldX: number, worldZ: number): void {
-        const segs = buildWallSegments2D(this.ctx.walls, this.ctx.nodeById, this.ctx.originX, this.ctx.originY);
-        const boxes = buildFurnitureBoxes2D(this.ctx.furniture, this.ctx.originX, this.ctx.originY);
+        const { transform } = this.ctx;
+        const segs = buildWallSegments2D(this.ctx.walls, this.ctx.nodeById, transform);
+        const boxes = buildFurnitureBoxes2D(this.ctx.furniture, transform);
         const r = resolveAlignment({
             cx: worldX, cz: worldZ,
             hw: this.footprint.width / 2, hd: this.footprint.depth / 2,
@@ -91,7 +91,7 @@ export class PlaceFurnitureTool implements ToolBase {
         const stage = e.target.getStage();
         const ptr = stage?.getRelativePointerPosition();
         if (!ptr) return;
-        this.computeGhost(toWorldX(ptr.x, this.ctx.originX), toWorldZ(ptr.y, this.ctx.originY));
+        this.computeGhost(this.ctx.transform.toWorldX(ptr.x), this.ctx.transform.toWorldZ(ptr.y));
         this.recomputeCollision();
         this.ctx.requestUpdate();
     }
@@ -101,7 +101,7 @@ export class PlaceFurnitureTool implements ToolBase {
         e.cancelBubble = true;
         if (!this.ghost) {
             const ptr = e.target.getStage()?.getRelativePointerPosition();
-            if (ptr) this.computeGhost(toWorldX(ptr.x, this.ctx.originX), toWorldZ(ptr.y, this.ctx.originY));
+            if (ptr) this.computeGhost(this.ctx.transform.toWorldX(ptr.x), this.ctx.transform.toWorldZ(ptr.y));
         }
         if (!this.ghost) return;
         // Chặn đặt khi chồng tường / nội thất khác — giữ ghost để người dùng chỉnh vị trí.
@@ -132,11 +132,11 @@ export class PlaceFurnitureTool implements ToolBase {
 
     renderOverlay(): React.ReactNode {
         if (!this.modelId || !this.ghost) return null;
-        const { originX, originY, ss } = this.ctx;
-        const cx = this.ghost.x * PX_PER_WORLD + originX;
-        const cy = this.ghost.z * PX_PER_WORLD + originY;
-        const w = this.footprint.width * PX_PER_WORLD;
-        const d = this.footprint.depth * PX_PER_WORLD;
+        const { transform, ss } = this.ctx;
+        const cx = transform.toPxX(this.ghost.x);
+        const cy = transform.toPxY(this.ghost.z);
+        const w = transform.toPxDim(this.footprint.width);
+        const d = transform.toPxDim(this.footprint.depth);
 
         const img = this.topDownUrl ? getLoadedImage(this.topDownUrl) : null;
         const bad = this.colliding;
@@ -149,8 +149,8 @@ export class PlaceFurnitureTool implements ToolBase {
                     <Line
                         key={`guide-${i}`}
                         points={[
-                            g.x1 * PX_PER_WORLD + originX, g.z1 * PX_PER_WORLD + originY,
-                            g.x2 * PX_PER_WORLD + originX, g.z2 * PX_PER_WORLD + originY,
+                            transform.toPxX(g.x1), transform.toPxY(g.z1),
+                            transform.toPxX(g.x2), transform.toPxY(g.z2),
                         ]}
                         stroke="#f8b400" strokeWidth={ss(2)} dash={[ss(8), ss(5)]} listening={false}
                     />

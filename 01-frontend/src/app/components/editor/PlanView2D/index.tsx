@@ -61,11 +61,11 @@ export default function PlanView2D() {
     const endPlacement2D       = useUIStore(s => s.endPlacement2D);
     const wallPlacementModelId = useUIStore(s => s.wallPlacementModelId);
     const endWallPlacement2D   = useUIStore(s => s.endWallPlacement2D);
-    const originX = viewportWidth / 2;
-    const originY = viewportHeight / 2;
-    // R5: single PlanTransform object — threads through ToolContext to eliminate
-    // scattered `* 100` / PX_PER_WORLD literals. Rebuilt only when viewport changes.
-    const transform = buildPlanTransform(viewportWidth, viewportHeight);
+    // M-2: memoize PlanTransform — rebuilt only when viewport dimensions change.
+    const transform = useMemo(
+        () => buildPlanTransform(viewportWidth, viewportHeight),
+        [viewportWidth, viewportHeight],
+    );
 
     const { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo, nextNodeId, nextWallId } = useEngineApi();
     const toolMode: WallToolId = activeTool2D === "draw" ? "draw" : "select";
@@ -162,7 +162,7 @@ export default function PlanView2D() {
     }, []);
 
     // ── Camera + input ───────────────────────────────────────────────────────
-    const camera = usePlanCamera(originX, originY);
+    const camera = usePlanCamera(transform.originX, transform.originY);
     const { stageScale, stagePos, isPanning, ss, sh, gridSizePx, gridOffsetX, gridOffsetY } = camera;
     const inputHandlers = usePlanInput({ camera, isSelectMode, setSelectedFurnitureId, setSelectedRoomKey: (key) => {
         // Chọn phòng — loại trừ furniture/tường để 3 loại không chồng nhau.
@@ -194,13 +194,13 @@ export default function PlanView2D() {
 
     // Tường ở world-space (mét) cho wall-snap khi kéo nội thất.
     const wallSegments = useMemo(
-        () => buildWallSegments2D(walls, nodeById, originX, originY),
-        [walls, nodeById, originX, originY],
+        () => buildWallSegments2D(walls, nodeById, transform),
+        [walls, nodeById, transform],
     );
 
     // ── ToolContext ──────────────────────────────────────────────────────────
     activeTool.update({
-        nodes, walls, furniture, transform, originX, originY,
+        nodes, walls, furniture, transform,
         stageScale, stageScaleRef: camera.stageScaleRef, stagePosRef: camera.stagePosRef,
         nodeById, selectedWallIds, setSelectedWallIds,
         dispatch, dispatchAsync, withTransaction, asyncTransaction,
@@ -234,10 +234,10 @@ export default function PlanView2D() {
             >
                 <RoomLayer rooms={rooms} stageScale={stageScale} activeTool2D={activeTool2D} onSelectRoom={handleSelectRoom} ss={ss} />
                 <WallLayer walls={walls} caps={caps} furniture={furniture} activeTool={activeTool} activeTool2D={activeTool2D} nodeById={nodeById} />
-                <FurnitureLayer furniture={furniture} isSelectMode={isSelectMode} selectedFurnitureId={selectedFurnitureId} setSelectedFurnitureId={setSelectedFurnitureId} setSelectedWallIds={setSelectedWallIds} dragTransactionOpenRef={dragTransactionOpenRef} recordMoveUndo={recordMoveUndo} recordRotateUndo={recordRotateUndo} recordWallItemMoveUndo={recordWallItemMoveUndo} dispatch={dispatch} originX={originX} originY={originY} wallSegments={wallSegments} walls={walls} nodeById={nodeById} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
+                <FurnitureLayer furniture={furniture} isSelectMode={isSelectMode} selectedFurnitureId={selectedFurnitureId} setSelectedFurnitureId={setSelectedFurnitureId} setSelectedWallIds={setSelectedWallIds} dragTransactionOpenRef={dragTransactionOpenRef} recordMoveUndo={recordMoveUndo} recordRotateUndo={recordRotateUndo} recordWallItemMoveUndo={recordWallItemMoveUndo} dispatch={dispatch} transform={transform} wallSegments={wallSegments} walls={walls} nodeById={nodeById} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
                 <HandleLayer transformerRef={transformerRef} furnitureNodeRefs={furnitureNodeRefs} selectedFurnitureId={selectedFurnitureId} isSelectMode={isSelectMode} furniture={furniture} selectedIsWallItem={selectedIsWallItem} ss={ss} />
                 <DimensionLayer dimensions={dimensions} angleDimensions={angleDimensions} stageScale={stageScale} ss={ss} />
-                <OverlayLayer activeTool={activeTool} originX={originX} originY={originY} />
+                <OverlayLayer activeTool={activeTool} transform={transform} />
             </Stage>
 
             {toolMode === "select" && selectedWallIds.size > 0 && (
