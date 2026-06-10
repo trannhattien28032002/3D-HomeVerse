@@ -56,6 +56,27 @@ export type EngineApi = {
     redo: () => void;
     canUndo: () => boolean;
     canRedo: () => boolean;
+    /**
+     * Ghi command-inverse cho MOVE_FURNITURE — rẻ hơn snapshot toàn scene.
+     * Gọi sau khi MOVE_FURNITURE dispatch xong (biết cả from + to).
+     * Undo = dispatch MOVE_FURNITURE với {x: fromX, z: fromZ}.
+     */
+    recordMoveUndo: (entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) => void;
+    /**
+     * Ghi command-inverse cho ROTATE_FURNITURE — rẻ hơn snapshot toàn scene.
+     * Gọi sau khi ROTATE_FURNITURE dispatch xong.
+     * Undo = dispatch ROTATE_FURNITURE với rotY cũ.
+     */
+    recordRotateUndo: (entityId: string, fromRotY: number, toRotY: number) => void;
+    /**
+     * Ghi command-inverse cho MOVE_WALL_ITEM — rẻ hơn snapshot toàn scene (R3).
+     * Undo = dispatch MOVE_WALL_ITEM với topology tường cũ.
+     */
+    recordWallItemMoveUndo: (
+        entityId: string,
+        fromHostWallId: string, fromT: number, fromSide: number,
+        toHostWallId: string, toT: number, toSide: number,
+    ) => void;
     /** Vào chế độ đặt đồ xem-trước (ghost) cho model cho trước. */
     beginPlacement: (modelId: string) => void;
     /** Huỷ phiên đặt đồ đang chạy (nếu có) và gỡ ghost. */

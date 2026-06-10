@@ -9,9 +9,9 @@
  *     để tránh ECS dispatch → snapshot → re-render làm gián đoạn gesture.
  *   - onDragEnd: dispatch MOVE_FURNITURE với tọa độ world đã snap.
  *
- * Transaction:
- *   beginTransaction("move furniture") khi bắt đầu drag,
- *   commitTransaction() khi kết thúc — cho phép Undo/Redo toàn bộ thao tác kéo.
+ * Undo (R3 — command-inverse):
+ *   Khi drag kết thúc, gọi recordMoveUndo / recordRotateUndo / recordWallItemMoveUndo
+ *   thay vì snapshot toàn scene. Undo = dispatch inverse command, không teardown mesh.
  *
  * Image subscription:
  *   subscribeImages() → setImageVersion khi ảnh load xong, buộc re-render để
@@ -45,10 +45,12 @@ type Props = {
     setSelectedFurnitureId: (id: string | null) => void;
     setSelectedWallIds: Dispatch<SetStateAction<Set<string>>>;
     dragTransactionOpenRef: MutableRefObject<boolean>;
-    beginTransaction: (label: string) => void;
-    commitTransaction: () => void;
-    cancelTransaction: () => void;
-    withTransaction: (label: string, fn: () => void) => void;
+    /** Ghi inverse undo cho MOVE_FURNITURE (R3). */
+    recordMoveUndo: (entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) => void;
+    /** Ghi inverse undo cho ROTATE_FURNITURE (R3). */
+    recordRotateUndo: (entityId: string, fromRotY: number, toRotY: number) => void;
+    /** Ghi inverse undo cho MOVE_WALL_ITEM (R3). */
+    recordWallItemMoveUndo: (entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) => void;
     dispatch: (cmd: EngineCommand) => void;
     originX: number;
     originY: number;
@@ -89,8 +91,8 @@ function renderBody(f: Furniture2D, ss: (px: number) => number) {
 
 function FurnitureLayerInner({
     furniture, isSelectMode, selectedFurnitureId, setSelectedFurnitureId,
-    setSelectedWallIds, dragTransactionOpenRef, beginTransaction, commitTransaction,
-    cancelTransaction, withTransaction, dispatch, originX, originY, wallSegments,
+    setSelectedWallIds, dragTransactionOpenRef, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo,
+    dispatch, originX, originY, wallSegments,
     walls, nodeById, furnitureNodeRefs, ss,
 }: Props) {
     const [, setImageVersion] = useState(0);
@@ -112,6 +114,10 @@ function FurnitureLayerInner({
     // Neighbor boxes (đồ KHÁC) — bất biến trong 1 gesture nên gom 1 lần ở onDragStart,
     // tránh buildFurnitureBoxes2D (alloc O(F)) mỗi mousemove.
     const neighborBoxesRef = useRef<FurnitureBox[] | null>(null);
+    // Vị trí world-space TRƯỚC khi kéo (cho command-inverse undo, R3).
+    const dragFromPosRef = useRef<{ x: number; z: number } | null>(null);
+    // Wall-move trước khi kéo cửa (cho command-inverse undo, R3).
+    const dragFromWallRef = useRef<{ hostWallId: string; t: number; side: number } | null>(null);
 
     /**
      * Kéo cửa: chiếu node lên tường gần nhất (free-drag → bám tường), GIỮ side hiện tại,
@@ -244,12 +250,24 @@ function FurnitureLayerInner({
                             showCollide(null, f);
                             // Vị trí ban đầu là an toàn — mốc để "dừng" khi đụng tường/đồ ngay từ đầu.
                             lastSafePosRef.current = { x: f.x, y: f.y };
-                            // Gom neighbor boxes 1 lần cho cả gesture (đồ thường — wall-item không dùng).
-                            if (!f.isWallItem) {
+                            // Ghi lại vị trí world-space TRƯỚC gesture để có thể tạo inverse undo (R3).
+                            if (f.isWallItem) {
+                                // Wall-item: lưu topology tường hiện tại.
+                                if (f.hostWallId !== undefined && f.wallT !== undefined && f.wallSide !== undefined) {
+                                    dragFromWallRef.current = { hostWallId: f.hostWallId, t: f.wallT, side: f.wallSide };
+                                } else {
+                                    dragFromWallRef.current = null;
+                                }
+                                dragFromPosRef.current = null;
+                            } else {
+                                dragFromPosRef.current = { x: (f.x - originX) / PX_PER_WORLD, z: (f.y - originY) / PX_PER_WORLD };
+                                dragFromWallRef.current = null;
+                                // Gom neighbor boxes 1 lần cho cả gesture.
                                 neighborBoxesRef.current = buildFurnitureBoxes2D(furniture, originX, originY, f.entityId);
                             }
                             dragTransactionOpenRef.current = true;
-                            beginTransaction(f.isWallItem ? "move door" : "move furniture");
+                            // Không gọi beginTransaction nữa cho move/rotate thường — dùng inverse undo (R3).
+                            // Vẫn gọi cho wall-item vì MOVE_WALL_ITEM cũng cần inverse (tracked ở onDragEnd).
                         }}
                         onTransformEnd={(e: KonvaEventObject<Event>) => {
                             const node = e.target as Konva.Group;
@@ -261,11 +279,12 @@ function FurnitureLayerInner({
                             if (f.isWallItem) return;
                             // Tái-snap góc về bội số ROT_STEP_DEG (Konva chỉ snap thị giác
                             // lúc kéo anchor) rồi đồng bộ node để tránh drift — xem RC-3.
+                            const fromRotY = konvaDegToThreeRotY(f.rotDeg); // rotY TRƯỚC khi xoay
                             const rotY = snapAngleRad(konvaDegToThreeRotY(node.rotation()));
                             node.rotation(threeRotYToKonvaDeg(rotY));
-                            withTransaction("rotate furniture", () => {
-                                dispatch({ type: "ROTATE_FURNITURE", entityId: f.entityId, rotY });
-                            });
+                            dispatch({ type: "ROTATE_FURNITURE", entityId: f.entityId, rotY });
+                            // Inverse undo cho ROTATE_FURNITURE (R3) — rẻ hơn snapshot toàn scene.
+                            recordRotateUndo(f.entityId, fromRotY, rotY);
                         }}
                         onDragMove={(e: KonvaEventObject<MouseEvent>) => {
                             // Snap imperatively during drag — no ECS dispatch to avoid
@@ -287,12 +306,20 @@ function FurnitureLayerInner({
                                 showCollide(null, f); // ẩn ô đỏ
                                 const pending = pendingWallMoveRef.current;
                                 pendingWallMoveRef.current = null;
+                                const fromWall = dragFromWallRef.current;
+                                dragFromWallRef.current = null;
                                 if (pending) {
                                     dispatch({ type: "MOVE_WALL_ITEM", ...pending });
-                                    commitTransaction();
+                                    // Inverse undo cho wall-item (R3): không dùng snapshot.
+                                    if (fromWall) {
+                                        recordWallItemMoveUndo(
+                                            pending.entityId,
+                                            fromWall.hostWallId, fromWall.t, fromWall.side,
+                                            pending.hostWallId, pending.t, pending.side,
+                                        );
+                                    }
                                 } else {
-                                    // Chồng lấn / ngoài tường → huỷ, trả node về vị trí cũ.
-                                    cancelTransaction();
+                                    // Chồng lấn / ngoài tường → trả node về vị trí cũ (không cần undo entry).
                                     node.position({ x: f.x, y: f.y });
                                     node.rotation(f.rotDeg);
                                     node.getLayer()?.batchDraw();
@@ -305,7 +332,12 @@ function FurnitureLayerInner({
                             showCollide(null, f);
                             renderGuide([]);
                             dispatch({ type: "MOVE_FURNITURE", entityId: f.entityId, x, z });
-                            commitTransaction();
+                            // Inverse undo cho MOVE_FURNITURE (R3) — rẻ hơn snapshot toàn scene.
+                            const fromPos = dragFromPosRef.current;
+                            dragFromPosRef.current = null;
+                            if (fromPos) {
+                                recordMoveUndo(f.entityId, fromPos.x, fromPos.z, x, z);
+                            }
                         }}
                     >
                         {renderBody(f, ss)}

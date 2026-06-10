@@ -199,19 +199,54 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
         undo() {
             const inst = instanceRef.current;
             if (!inst) return;
-            const snapshot = undoHistory.undo(serializeScene(inst));
-            if (snapshot) deserializeScene(snapshot, inst);
+            const result = undoHistory.undo(serializeScene(inst));
+            if (!result) return;
+            if (result.kind === "snapshot") {
+                deserializeScene(result.snapshot, inst);
+            } else {
+                // Command-inverse: dispatch ngược lại (không teardown mesh).
+                dispatch(result.command);
+            }
         },
 
         redo() {
             const inst = instanceRef.current;
             if (!inst) return;
-            const snapshot = undoHistory.redo(serializeScene(inst));
-            if (snapshot) deserializeScene(snapshot, inst);
+            const result = undoHistory.redo(serializeScene(inst));
+            if (!result) return;
+            if (result.kind === "snapshot") {
+                deserializeScene(result.snapshot, inst);
+            } else {
+                dispatch(result.command);
+            }
         },
 
         canUndo: () => undoHistory.canUndo(),
         canRedo: () => undoHistory.canRedo(),
+
+        recordMoveUndo(entityId, fromX, fromZ, toX, toZ) {
+            undoHistory.pushInverse(
+                "move furniture",
+                { type: "MOVE_FURNITURE", entityId, x: fromX, z: fromZ },
+                { type: "MOVE_FURNITURE", entityId, x: toX, z: toZ },
+            );
+        },
+
+        recordRotateUndo(entityId, fromRotY, toRotY) {
+            undoHistory.pushInverse(
+                "rotate furniture",
+                { type: "ROTATE_FURNITURE", entityId, rotY: fromRotY },
+                { type: "ROTATE_FURNITURE", entityId, rotY: toRotY },
+            );
+        },
+
+        recordWallItemMoveUndo(entityId, fromHostWallId, fromT, fromSide, toHostWallId, toT, toSide) {
+            undoHistory.pushInverse(
+                "move wall item",
+                { type: "MOVE_WALL_ITEM", entityId, hostWallId: fromHostWallId, t: fromT, side: fromSide },
+                { type: "MOVE_WALL_ITEM", entityId, hostWallId: toHostWallId, t: toT, side: toSide },
+            );
+        },
 
         beginPlacement: (modelId) => placementSystem.begin(modelId),
         cancelPlacement: () => placementSystem.cancel(),

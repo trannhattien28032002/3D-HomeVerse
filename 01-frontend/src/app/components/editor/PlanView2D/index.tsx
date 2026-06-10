@@ -60,7 +60,7 @@ export default function PlanView2D() {
     const originX = viewportWidth / 2;
     const originY = viewportHeight / 2;
 
-    const { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, nextNodeId, nextWallId } = useEngineApi();
+    const { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo, nextNodeId, nextWallId } = useEngineApi();
     const toolMode: WallToolId = activeTool2D === "draw" ? "draw" : "select";
     const isSelectMode = activeTool2D === "select";
     const isPlacingWall = activeTool2D === "placing-wall";
@@ -209,7 +209,7 @@ export default function PlanView2D() {
             >
                 <RoomLayer rooms={rooms} stageScale={stageScale} activeTool2D={activeTool2D} onSelectRoom={handleSelectRoom} ss={ss} />
                 <WallLayer walls={walls} caps={caps} furniture={furniture} activeTool={activeTool} activeTool2D={activeTool2D} nodeById={nodeById} />
-                <FurnitureLayer furniture={furniture} isSelectMode={isSelectMode} selectedFurnitureId={selectedFurnitureId} setSelectedFurnitureId={setSelectedFurnitureId} setSelectedWallIds={setSelectedWallIds} dragTransactionOpenRef={dragTransactionOpenRef} beginTransaction={beginTransaction} commitTransaction={commitTransaction} cancelTransaction={cancelTransaction} withTransaction={withTransaction} dispatch={dispatch} originX={originX} originY={originY} wallSegments={wallSegments} walls={walls} nodeById={nodeById} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
+                <FurnitureLayer furniture={furniture} isSelectMode={isSelectMode} selectedFurnitureId={selectedFurnitureId} setSelectedFurnitureId={setSelectedFurnitureId} setSelectedWallIds={setSelectedWallIds} dragTransactionOpenRef={dragTransactionOpenRef} recordMoveUndo={recordMoveUndo} recordRotateUndo={recordRotateUndo} recordWallItemMoveUndo={recordWallItemMoveUndo} dispatch={dispatch} originX={originX} originY={originY} wallSegments={wallSegments} walls={walls} nodeById={nodeById} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
                 <HandleLayer transformerRef={transformerRef} furnitureNodeRefs={furnitureNodeRefs} selectedFurnitureId={selectedFurnitureId} isSelectMode={isSelectMode} furniture={furniture} selectedIsWallItem={selectedIsWallItem} ss={ss} />
                 <DimensionLayer dimensions={dimensions} angleDimensions={angleDimensions} stageScale={stageScale} ss={ss} />
                 <OverlayLayer activeTool={activeTool} originX={originX} originY={originY} />

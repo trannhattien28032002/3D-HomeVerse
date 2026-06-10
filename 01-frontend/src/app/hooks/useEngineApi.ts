@@ -28,6 +28,12 @@ export type EngineApi = {
     beginTransaction: (label: string) => void;
     commitTransaction: () => void;
     cancelTransaction: () => void;
+    /** Ghi command-inverse cho MOVE_FURNITURE (rẻ hơn snapshot toàn scene, R3). */
+    recordMoveUndo: (entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) => void;
+    /** Ghi command-inverse cho ROTATE_FURNITURE (R3). */
+    recordRotateUndo: (entityId: string, fromRotY: number, toRotY: number) => void;
+    /** Ghi command-inverse cho MOVE_WALL_ITEM (R3). */
+    recordWallItemMoveUndo: (entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) => void;
     nextNodeId: () => string;
     nextWallId: () => string;
 };
@@ -73,6 +79,18 @@ export function useEngineApi(): EngineApi {
         engine?.api.cancelTransaction();
     }
 
+    function recordMoveUndo(entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) {
+        engine?.api.recordMoveUndo(entityId, fromX, fromZ, toX, toZ);
+    }
+
+    function recordRotateUndo(entityId: string, fromRotY: number, toRotY: number) {
+        engine?.api.recordRotateUndo(entityId, fromRotY, toRotY);
+    }
+
+    function recordWallItemMoveUndo(entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) {
+        engine?.api.recordWallItemMoveUndo(entityId, fromHostWallId, fromT, fromSide, toHostWallId, toT, toSide);
+    }
+
     function nextNodeId() {
         return engine?.nodes.newNodeId() ?? uuidv4();
     }
@@ -81,5 +99,5 @@ export function useEngineApi(): EngineApi {
         return engine?.api.getNextIds()?.wallId ?? uuidv4();
     }
 
-    return { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, nextNodeId, nextWallId };
+    return { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo, nextNodeId, nextWallId };
 }
