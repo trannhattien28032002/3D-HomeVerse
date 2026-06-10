@@ -8,8 +8,8 @@
  *   2. ECS World + NodeRegistry + EventBus
  *   3. Systems đăng ký vào World          (systemSetup)
  *   4. Đèn ambient + directional mặc định
- *   5. Dispatcher + UndoHistory
- *   6. FurniturePlacementSystem
+ *   5. Dispatcher + UndoHistory + asyncTransactionFn
+ *   6. FurniturePlacementSystem (nhận asyncTransactionFn + dispatchAsync)
  *   7. Game loop bắt đầu (requestAnimationFrame)
  *
  * Phím tắt toàn cục KHÔNG ở đây — chúng do React (useEditorShortcuts) xử lý.
@@ -30,25 +30,28 @@ import { createDispatcher } from "src/engine/commands/dispatcher";
 import { UndoHistory } from "src/engine/commands/history";
 import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
 import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
+import { disposeSurfaceMaterials } from "src/engine/rendering/surfaceMaterial";
 import { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
 import { ModelRegistry } from "src/engine/rendering/ModelRegistry";
 import { EntityRegistry } from "src/engine/registries/EntityRegistry";
+import { SelectionHighlight } from "src/engine/rendering/SelectionHighlight";
 import { serializeScene } from "src/engine/serialization/serialize";
 import { deserializeScene } from "src/engine/serialization/deserialize";
 import { createAmbientLight, createDirectionalLight } from "src/engine/game/LightFactory";
-import { FurniturePlacementSystem } from "src/engine/systems/FurniturePlacementSystem";
-import { Transform } from "src/engine/components/Transform";
-import { ColliderAABB } from "src/engine/components/ColliderAABB";
-import { StaticBody } from "src/engine/components/StaticBody";
+import { FurniturePlacementSystem } from "src/engine/systems/placement/FurniturePlacementSystem";
+import { Transform } from "src/engine/components/core/Transform";
+import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
+import { StaticBody } from "src/engine/components/physics/StaticBody";
+import { Model3D } from "src/engine/components/render/Model3D";
+import { SurfaceMaterial } from "src/engine/components/render/SurfaceMaterial";
+import { v4 as uuidv4 } from "uuid";
 
 import type { EngineApi, EngineInstance } from "src/engine/engineTypes";
 import type { SceneDocument } from "src/engine/serialization/SceneDocument";
 
-// Re-export types so existing imports keep working.
+// Re-export type để các import cũ vẫn hoạt động.
 export type { EngineApi, EngineInstance } from "src/engine/engineTypes";
-
-/** Initial value for maxWallIdRef — no default walls are pre-created. */
-const INITIAL_NEXT_WALL_ID = 1;
 
 export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     const { scene, camera, renderer } = createScene(canvas);
@@ -59,41 +62,43 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
 
     const meshRegistry = new MeshRegistry(scene);
     const materialRegistry = new MaterialRegistry();
+    const materialLibrary = new MaterialLibrary(renderer);
     const gltfLoader = new GLTFModelLoader();
     const modelRegistry = new ModelRegistry(scene);
     const entityRegistry = new EntityRegistry(world, meshRegistry, modelRegistry);
 
-    const { orbit, gizmoSystem, collisionSystem, dragGhostController } = createSystems(world, scene, camera, renderer, nodeRegistry, events, meshRegistry, materialRegistry);
+    // Material sàn theo roomKey (sorted nodeIds) — shared giữa RoomSystem (re-apply
+    // khi dựng lại floor mesh) và dispatcher (SET_FLOOR_MATERIAL ghi vào).
+    const floorMaterials = new Map<string, string>();
 
-    // Headless floor collider — no Mesh so GizmoSystem/RenderSystem ignores it.
-    // ColliderAABB(50, 0.5, 50) uses half-extents, matching CannonCollisionSystem convention.
-    // Center at Y=-0.5 so the top face sits exactly at Y=0 (world floor level).
+    const { orbit, gizmoSystem, collisionSystem, dragGhostController, composer, outlinePass } = createSystems(world, scene, camera, renderer, nodeRegistry, events, meshRegistry, materialRegistry, materialLibrary, floorMaterials);
+
+    // Collider sàn "headless" — không có Mesh nên GizmoSystem/RenderSystem bỏ qua.
+    // ColliderAABB(50, 0.5, 50) dùng half-extent, đúng quy ước của CannonCollisionSystem.
+    // Tâm Y=-0.52 → MẶT TRÊN ở Y=-0.02 (thấp hơn mặt sàn thế giới Y=0 một khe 2cm).
+    // Lý do: đồ đặt trên sàn có ĐÁY collider ≈ Y=0; nếu mặt sàn trùng khít Y=0 thì box-box
+    // chạm-khít bị tính là va chạm → đồ kê sát sàn (nhất là giường, đáy ~Y=0) luôn bị tô đỏ
+    // khi kéo. Hạ 2cm tạo khe an toàn lớn hơn sai số float, nhưng sàn VẪN là collider thật
+    // chặn vật rơi xuống dưới sàn.
     const groundEid = world.createEntity();
-    world.addComponent(groundEid, new Transform(0, -0.5, 0));
+    world.addComponent(groundEid, new Transform(0, -0.52, 0));
     world.addComponent(groundEid, new ColliderAABB(50, 0.5, 50));
     world.addComponent(groundEid, new StaticBody());
 
-    // Ambient raised to 0.5 so wall faces away from the sun still read clearly.
+    // Ambient nâng lên 0.5 để mặt tường quay lưng với mặt trời vẫn đủ sáng để nhìn rõ.
     createAmbientLight(world, { intensity: 0.5 });
     createDirectionalLight(world, { x: 10, y: 18, z: 10, intensity: 0.9 });
 
-    // wallEntityByWallId: ánh xạ wallId → ECS entityId — dùng để tra entity từ ID logic
-    const wallEntityByWallId = new Map<number, number>();
-    // maxWallIdRef: theo dõi wallId lớn nhất đã dùng — mutable ref để dispatcher cập nhật
-    const maxWallIdRef = { value: INITIAL_NEXT_WALL_ID - 1 };
+    // wallEntityByWallId: ánh xạ wallId (uuid) → ECS entityId (uuid) — tra entity từ ID logic
+    const wallEntityByWallId = new Map<string, string>();
+
+    // Viền chọn 3D: đồng bộ OutlinePass.selectedObjects theo event chọn (đồ/tường/sàn),
+    // đổi màu viền theo loại để người dùng biết đang chọn gì.
+    const selectionHighlight = new SelectionHighlight(outlinePass, world, wallEntityByWallId, meshRegistry, events);
 
     // initDefaultScene(world, scene, nodeRegistry, wallEntityByWallId);
 
-    const dispatch = createDispatcher({ world, scene, nodeRegistry, wallEntityByWallId, maxWallIdRef, meshRegistry, materialRegistry, gltfLoader, modelRegistry, collisionSystem, entityRegistry });
-
-    const placementSystem = new FurniturePlacementSystem(
-        scene, camera, renderer.domElement,
-        orbit.controls,
-        dispatch,
-        events,
-        gltfLoader,
-        collisionSystem,
-    );
+    const { dispatch, dispatchAsync } = createDispatcher({ world, scene, nodeRegistry, wallEntityByWallId, meshRegistry, materialRegistry, materialLibrary, gltfLoader, modelRegistry, collisionSystem, entityRegistry, floorMaterials });
 
     // ── Undo / redo state ─────────────────────────────────────────────────────
     // instanceRef: ref vòng — cho phép undo/redo truy cập engineInstance trước khi nó được tạo
@@ -104,10 +109,35 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     let pendingLabel: string | null = null;
     let pendingSnapshot: SceneDocument | null = null;
 
+    // asyncTransactionFn — snapshot trước → await fn → push history.
+    // Khai báo SAU instanceRef/undoHistory để closure capture đúng.
+    // Dùng cho PLACE_FURNITURE / PLACE_WALL_ITEM (placement async undo-safe).
+    const asyncTransactionFn = async (label: string, fn: () => Promise<void>): Promise<void> => {
+        const inst = instanceRef.current;
+        if (!inst) { await fn(); return; }
+        const snapshot = serializeScene(inst);
+        await fn();
+        undoHistory.push(label, snapshot);
+    };
+
+    const placementSystem = new FurniturePlacementSystem(
+        scene, camera, renderer.domElement,
+        orbit.controls,
+        events,
+        gltfLoader,
+        collisionSystem,
+        world,
+        nodeRegistry,
+        asyncTransactionFn,
+        dispatchAsync,
+    );
+
     const onResize = () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Composer (+ OutlinePass) phải đồng bộ kích thước, nếu không viền lệch vị trí.
+        composer.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener("resize", onResize);
 
@@ -126,12 +156,13 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     const api: EngineApi = {
         events,
         dispatch,
+        dispatchAsync,
         clampNodeMove: (_nodeId, newX, newZ) => ({ x: newX, z: newZ }),
         getNextIds: () => ({
-            nodeId: nodeRegistry.nextAvailableNodeId(),
-            wallId: maxWallIdRef.value + 1,
+            nodeId: nodeRegistry.newNodeId(),
+            wallId: uuidv4(),
         }),
-        setView:    (preset)   => orbit.setView(preset),
+        setView: (preset) => orbit.setView(preset),
         rotateView: (angleDeg) => orbit.rotateBy(angleDeg),
         setGizmoMode: (mode) => gizmoSystem.setGizmoMode(mode),
 
@@ -142,6 +173,8 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
             fn();
             undoHistory.push(label, snapshot);
         },
+
+        asyncTransaction: asyncTransactionFn,
 
         beginTransaction(label) {
             const inst = instanceRef.current;
@@ -178,13 +211,33 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
         },
 
         canUndo: () => undoHistory.canUndo(),
-        canRedo:  () => undoHistory.canRedo(),
+        canRedo: () => undoHistory.canRedo(),
 
         beginPlacement: (modelId) => placementSystem.begin(modelId),
         cancelPlacement: () => placementSystem.cancel(),
+
+        getEntityMaterials(entityId) {
+            const model = world.getComponent(entityId, Model3D);
+            if (!model?.materialOverrides) return {};
+            const out: Record<string, string> = {};
+            for (const [slotId, override] of model.materialOverrides) {
+                if (override.variantId) out[slotId] = override.variantId;
+            }
+            return out;
+        },
+
+        getWallMaterial(wallId) {
+            const entityId = wallEntityByWallId.get(wallId);
+            if (!entityId) return null;
+            return world.getComponent(entityId, SurfaceMaterial)?.materialId ?? null;
+        },
+
+        getFloorMaterial(roomKey) {
+            return floorMaterials.get(roomKey) ?? null;
+        },
     };
 
-    // Wire GizmoSystem to the transaction + delete API (created after createSystems).
+    // Nối GizmoSystem vào API transaction + delete (tạo sau createSystems).
     gizmoSystem.setCommandCallbacks(
         (label) => api.beginTransaction(label),
         () => api.commitTransaction(),
@@ -198,10 +251,14 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
         api,
         nodes: nodeRegistry,
         wallEntityByWallId,
+        materialLibrary,
+        floorMaterials,
         dispose() {
             undoHistory.clear();
             running = false;
             window.removeEventListener("resize", onResize);
+            selectionHighlight.dispose();
+            composer.dispose();
             orbit.controls.dispose();
             gizmoSystem.dispose();
             dragGhostController.dispose();
@@ -210,10 +267,12 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
             gltfLoader.dispose();
             modelRegistry.disposeAll();
 
-            // All wall bodies, cap meshes, and room floor meshes are tracked by MeshRegistry.
-            // Materials are shared via MaterialRegistry — release them after all meshes are gone.
+            // Mọi mesh tường, cap, và sàn phòng đều do MeshRegistry quản lý.
+            // Vật liệu dùng chung qua MaterialRegistry — giải phóng sau khi mọi mesh đã biến mất.
             meshRegistry.disposeAll();
             materialRegistry.releaseAll();
+            materialLibrary.dispose();
+            disposeSurfaceMaterials();
 
             renderer.dispose();
             if (window.gameEngine === engineInstance) delete window.gameEngine;

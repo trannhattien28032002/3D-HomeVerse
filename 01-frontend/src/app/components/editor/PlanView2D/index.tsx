@@ -1,19 +1,37 @@
 /**
- * PlanView2D — 2D floor plan host (Konva Stage + composed layers).
- * Đợt 6 refactor: logic tách vào usePlanCamera, usePlanInput, và các Layer file.
- * Layer z-order: Room → Wall → Furniture → Handle → Dimension → Overlay (tool+axes)
+ * Container chính của Plan 2D — tích hợp toàn bộ các layer Konva và tool system.
+ *
+ * Kiến trúc layer (thứ tự từ dưới lên):
+ *   RoomLayer → WallLayer → FurnitureLayer → HandleLayer → DimensionLayer → OverlayLayer
+ *
+ * Tool system:
+ *   - createToolInstances() tạo 1 instance/tool một lần (toolsRef).
+ *   - activeTool2D xác định tool nào active; khi đổi tool, deactivate tool cũ.
+ *   - activeTool.update(ctx) cập nhật ToolContext mỗi render để tool luôn có dữ liệu mới nhất.
+ *
+ * Camera:
+ *   usePlanCamera → stageScale, stagePos, pan, zoom, helper ss()/sh().
+ *   usePlanInput  → wheel/mouse handlers delegate xuống activeTool hoặc camera pan.
+ *
+ * Selection:
+ *   selectedWallIds    — Set<wallId> cho WallLayer + WallPropertiesPanel.
+ *   selectedFurnitureId — entityId cho FurnitureLayer + HandleLayer (Transformer).
+ *
+ * Status bar (góc trên trái) hiển thị số node, wall, wall đang chọn, và zoom level.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Stage } from "react-konva";
 import type Konva from "konva";
 
 import { useFloorPlanSnapshot, type Node2D } from "src/app/store/useFloorPlanSnapshot";
+import { buildWallSegments2D } from "./wallSegments2D";
 import { useUIStore } from "src/app/store/useUIStore";
 import { useEngineOrNull } from "src/app/engine/EngineContext";
 import { useEngineApi } from "src/app/hooks/useEngineApi";
 import { usePlanShortcuts } from "src/app/hooks/usePlanShortcuts";
 import WallPropertiesPanel from "src/app/components/editor/WallPropertiesPanel";
 import type { PlaceFurnitureTool } from "src/app/components/editor/tools/PlaceFurnitureTool";
+import type { WallPlacementTool } from "src/app/components/editor/tools/WallPlacementTool";
 import type { ToolBase, ToolContext } from "src/app/components/editor/tools/ToolBase";
 import { TOOL_IDS, type ToolId, type WallToolId, createToolInstances } from "src/app/components/editor/tools/toolRegistry";
 
@@ -32,29 +50,46 @@ export default function PlanView2D() {
     const engine         = useEngineOrNull();
     const { nodes, walls, caps, rooms, dimensions, angleDimensions, furniture } = useFloorPlanSnapshot(viewportWidth, viewportHeight);
 
-    const activeTool2D     = useUIStore(s => s.activeTool2D);
-    const setTool2D        = useUIStore(s => s.setTool2D);
-    const placementModelId = useUIStore(s => s.placementModelId);
-    const endPlacement2D   = useUIStore(s => s.endPlacement2D);
+    const activeTool2D         = useUIStore(s => s.activeTool2D);
+    const setTool2D            = useUIStore(s => s.setTool2D);
+    const placementModelId     = useUIStore(s => s.placementModelId);
+    const endPlacement2D       = useUIStore(s => s.endPlacement2D);
+    const wallPlacementModelId = useUIStore(s => s.wallPlacementModelId);
+    const endWallPlacement2D   = useUIStore(s => s.endWallPlacement2D);
     const originX = viewportWidth / 2;
     const originY = viewportHeight / 2;
 
-    const { dispatch, withTransaction, beginTransaction, commitTransaction, cancelTransaction, nextNodeId, nextWallId } = useEngineApi();
+    const { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, nextNodeId, nextWallId } = useEngineApi();
     const toolMode: WallToolId = activeTool2D === "draw" ? "draw" : "select";
     const isSelectMode = activeTool2D === "select";
+    const isPlacingWall = activeTool2D === "placing-wall";
 
     // ── Selection ────────────────────────────────────────────────────────────
-    const [selectedWallIds, setSelectedWallIds] = useState<Set<number>>(new Set());
-    const [selectedFurnitureId, setSelectedFurnitureId] = useState<number | null>(null);
+    const [selectedWallIds, setSelectedWallIds] = useState<Set<string>>(new Set());
+    const [selectedFurnitureId, setSelectedFurnitureId] = useState<string | null>(null);
+    const [selectedRoomKey, setSelectedRoomKey] = useState<string | null>(null);
+    const setSelected = useUIStore(s => s.setSelected);
     useEffect(() => {
         if (selectedFurnitureId !== null && !furniture.some(f => f.entityId === selectedFurnitureId))
             setSelectedFurnitureId(null);
     }, [furniture, selectedFurnitureId]);
+    // Chọn furniture/tường ⇒ bỏ chọn phòng (3 loại loại trừ lẫn nhau cho Material Sidebar).
+    useEffect(() => {
+        if (selectedFurnitureId || selectedWallIds.size > 0) setSelectedRoomKey(null);
+    }, [selectedFurnitureId, selectedWallIds]);
+    // Mirror selection 2D → store dùng chung để Material Sidebar đọc được (cùng nguồn với 3D).
+    // Ưu tiên: furniture (object) > tường đơn > phòng (sàn).
+    useEffect(() => {
+        if (selectedFurnitureId) setSelected({ kind: "object", id: selectedFurnitureId });
+        else if (selectedWallIds.size === 1) setSelected({ kind: "wall", id: [...selectedWallIds][0] });
+        else if (selectedRoomKey) setSelected({ kind: "room", id: selectedRoomKey });
+        else setSelected(null);
+    }, [selectedFurnitureId, selectedWallIds, selectedRoomKey, setSelected]);
     const dragTransactionOpenRef = useRef(false);
 
     // ── Konva refs ───────────────────────────────────────────────────────────
     const transformerRef    = useRef<Konva.Transformer | null>(null);
-    const furnitureNodeRefs = useRef(new Map<number, Konva.Group>());
+    const furnitureNodeRefs = useRef(new Map<string, Konva.Group>());
 
     // ── Tool instances ───────────────────────────────────────────────────────
     const toolsRef = useRef(createToolInstances());
@@ -66,7 +101,9 @@ export default function PlanView2D() {
         if (prev !== activeTool2D) toolsRef.current[prev].deactivate();
         if (activeTool2D === "placing" && placementModelId)
             (toolsRef.current.placing as PlaceFurnitureTool).setTarget(placementModelId, endPlacement2D);
-    }, [activeTool2D, placementModelId, endPlacement2D]);
+        if (activeTool2D === "placing-wall" && wallPlacementModelId)
+            (toolsRef.current["placing-wall"] as WallPlacementTool).setTarget(wallPlacementModelId, endWallPlacement2D);
+    }, [activeTool2D, placementModelId, endPlacement2D, wallPlacementModelId, endWallPlacement2D]);
 
     const [, setToolUpdateSeed] = useState(0);
     const requestUpdate = useCallback(() => setToolUpdateSeed(s => s + 1), []);
@@ -80,7 +117,14 @@ export default function PlanView2D() {
     // ── Camera + input ───────────────────────────────────────────────────────
     const camera = usePlanCamera(originX, originY);
     const { stageScale, stagePos, isPanning, ss, sh, gridSizePx, gridOffsetX, gridOffsetY } = camera;
-    const inputHandlers = usePlanInput({ camera, isSelectMode, setSelectedFurnitureId, getActiveTool: () => activeTool });
+    const inputHandlers = usePlanInput({ camera, isSelectMode, setSelectedFurnitureId, setSelectedRoomKey, getActiveTool: () => activeTool });
+
+    // Chọn phòng (từ RoomLayer) — loại trừ furniture/tường để 3 loại không chồng nhau.
+    const handleSelectRoom = useCallback((roomKey: string) => {
+        setSelectedFurnitureId(null);
+        setSelectedWallIds(new Set());
+        setSelectedRoomKey(roomKey);
+    }, []);
 
     // ── Derived ──────────────────────────────────────────────────────────────
     const singleSelectedWall = useMemo(
@@ -88,21 +132,30 @@ export default function PlanView2D() {
         [walls, selectedWallIds],
     );
     const nodeById = useMemo(() => {
-        const m = new Map<number, Node2D>();
+        const m = new Map<string, Node2D>();
         for (const n of nodes) m.set(n.id, n);
         return m;
     }, [nodes]);
+
+    // Tường ở world-space (mét) cho wall-snap khi kéo nội thất.
+    const wallSegments = useMemo(
+        () => buildWallSegments2D(walls, nodeById, originX, originY),
+        [walls, nodeById, originX, originY],
+    );
 
     // ── ToolContext ──────────────────────────────────────────────────────────
     activeTool.update({
         nodes, walls, furniture, originX, originY,
         stageScale, stageScaleRef: camera.stageScaleRef, stagePosRef: camera.stagePosRef,
         nodeById, selectedWallIds, setSelectedWallIds,
-        dispatch, withTransaction, beginTransaction, commitTransaction, cancelTransaction,
+        dispatch, dispatchAsync, withTransaction, asyncTransaction,
+        beginTransaction, commitTransaction, cancelTransaction,
         nextNodeId, nextWallId, ss, sh, requestUpdate,
     } satisfies ToolContext);
 
-    usePlanShortcuts({ engine, selectedWallIds, setSelectedWallIds, selectedFurnitureId, setSelectedFurnitureId, activeTool2D, setTool2D, walls, getActiveTool: () => activeTool });
+    const selectedIsWallItem = selectedFurnitureId != null && (furniture.find(f => f.entityId === selectedFurnitureId)?.isWallItem ?? false);
+
+    usePlanShortcuts({ engine, selectedWallIds, setSelectedWallIds, selectedFurnitureId, setSelectedFurnitureId, activeTool2D, setTool2D, walls, furniture, getActiveTool: () => activeTool });
 
     return (
         <div style={{ width: "100vw", height: "100vh", background: "#f7f3ea", position: "relative", overflow: "hidden" }}>
@@ -116,7 +169,7 @@ export default function PlanView2D() {
                 width={viewportWidth} height={viewportHeight}
                 x={stagePos.x} y={stagePos.y}
                 scaleX={stageScale} scaleY={stageScale}
-                style={{ display: "block", backgroundColor: "#f7f3ea", backgroundImage: `linear-gradient(rgba(213,196,172,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(213,196,172,0.5) 1px, transparent 1px)`, backgroundSize: `${gridSizePx}px ${gridSizePx}px`, backgroundPosition: `${gridOffsetX}px ${gridOffsetY}px`, cursor: isPanning ? "grabbing" : activeTool2D !== "select" ? "crosshair" : "default" }}
+                style={{ display: "block", backgroundColor: "#f7f3ea", backgroundImage: `linear-gradient(rgba(213,196,172,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(213,196,172,0.5) 1px, transparent 1px)`, backgroundSize: `${gridSizePx}px ${gridSizePx}px`, backgroundPosition: `${gridOffsetX}px ${gridOffsetY}px`, cursor: isPanning ? "grabbing" : (activeTool2D !== "select" || isPlacingWall) ? "crosshair" : "default" }}
                 onWheel={inputHandlers.onWheel}
                 onMouseDown={inputHandlers.onMouseDown}
                 onMouseMove={inputHandlers.onMouseMove}
@@ -124,10 +177,10 @@ export default function PlanView2D() {
                 onClick={inputHandlers.onClick}
                 onContextMenu={inputHandlers.onContextMenu}
             >
-                <RoomLayer rooms={rooms} stageScale={stageScale} activeTool2D={activeTool2D} setSelectedWallIds={setSelectedWallIds} ss={ss} />
-                <WallLayer walls={walls} caps={caps} activeTool={activeTool} activeTool2D={activeTool2D} />
-                <FurnitureLayer furniture={furniture} isSelectMode={isSelectMode} selectedFurnitureId={selectedFurnitureId} setSelectedFurnitureId={setSelectedFurnitureId} setSelectedWallIds={setSelectedWallIds} dragTransactionOpenRef={dragTransactionOpenRef} beginTransaction={beginTransaction} commitTransaction={commitTransaction} withTransaction={withTransaction} dispatch={dispatch} originX={originX} originY={originY} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
-                <HandleLayer transformerRef={transformerRef} furnitureNodeRefs={furnitureNodeRefs} selectedFurnitureId={selectedFurnitureId} isSelectMode={isSelectMode} furniture={furniture} ss={ss} />
+                <RoomLayer rooms={rooms} stageScale={stageScale} activeTool2D={activeTool2D} onSelectRoom={handleSelectRoom} ss={ss} />
+                <WallLayer walls={walls} caps={caps} furniture={furniture} activeTool={activeTool} activeTool2D={activeTool2D} nodeById={nodeById} />
+                <FurnitureLayer furniture={furniture} isSelectMode={isSelectMode} selectedFurnitureId={selectedFurnitureId} setSelectedFurnitureId={setSelectedFurnitureId} setSelectedWallIds={setSelectedWallIds} dragTransactionOpenRef={dragTransactionOpenRef} beginTransaction={beginTransaction} commitTransaction={commitTransaction} cancelTransaction={cancelTransaction} withTransaction={withTransaction} dispatch={dispatch} originX={originX} originY={originY} wallSegments={wallSegments} walls={walls} nodeById={nodeById} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
+                <HandleLayer transformerRef={transformerRef} furnitureNodeRefs={furnitureNodeRefs} selectedFurnitureId={selectedFurnitureId} isSelectMode={isSelectMode} furniture={furniture} selectedIsWallItem={selectedIsWallItem} ss={ss} />
                 <DimensionLayer dimensions={dimensions} angleDimensions={angleDimensions} stageScale={stageScale} ss={ss} />
                 <OverlayLayer activeTool={activeTool} originX={originX} originY={originY} />
             </Stage>

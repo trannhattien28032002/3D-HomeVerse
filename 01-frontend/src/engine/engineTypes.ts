@@ -10,6 +10,7 @@ import type { World } from "src/engine/ecs/World";
 import type { EngineEvents } from "src/engine/events/EngineEvents";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
+import type { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
 
 /** Tên camera preset — xem định nghĩa góc nhìn cụ thể trong OrbitControlSystem.ts */
 export type CameraPreset = "plan" | "perspective" | "eye-level";
@@ -23,9 +24,14 @@ export type EngineApi = {
     events: EngineEvents;
     /** Gửi command vào dispatcher — cách duy nhất để thay đổi trạng thái ECS từ UI. */
     dispatch: (command: EngineCommand) => void;
-    clampNodeMove: (nodeId: number, newX: number, newZ: number) => { x: number; z: number };
-    /** Lấy nodeId và wallId tiếp theo có thể dùng (chưa bị chiếm). */
-    getNextIds: () => { nodeId: number; wallId: number };
+    /**
+     * Gửi command async (PLACE_FURNITURE / PLACE_WALL_ITEM) và trả về Promise.
+     * Dùng trong asyncTransaction để đảm bảo entity đã tồn tại trước khi snapshot.
+     */
+    dispatchAsync: (command: EngineCommand) => Promise<void>;
+    clampNodeMove: (nodeId: string, newX: number, newZ: number) => { x: number; z: number };
+    /** Sinh nodeId và wallId uuid mới cho thao tác kế tiếp. */
+    getNextIds: () => { nodeId: string; wallId: string };
     /** Chuyển camera sang preset (plan / perspective / eye-level) với animation. */
     setView: (preset: CameraPreset) => void;
     /** Xoay camera ngang angleDeg độ quanh điểm nhìn hiện tại. */
@@ -35,6 +41,11 @@ export type EngineApi = {
     // ── Transaction + Undo ──────────────────────────────────────────────────
     /** Gom tất cả dispatch() bên trong fn() thành một entry undo duy nhất. */
     transaction: (label: string, fn: () => void) => void;
+    /**
+     * Phiên bản async của transaction — snapshot TRƯỚC fn → await fn() → push history.
+     * Dùng cho PLACE_FURNITURE / PLACE_WALL_ITEM để undo xóa được entity đã spawn.
+     */
+    asyncTransaction: (label: string, fn: () => Promise<void>) => Promise<void>;
     /** Mở transaction thủ công — dùng cho thao tác kéo thả trải dài nhiều event. */
     beginTransaction: (label: string) => void;
     /** Đóng transaction và đẩy vào undo stack. */
@@ -45,10 +56,17 @@ export type EngineApi = {
     redo: () => void;
     canUndo: () => boolean;
     canRedo: () => boolean;
-    /** Enter ghost-preview placement mode for the given model. */
+    /** Vào chế độ đặt đồ xem-trước (ghost) cho model cho trước. */
     beginPlacement: (modelId: string) => void;
-    /** Cancel active placement (if any) and remove the ghost. */
+    /** Huỷ phiên đặt đồ đang chạy (nếu có) và gỡ ghost. */
     cancelPlacement: () => void;
+    // ── Material read ─────────────────────────────────────────────────────────
+    /** Trả về map slotId → materialId hiện tại của entity (đồ nội thất). */
+    getEntityMaterials: (entityId: string) => Record<string, string>;
+    /** Trả về materialId hiện tại của tường, hoặc null nếu chưa đổi. */
+    getWallMaterial: (wallId: string) => string | null;
+    /** Trả về materialId hiện tại của sàn phòng (theo roomKey), hoặc null. */
+    getFloorMaterial: (roomKey: string) => string | null;
 };
 
 /**
@@ -61,8 +79,15 @@ export type EngineInstance = {
     api: EngineApi;
     /** NodeRegistry — topology graph của tất cả node/wall. */
     nodes: NodeRegistry;
-    /** Ánh xạ wallId → ECS entityId — cần thiết cho serialize và dispatcher. */
-    wallEntityByWallId: Map<number, number>;
+    /** Ánh xạ wallId (uuid) → ECS entityId (uuid) — cần thiết cho serialize và dispatcher. */
+    wallEntityByWallId: Map<string, string>;
+    /** PBR material catalog + KTX2 loader — dùng để apply texture lên tường/sàn/đồ vật. */
+    materialLibrary: MaterialLibrary;
+    /**
+     * Material sàn theo roomKey (sorted nodeIds) → materialId — chia sẻ với dispatcher
+     * và RoomSystem. serialize đọc để lưu; deserialize ghi lại qua SET_FLOOR_MATERIAL.
+     */
+    floorMaterials: Map<string, string>;
     /** Dọn dẹp toàn bộ Three.js objects, event listeners, physics khi unmount. */
     dispose: () => void;
 };

@@ -49,20 +49,27 @@ export type ToolContext = {
     stageScale: number;                           // current zoom level
     stageScaleRef: { current: number };           // ref để đọc trong event handler (không stale)
     stagePosRef: { current: { x: number; y: number } }; // pan offset ref
-    nodeById: Map<number, Node2D>;                // O(1) lookup node theo ID
+    nodeById: Map<string, Node2D>;                // O(1) lookup node theo ID
 
     // Selection state — owned bởi host (cần cho WallPropertiesPanel và status bar)
-    selectedWallIds: Set<number>;
-    setSelectedWallIds: React.Dispatch<React.SetStateAction<Set<number>>>;
+    selectedWallIds: Set<string>;
+    setSelectedWallIds: React.Dispatch<React.SetStateAction<Set<string>>>;
 
     // Engine commands — tool dispatch để thay đổi ECS
     dispatch: (cmd: EngineCommand) => void;
+    /** Async dispatch cho PLACE_FURNITURE / PLACE_WALL_ITEM (trả về Promise). */
+    dispatchAsync: (cmd: EngineCommand) => Promise<void>;
     withTransaction: (label: string, fn: () => void) => void;
+    /**
+     * Async transaction — snapshot trước → await fn() → push history.
+     * Dùng cho placement để undo xóa được entity đã spawn.
+     */
+    asyncTransaction: (label: string, fn: () => Promise<void>) => Promise<void>;
     beginTransaction: (label: string) => void;
     commitTransaction: () => void;
     cancelTransaction: () => void;
-    nextNodeId: () => number;
-    nextWallId: () => number;
+    nextNodeId: () => string;
+    nextWallId: () => string;
 
     // Scale-compensated helpers — tool không cần biết stageScale trực tiếp
     ss: (px: number) => number; // screen-stable size (text/stroke)

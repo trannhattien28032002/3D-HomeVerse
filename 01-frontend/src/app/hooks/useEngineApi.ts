@@ -16,17 +16,20 @@
  * audit thực tế, hook làm nhiều việc hơn null-check (xem dưới). Pragmatic
  * choice: rename để tên đúng nghĩa, giữ logic.
  */
+import { v4 as uuidv4 } from "uuid";
 import { useEngineOrNull } from "src/app/engine/EngineContext";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 
 export type EngineApi = {
     dispatch: (cmd: EngineCommand) => void;
+    dispatchAsync: (cmd: EngineCommand) => Promise<void>;
     withTransaction: (label: string, fn: () => void) => void;
+    asyncTransaction: (label: string, fn: () => Promise<void>) => Promise<void>;
     beginTransaction: (label: string) => void;
     commitTransaction: () => void;
     cancelTransaction: () => void;
-    nextNodeId: () => number;
-    nextWallId: () => number;
+    nextNodeId: () => string;
+    nextWallId: () => string;
 };
 
 export function useEngineApi(): EngineApi {
@@ -40,9 +43,22 @@ export function useEngineApi(): EngineApi {
         engine.api.dispatch(cmd);
     }
 
+    function dispatchAsync(cmd: EngineCommand): Promise<void> {
+        if (!engine) {
+            console.warn("[useEngineApi] dispatchAsync called before engine init:", cmd.type);
+            return Promise.resolve();
+        }
+        return engine.api.dispatchAsync(cmd);
+    }
+
     function withTransaction(label: string, fn: () => void) {
         if (!engine) { fn(); return; }
         engine.api.transaction(label, fn);
+    }
+
+    function asyncTransaction(label: string, fn: () => Promise<void>): Promise<void> {
+        if (!engine) return fn();
+        return engine.api.asyncTransaction(label, fn);
     }
 
     function beginTransaction(label: string) {
@@ -58,12 +74,12 @@ export function useEngineApi(): EngineApi {
     }
 
     function nextNodeId() {
-        return engine?.nodes.nextAvailableNodeId() ?? 100;
+        return engine?.nodes.newNodeId() ?? uuidv4();
     }
 
     function nextWallId() {
-        return engine?.api.getNextIds()?.wallId ?? 50;
+        return engine?.api.getNextIds()?.wallId ?? uuidv4();
     }
 
-    return { dispatch, withTransaction, beginTransaction, commitTransaction, cancelTransaction, nextNodeId, nextWallId };
+    return { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, nextNodeId, nextWallId };
 }

@@ -1,14 +1,15 @@
 import React from "react";
-import { Group, Layer, Rect } from "react-konva";
+import { Group, Layer, Line, Rect } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import { toWorldX, toWorldZ, PX_PER_WORLD } from "./toolUtils";
 import { obbCorners, collidesWithFurniture, collidesWithWalls } from "./collision2D";
-import { getFootprint2D, getTopDownUrl } from "src/engine/game/FurnitureCatalog";
+import { getFootprint2D, getTopDownUrl } from "src/engine/catalog/FurnitureCatalog";
 import { ensureImage, getLoadedImage } from "src/app/components/editor/furnitureImages";
 import { TopDownSprite } from "src/app/components/editor/furnitureSprite";
-import { snapToGridM } from "src/shared/constants/placement";
+import { resolveAlignment, type AlignGuide } from "src/shared/geometry/alignment";
+import { buildWallSegments2D, buildFurnitureBoxes2D } from "src/app/components/editor/PlanView2D/wallSegments2D";
 
 /**
  * PlaceFurnitureTool — đặt nội thất trong PlanView2D (tab 2D) bằng ghost top-down.
@@ -28,6 +29,8 @@ export class PlaceFurnitureTool implements ToolBase {
     private topDownUrl: string | undefined;
     /** Vị trí ghost world-space (mét), null khi con trỏ chưa di chuyển vào canvas. */
     private ghost: { x: number; z: number } | null = null;
+    /** Đường gióng wall-snap hiện tại (world-space) để vẽ trong renderOverlay. */
+    private guides: AlignGuide[] = [];
     /** true khi ghost chồng tường hoặc nội thất khác → preview đỏ, chặn đặt. */
     private colliding = false;
 
@@ -43,6 +46,7 @@ export class PlaceFurnitureTool implements ToolBase {
         this.topDownUrl = getTopDownUrl(modelId);
         if (this.topDownUrl) ensureImage(this.topDownUrl);
         this.ghost = null;
+        this.guides = [];
         this.colliding = false;
     }
 
@@ -51,6 +55,7 @@ export class PlaceFurnitureTool implements ToolBase {
         this.modelId = null;
         this.onComplete = null;
         this.ghost = null;
+        this.guides = [];
         this.colliding = false;
         cb?.();
     }
@@ -68,15 +73,25 @@ export class PlaceFurnitureTool implements ToolBase {
         this.colliding = collidesWithFurniture(poly, furniture) || collidesWithWalls(poly, walls);
     }
 
+    /** Snap ghost theo nguồn chân lý chung (edge + wall) từ điểm world. */
+    private computeGhost(worldX: number, worldZ: number): void {
+        const segs = buildWallSegments2D(this.ctx.walls, this.ctx.nodeById, this.ctx.originX, this.ctx.originY);
+        const boxes = buildFurnitureBoxes2D(this.ctx.furniture, this.ctx.originX, this.ctx.originY);
+        const r = resolveAlignment({
+            cx: worldX, cz: worldZ,
+            hw: this.footprint.width / 2, hd: this.footprint.depth / 2,
+            rotY: 0, walls: segs, neighbors: boxes,
+        });
+        this.ghost = { x: r.x, z: r.z };
+        this.guides = r.guides;
+    }
+
     onStageMouseMove(e: KonvaEventObject<MouseEvent>): void {
         if (!this.modelId) return;
         const stage = e.target.getStage();
         const ptr = stage?.getRelativePointerPosition();
         if (!ptr) return;
-        this.ghost = {
-            x: snapToGridM(toWorldX(ptr.x, this.ctx.originX)),
-            z: snapToGridM(toWorldZ(ptr.y, this.ctx.originY)),
-        };
+        this.computeGhost(toWorldX(ptr.x, this.ctx.originX), toWorldZ(ptr.y, this.ctx.originY));
         this.recomputeCollision();
         this.ctx.requestUpdate();
     }
@@ -86,18 +101,17 @@ export class PlaceFurnitureTool implements ToolBase {
         e.cancelBubble = true;
         if (!this.ghost) {
             const ptr = e.target.getStage()?.getRelativePointerPosition();
-            if (ptr) {
-                this.ghost = {
-                    x: snapToGridM(toWorldX(ptr.x, this.ctx.originX)),
-                    z: snapToGridM(toWorldZ(ptr.y, this.ctx.originY)),
-                };
-            }
+            if (ptr) this.computeGhost(toWorldX(ptr.x, this.ctx.originX), toWorldZ(ptr.y, this.ctx.originY));
         }
         if (!this.ghost) return;
         // Chặn đặt khi chồng tường / nội thất khác — giữ ghost để người dùng chỉnh vị trí.
         this.recomputeCollision();
         if (this.colliding) { this.ctx.requestUpdate(); return; }
-        this.ctx.dispatch({ type: "PLACE_FURNITURE", modelId: this.modelId, x: this.ghost.x, z: this.ghost.z, rotY: 0 });
+        // Dùng asyncTransaction để snapshot được chụp TRƯỚC và đóng SAU khi entity spawn xong.
+        // Đảm bảo undo sau placement xóa được entity (R1 fix).
+        const cmd = { type: "PLACE_FURNITURE" as const, modelId: this.modelId, x: this.ghost.x, z: this.ghost.z, rotY: 0 };
+        this.ctx.asyncTransaction("place furniture", () => this.ctx.dispatchAsync(cmd))
+            .catch(err => console.error("[PlaceFurnitureTool] place failed:", err));
         this.complete();
     }
 
@@ -130,6 +144,17 @@ export class PlaceFurnitureTool implements ToolBase {
 
         return (
             <Layer listening={false}>
+                {/* Đường gióng wall-snap khi mép ghost áp sát mặt tường. */}
+                {this.guides.map((g, i) => (
+                    <Line
+                        key={`guide-${i}`}
+                        points={[
+                            g.x1 * PX_PER_WORLD + originX, g.z1 * PX_PER_WORLD + originY,
+                            g.x2 * PX_PER_WORLD + originX, g.z2 * PX_PER_WORLD + originY,
+                        ]}
+                        stroke="#f8b400" strokeWidth={ss(2)} dash={[ss(8), ss(5)]} listening={false}
+                    />
+                ))}
                 <Group x={cx} y={cy} opacity={0.6} perfectDrawEnabled={false}>
                     {img ? (
                         <>
@@ -167,6 +192,7 @@ export class PlaceFurnitureTool implements ToolBase {
         this.modelId = null;
         this.onComplete = null;
         this.ghost = null;
+        this.guides = [];
         this.colliding = false;
     }
 }
