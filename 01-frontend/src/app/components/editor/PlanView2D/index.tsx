@@ -13,13 +13,15 @@
  *   usePlanCamera → stageScale, stagePos, pan, zoom, helper ss()/sh().
  *   usePlanInput  → wheel/mouse handlers delegate xuống activeTool hoặc camera pan.
  *
- * Selection:
- *   selectedWallIds    — Set<wallId> cho WallLayer + WallPropertiesPanel.
- *   selectedFurnitureId — entityId cho FurnitureLayer + HandleLayer (Transformer).
+ * Selection (R6 — single owner):
+ *   useUIStore.selected        — nguồn duy nhất cho Material Sidebar (object/wall/room).
+ *   useUIStore.selectedWallIds — multi-select tường 2D; tự động sync selected khi size===1.
+ *   selectedFurnitureId / selectedRoomKey — derived từ selected, không là state riêng.
+ *   Đã xóa 4 useEffect sync selection cũ (R6).
  *
  * Status bar (góc trên trái) hiển thị số node, wall, wall đang chọn, và zoom level.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { Stage } from "react-konva";
 import type Konva from "konva";
 
@@ -70,27 +72,37 @@ export default function PlanView2D() {
     const isSelectMode = activeTool2D === "select";
     const isPlacingWall = activeTool2D === "placing-wall";
 
-    // ── Selection ────────────────────────────────────────────────────────────
-    const [selectedWallIds, setSelectedWallIds] = useState<Set<string>>(new Set());
-    const [selectedFurnitureId, setSelectedFurnitureId] = useState<string | null>(null);
-    const [selectedRoomKey, setSelectedRoomKey] = useState<string | null>(null);
-    const setSelected = useUIStore(s => s.setSelected);
+    // ── Selection (R6 — single owner in useUIStore) ──────────────────────────
+    // selectedWallIds và selected là nguồn sự thật duy nhất. Không có local useState
+    // hay useEffect sync — thay bằng derived values thuần.
+    const selectedWallIds    = useUIStore(s => s.selectedWallIds);
+    const setSelectedWallIds = useUIStore(s => s.setSelectedWallIds);
+    const selected           = useUIStore(s => s.selected);
+    const setSelected        = useUIStore(s => s.setSelected);
+
+    // Derived — không là state, tính inline từ selected.
+    const selectedFurnitureId: string | null = selected?.kind === "object" ? selected.id : null;
+    const selectedRoomKey:     string | null = selected?.kind === "room"   ? selected.id : null;
+
+    // Auto-clear furniture selection nếu entity đó không còn trong snapshot
+    // (e.g. xóa qua Delete shortcut rồi undo). Đây là 1 useEffect duy nhất còn lại —
+    // không thể bỏ vì đây là guard reactive, không phải sync logic.
     useEffect(() => {
         if (selectedFurnitureId !== null && !furniture.some(f => f.entityId === selectedFurnitureId))
-            setSelectedFurnitureId(null);
-    }, [furniture, selectedFurnitureId]);
-    // Chọn furniture/tường ⇒ bỏ chọn phòng (3 loại loại trừ lẫn nhau cho Material Sidebar).
-    useEffect(() => {
-        if (selectedFurnitureId || selectedWallIds.size > 0) setSelectedRoomKey(null);
-    }, [selectedFurnitureId, selectedWallIds]);
-    // Mirror selection 2D → store dùng chung để Material Sidebar đọc được (cùng nguồn với 3D).
-    // Ưu tiên: furniture (object) > tường đơn > phòng (sàn).
-    useEffect(() => {
-        if (selectedFurnitureId) setSelected({ kind: "object", id: selectedFurnitureId });
-        else if (selectedWallIds.size === 1) setSelected({ kind: "wall", id: [...selectedWallIds][0] });
-        else if (selectedRoomKey) setSelected({ kind: "room", id: selectedRoomKey });
-        else setSelected(null);
-    }, [selectedFurnitureId, selectedWallIds, selectedRoomKey, setSelected]);
+            setSelected(null);
+    }, [furniture, selectedFurnitureId, setSelected]);
+
+    /** Hàm helper: đặt furniture selection và clear wall/room. */
+    const setSelectedFurnitureId = useCallback((id: string | null) => {
+        if (id === null) {
+            if (selected?.kind === "object") setSelected(null);
+        } else {
+            setSelected({ kind: "object", id });
+            // Clear wall multi-select khi chọn furniture.
+            if (selectedWallIds.size > 0) setSelectedWallIds(new Set());
+        }
+    }, [selected, setSelected, selectedWallIds, setSelectedWallIds]);
+
     const dragTransactionOpenRef = useRef(false);
 
     // ── Freeze topology layers during drag (R2) ──────────────────────────────
@@ -152,14 +164,22 @@ export default function PlanView2D() {
     // ── Camera + input ───────────────────────────────────────────────────────
     const camera = usePlanCamera(originX, originY);
     const { stageScale, stagePos, isPanning, ss, sh, gridSizePx, gridOffsetX, gridOffsetY } = camera;
-    const inputHandlers = usePlanInput({ camera, isSelectMode, setSelectedFurnitureId, setSelectedRoomKey, getActiveTool: () => activeTool });
+    const inputHandlers = usePlanInput({ camera, isSelectMode, setSelectedFurnitureId, setSelectedRoomKey: (key) => {
+        // Chọn phòng — loại trừ furniture/tường để 3 loại không chồng nhau.
+        if (key === null) {
+            if (selected?.kind === "room") setSelected(null);
+        } else {
+            setSelected({ kind: "room", id: key });
+            if (selectedWallIds.size > 0) setSelectedWallIds(new Set());
+        }
+    }, getActiveTool: () => activeTool });
 
     // Chọn phòng (từ RoomLayer) — loại trừ furniture/tường để 3 loại không chồng nhau.
     const handleSelectRoom = useCallback((roomKey: string) => {
-        setSelectedFurnitureId(null);
-        setSelectedWallIds(new Set());
-        setSelectedRoomKey(roomKey);
-    }, []);
+        setSelected({ kind: "room", id: roomKey });
+        if (selectedWallIds.size > 0) setSelectedWallIds(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [setSelected, setSelectedWallIds]);
 
     // ── Derived ──────────────────────────────────────────────────────────────
     const singleSelectedWall = useMemo(
