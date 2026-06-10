@@ -23,7 +23,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Stage } from "react-konva";
 import type Konva from "konva";
 
-import { useFloorPlanSnapshot, type Node2D } from "src/app/store/useFloorPlanSnapshot";
+import { useFloorPlanSnapshot } from "src/app/store/useFloorPlanSnapshot";
+import type { Node2D } from "src/app/plan2d/types";
+import { buildPlanTransform } from "src/app/plan2d/PlanTransform";
 import { buildWallSegments2D } from "./wallSegments2D";
 import { useUIStore } from "src/app/store/useUIStore";
 import { useEngineOrNull } from "src/app/engine/EngineContext";
@@ -59,6 +61,9 @@ export default function PlanView2D() {
     const endWallPlacement2D   = useUIStore(s => s.endWallPlacement2D);
     const originX = viewportWidth / 2;
     const originY = viewportHeight / 2;
+    // R5: single PlanTransform object — threads through ToolContext to eliminate
+    // scattered `* 100` / PX_PER_WORLD literals. Rebuilt only when viewport changes.
+    const transform = buildPlanTransform(viewportWidth, viewportHeight);
 
     const { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo, nextNodeId, nextWallId } = useEngineApi();
     const toolMode: WallToolId = activeTool2D === "draw" ? "draw" : "select";
@@ -175,7 +180,7 @@ export default function PlanView2D() {
 
     // ── ToolContext ──────────────────────────────────────────────────────────
     activeTool.update({
-        nodes, walls, furniture, originX, originY,
+        nodes, walls, furniture, transform, originX, originY,
         stageScale, stageScaleRef: camera.stageScaleRef, stagePosRef: camera.stagePosRef,
         nodeById, selectedWallIds, setSelectedWallIds,
         dispatch, dispatchAsync, withTransaction, asyncTransaction,

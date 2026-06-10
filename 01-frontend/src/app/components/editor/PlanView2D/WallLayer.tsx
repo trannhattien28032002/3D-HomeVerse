@@ -11,7 +11,8 @@
  */
 import { memo } from "react";
 import { Arc, Layer, Line, Rect } from "react-konva";
-import type { Wall2D, Cap2D, Furniture2D, Node2D } from "src/app/store/useFloorPlanSnapshot";
+import type { Wall2D, Cap2D, Furniture2D, Node2D } from "src/app/plan2d/types";
+import { PX_PER_WORLD } from "src/shared/math/coords";
 import type { ToolBase } from "src/app/components/editor/tools/ToolBase";
 import type { ToolId } from "src/app/components/editor/tools/toolRegistry";
 
@@ -85,7 +86,7 @@ function WallLayerInner({ walls, caps, furniture, activeTool, activeTool2D, node
                         const { px, py, ux, uy, nx, ny } = basis;
                         const hw = f.cutWidthPx / 2; // nửa bề rộng lỗ (px)
                         const side = f.wallSide ?? 1;
-                        const wallThickPx = wall.thickness * 100; // thickness mét → px
+                        const wallThickPx = wall.thickness * PX_PER_WORLD; // thickness mét → px
 
                         // Điểm A, B = 2 mép lỗ dọc tim tường.
                         const ax = px - ux * hw;
