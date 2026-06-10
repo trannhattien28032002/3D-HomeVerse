@@ -27,6 +27,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useEngineOrNull } from "src/app/engine/EngineContext";
 import type { ECSSnapshot, NodeSnapshot, WallSnapshot, NodeCapSnapshot, RoomSnapshot, DimensionSnapshot, AngleDimensionSnapshot, FurnitureSnapshot } from "src/engine/events/EngineEvents";
 import { PX_PER_WORLD, threeRotYToKonvaDeg } from "src/shared/math/coords";
+import type { Vec2 } from "src/shared/types/primitives";
 
 // PX_PER_WORLD imported from shared/math/coords — single source for world↔canvas scale.
 
@@ -34,35 +35,37 @@ import { PX_PER_WORLD, threeRotYToKonvaDeg } from "src/shared/math/coords";
 
 /** Node trong pixel-space — id stable từ ECS, (x,y) là toạ độ canvas px. */
 export type Node2D = {
-    id: number;
+    id: string;
     x: number; // px (canvas)
     y: number; // px (Konva Y = world Z * 100 + offsetY)
 };
 
 /** Wall trong pixel-space — polygon là 4 điểm miter-cut đã tính từ WallGeometrySystem. */
 export type Wall2D = {
-    id: number;
-    startNodeId: number;
-    endNodeId: number;
+    id: string;
+    startNodeId: string;
+    endNodeId: string;
     thickness: number; // world units (metres) — giữ nguyên để PlanView dùng cho snap
     height: number;    // world units (metres)
     cx: number; // center px — dùng cho label
     cy: number; // center px
     /** 4-point miter polygon (px) — undefined khi wall chưa có WallPolygon component */
-    polygon?: { x: number; y: number }[];
+    polygon?: Vec2[];
 };
 
 /** Cap polygon tại junction ≥ 3 tường — điền gap giữa các miter corners. */
 export type Cap2D = {
-    nodeId: number;
-    polygon: { x: number; y: number }[]; // N-gon px
+    nodeId: string;
+    polygon: Vec2[]; // N-gon px
 };
 
 /** Phòng được phát hiện — polygon px + centroid px cho area label. */
 export type Room2D = {
     id: string;
+    /** Khóa phòng bền (sorted nodeIds) — dùng để gắn material sàn (SET_FLOOR_MATERIAL). */
+    key: string;
     area: number;          // m²
-    polygon: { x: number; y: number }[];
+    polygon: Vec2[];
     centroidX: number;     // px — area-weighted centroid (Shoelace)
     centroidY: number;
     label: string;         // e.g. "12.5 m²" hoặc "12 m²"
@@ -70,7 +73,7 @@ export type Room2D = {
 
 /** Dimension annotation cho một wall — toạ độ đã offset vuông góc với tường. */
 export type Dimension2D = {
-    wallId: number;
+    wallId: string;
     length: number; // metres (giữ nguyên để tính hiển thị)
     startX: number; // px
     startY: number; // px
@@ -83,7 +86,7 @@ export type Dimension2D = {
 
 /** Angle annotation tại corner — Arc Konva + label. */
 export type AngleDimension2D = {
-    nodeId: number;
+    nodeId: string;
     cx: number;            // corner px
     cy: number;
     angle: number;         // interior angle degrees [5, 175]
@@ -96,7 +99,7 @@ export type AngleDimension2D = {
 
 /** Furniture trong pixel-space — footprint top-down để vẽ lên Konva. */
 export type Furniture2D = {
-    entityId: number;
+    entityId: string;
     modelId: string;
     x: number;       // tâm px (canvasX = worldX * 100 + ox)
     y: number;       // tâm px (Konva Y = worldZ * 100 + oy)
@@ -105,6 +108,22 @@ export type Furniture2D = {
     rotDeg: number;  // độ — Konva rotation (clockwise), từ Transform.rotY
     /** Top-down image URL. Undefined = render gray box + label fallback. */
     topDownUrl: string | undefined;
+    // Wall-item metadata (undefined cho floor furniture)
+    isWallItem?: boolean;
+    wallBehavior?: "opening" | "mount";
+    hostWallId?: string;
+    /** Vị trí dọc tim tường, 0..1. */
+    wallT?: number;
+    /** Mặt tường: +1 / −1. */
+    wallSide?: number;
+    /** Bề rộng lỗ khoét đã convert sang px. */
+    cutWidthPx?: number;
+    /** Chiều cao lỗ khoét đã convert sang px. */
+    cutHeightPx?: number;
+    /** Cao độ mép dưới lỗ (mét) — giữ đơn vị mét vì chỉ dùng cho logic, không vẽ. */
+    sill?: number;
+    /** Wall-item chồng chỗ với item khác trên cùng tường → vẽ cảnh báo đỏ. */
+    overlapping?: boolean;
 };
 
 // ─── Conversion helpers ────────────────────────────────────────────────────────
@@ -140,7 +159,7 @@ function capToPx(c: NodeCapSnapshot, ox: number, oy: number): Cap2D {
  * Đúng cho cả convex và non-convex. Fallback về trung bình vertex khi area = 0.
  * Dùng để đặt label diện tích phòng ở vị trí chính giữa (không phải trung bình vertex).
  */
-function computePolygonCentroid(pts: { x: number; y: number }[]): { x: number; y: number } {
+function computePolygonCentroid(pts: Vec2[]): Vec2 {
     let area = 0, cx = 0, cy = 0;
     const n = pts.length;
     for (let i = 0; i < n; i++) {
@@ -167,7 +186,7 @@ function roomToPx(r: RoomSnapshot, ox: number, oy: number): Room2D {
     const { x: centroidX, y: centroidY } = computePolygonCentroid(polygon);
     const a = r.area;
     const label = a >= 10 ? `${Math.round(a)} m²` : `${a.toFixed(1)} m²`;
-    return { id: r.id, area: a, polygon, centroidX, centroidY, label };
+    return { id: r.id, key: r.key, area: a, polygon, centroidX, centroidY, label };
 }
 
 function dimToPx(d: DimensionSnapshot, ox: number, oy: number): Dimension2D {
@@ -201,7 +220,7 @@ function angleToPx(a: AngleDimensionSnapshot, ox: number, oy: number): AngleDime
 }
 
 function furnitureToPx(f: FurnitureSnapshot, ox: number, oy: number): Furniture2D {
-    return {
+    const base: Furniture2D = {
         entityId: f.entityId,
         modelId: f.modelId,
         x: f.x * PX_PER_WORLD + ox,
@@ -211,6 +230,18 @@ function furnitureToPx(f: FurnitureSnapshot, ox: number, oy: number): Furniture2
         rotDeg: threeRotYToKonvaDeg(f.rotY),
         topDownUrl: f.topDownUrl,
     };
+    if (f.isWallItem) {
+        base.isWallItem = true;
+        base.wallBehavior = f.wallBehavior;
+        base.hostWallId = f.hostWallId;
+        base.wallT = f.wallT;
+        base.wallSide = f.wallSide;
+        base.sill = f.sill;
+        base.overlapping = f.overlapping;
+        if (f.cutWidth !== undefined) base.cutWidthPx = f.cutWidth * PX_PER_WORLD;
+        if (f.cutHeight !== undefined) base.cutHeightPx = f.cutHeight * PX_PER_WORLD;
+    }
+    return base;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -227,6 +258,11 @@ function furnitureToPx(f: FurnitureSnapshot, ox: number, oy: number): Furniture2
  * Lý do dùng useState + useEffect thay vì useSyncExternalStore:
  *   EngineEvents là custom EventBus không theo React store contract.
  *   useEffect + cleanup unsubscribe đảm bảo không leak listener khi component unmount.
+ *
+ * Performance (R2):
+ *   useMemo tách thành từng collection riêng biệt — khi chỉ furniture thay đổi
+ *   (e.g. drag kết thúc), walls/rooms/dimensions không re-map lại, các layer
+ *   dùng React.memo sẽ không re-render.
  */
 export function useFloorPlanSnapshot(vpW: number, vpH: number): {
     nodes: Node2D[];
@@ -249,19 +285,57 @@ export function useFloorPlanSnapshot(vpW: number, vpH: number): {
         return engine.api.events.on("snapshot", setSnap);
     }, [engine]); // re-run khi engine lần đầu available qua context
 
-    return useMemo(() => {
-        if (!snap) return { nodes: [], walls: [], caps: [], rooms: [], dimensions: [], angleDimensions: [], furniture: [] };
-        const ox = vpW / 2, oy = vpH / 2;
-        return {
-            nodes:           snap.nodes.map(n => nodeToPx(n, ox, oy)),
-            walls:           snap.walls.map(w => wallToPx(w, ox, oy)),
-            caps:            snap.caps.map(c => capToPx(c, ox, oy)),
-            rooms:           snap.rooms.map(r => roomToPx(r, ox, oy)),
-            dimensions:      snap.dimensions.map(d => dimToPx(d, ox, oy)),
-            angleDimensions: (snap.angleDimensions ?? []).map(a => angleToPx(a, ox, oy)),
-            furniture:       (snap.furniture ?? []).map(f => furnitureToPx(f, ox, oy)),
-        };
-    }, [snap, vpW, vpH]);
+    // ── Per-collection snapshot memos ─────────────────────────────────────────
+    // Mỗi collection dùng useMemo riêng để chỉ collection thay đổi mới trigger re-map.
+    // Khi drag furniture: chỉ snap.furniture đổi → chỉ furniture memo invalidate;
+    // WallLayer/RoomLayer/DimensionLayer (dùng React.memo) không re-render.
+
+    const ox = vpW / 2;
+    const oy = vpH / 2;
+
+    const nodes = useMemo(
+        () => snap ? snap.nodes.map(n => nodeToPx(n, ox, oy)) : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snap?.nodes, ox, oy],
+    );
+
+    const walls = useMemo(
+        () => snap ? snap.walls.map(w => wallToPx(w, ox, oy)) : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snap?.walls, ox, oy],
+    );
+
+    const caps = useMemo(
+        () => snap ? snap.caps.map(c => capToPx(c, ox, oy)) : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snap?.caps, ox, oy],
+    );
+
+    const rooms = useMemo(
+        () => snap ? snap.rooms.map(r => roomToPx(r, ox, oy)) : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snap?.rooms, ox, oy],
+    );
+
+    const dimensions = useMemo(
+        () => snap ? snap.dimensions.map(d => dimToPx(d, ox, oy)) : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snap?.dimensions, ox, oy],
+    );
+
+    const angleDimensions = useMemo(
+        () => snap ? (snap.angleDimensions ?? []).map(a => angleToPx(a, ox, oy)) : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snap?.angleDimensions, ox, oy],
+    );
+
+    const furniture = useMemo(
+        () => snap ? (snap.furniture ?? []).map(f => furnitureToPx(f, ox, oy)) : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snap?.furniture, ox, oy],
+    );
+
+    return { nodes, walls, caps, rooms, dimensions, angleDimensions, furniture };
 }
 
 export type { Node2D as NodeData2D, Wall2D as WallData2D, Cap2D as CapData2D, Room2D as RoomData2D };

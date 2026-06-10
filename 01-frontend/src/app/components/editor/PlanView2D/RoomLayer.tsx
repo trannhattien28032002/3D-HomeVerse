@@ -1,3 +1,13 @@
+/**
+ * Lớp Konva vẽ polygon phòng (room fill) và nhãn diện tích trong Plan 2D.
+ *
+ * Chia 2 Layer:
+ *   1. Fill layer (listening khi tool="select") — vùng phòng màu vàng nhạt,
+ *      click để bỏ chọn tường (cancelBubble = true ngăn Stage nhận event).
+ *   2. Label layer (listening=false) — hiển thị diện tích (m²) tại centroid,
+ *      chỉ render khi stageScale >= DIM_HIDE_BELOW để tránh lộn xộn khi zoom out.
+ */
+import { memo } from "react";
 import { Group, Layer, Line, Rect, Text } from "react-konva";
 import type { Room2D } from "src/app/store/useFloorPlanSnapshot";
 import type { ToolId } from "src/app/components/editor/tools/toolRegistry";
@@ -6,21 +16,22 @@ type Props = {
     rooms: Room2D[];
     stageScale: number;
     activeTool2D: ToolId;
-    setSelectedWallIds: (ids: Set<number>) => void;
+    /** Chọn phòng (theo roomKey bền) — nguồn cho Material Sidebar đổi material sàn. */
+    onSelectRoom: (roomKey: string) => void;
     ss: (px: number) => number;
 };
 
 const DIM_HIDE_BELOW = 0.25;
 
-export function RoomLayer({ rooms, stageScale, activeTool2D, setSelectedWallIds, ss }: Props) {
+function RoomLayerInner({ rooms, stageScale, activeTool2D, onSelectRoom, ss }: Props) {
     return (
         <>
-            {/* Room fills — click deselects walls */}
+            {/* Room fills — click chọn phòng (để đổi material sàn) */}
             <Layer listening={activeTool2D === "select"}>
                 {rooms.map(room => (
                     <Line key={room.id} points={room.polygon.flatMap(p => [p.x, p.y])} closed
                         fill="rgba(248,180,0,0.10)" stroke="rgba(124,88,0,0.18)" strokeWidth={2} lineJoin="round"
-                        onClick={e => { e.cancelBubble = true; setSelectedWallIds(new Set()); }}
+                        onClick={e => { e.cancelBubble = true; onSelectRoom(room.key); }}
                     />
                 ))}
             </Layer>
@@ -62,3 +73,6 @@ export function RoomLayer({ rooms, stageScale, activeTool2D, setSelectedWallIds,
         </>
     );
 }
+
+/** RoomLayer — React.memo'd để không re-render khi furniture drag (R2). */
+export const RoomLayer = memo(RoomLayerInner);

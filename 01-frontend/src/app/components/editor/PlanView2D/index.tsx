@@ -48,7 +48,8 @@ export default function PlanView2D() {
     const viewportWidth  = useUIStore(s => s.viewportWidth);
     const viewportHeight = useUIStore(s => s.viewportHeight);
     const engine         = useEngineOrNull();
-    const { nodes, walls, caps, rooms, dimensions, angleDimensions, furniture } = useFloorPlanSnapshot(viewportWidth, viewportHeight);
+    const snap = useFloorPlanSnapshot(viewportWidth, viewportHeight);
+    const { nodes, furniture } = snap;
 
     const activeTool2D         = useUIStore(s => s.activeTool2D);
     const setTool2D            = useUIStore(s => s.setTool2D);
@@ -86,6 +87,35 @@ export default function PlanView2D() {
         else setSelected(null);
     }, [selectedFurnitureId, selectedWallIds, selectedRoomKey, setSelected]);
     const dragTransactionOpenRef = useRef(false);
+
+    // ── Freeze topology layers during drag (R2) ──────────────────────────────
+    // Khi drag furniture (dragTransactionOpenRef = true), topology tường/phòng/dimension
+    // không thay đổi — đóng băng các collection này để WallLayer/RoomLayer/DimensionLayer
+    // không re-render trong suốt gesture kéo. Chỉ FurnitureLayer (với furniture prop) render.
+    //
+    // Chú ý: SnapshotSystem vẫn emit mỗi frame khi revision đổi (MOVE_FURNITURE dispatch
+    // mỗi onDragEnd) — nhưng nhờ useMemo per-collection, chỉ snap.furniture thay đổi.
+    // Các ref dưới đây freeze thêm một lớp nữa cho walls/rooms/dims khi đang drag.
+    const stableWallsRef     = useRef(snap.walls);
+    const stableCapsRef      = useRef(snap.caps);
+    const stableRoomsRef     = useRef(snap.rooms);
+    const stableDimsRef      = useRef(snap.dimensions);
+    const stableAngleDimsRef = useRef(snap.angleDimensions);
+
+    // Cập nhật các ref khi KHÔNG đang drag — đảm bảo topology luôn mới nhất sau gesture.
+    if (!dragTransactionOpenRef.current) {
+        stableWallsRef.current     = snap.walls;
+        stableCapsRef.current      = snap.caps;
+        stableRoomsRef.current     = snap.rooms;
+        stableDimsRef.current      = snap.dimensions;
+        stableAngleDimsRef.current = snap.angleDimensions;
+    }
+
+    const walls          = stableWallsRef.current;
+    const caps           = stableCapsRef.current;
+    const rooms          = stableRoomsRef.current;
+    const dimensions     = stableDimsRef.current;
+    const angleDimensions = stableAngleDimsRef.current;
 
     // ── Konva refs ───────────────────────────────────────────────────────────
     const transformerRef    = useRef<Konva.Transformer | null>(null);

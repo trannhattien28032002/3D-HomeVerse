@@ -1,3 +1,17 @@
+/**
+ * Lớp Konva vẽ chú thích kích thước trong Plan 2D.
+ *
+ * Hai loại annotation (cả 2 đều listening=false):
+ *   1. Linear dimension — đường song song với tường, hiển thị chiều dài (m).
+ *      - Extension lines từ endpoint ra ngoài DIM_OFFSET pixel.
+ *      - Nhãn xoay theo góc tường, nền trắng để dễ đọc.
+ *      - Ẩn khi stageScale < DIM_HIDE_BELOW hoặc chiều dài < MIN_DIM_LENGTH_M.
+ *   2. Angle arc — cung tròn tại node nối nhiều tường, hiển thị góc (°).
+ *      - Chỉ hiển thị khi stageScale >= ANGLE_HIDE_BELOW.
+ *
+ * ss() là hàm scale-stable: trả về pixel giữ nguyên kích thước thị giác khi zoom.
+ */
+import { memo } from "react";
 import { Arc, Circle, Group, Layer, Line, Rect, Text } from "react-konva";
 import type { Dimension2D, AngleDimension2D } from "src/app/store/useFloorPlanSnapshot";
 
@@ -14,7 +28,7 @@ type Props = {
     ss: (px: number) => number;
 };
 
-export function DimensionLayer({ dimensions, angleDimensions, stageScale, ss }: Props) {
+function DimensionLayerInner({ dimensions, angleDimensions, stageScale, ss }: Props) {
     return (
         <>
             {/* Linear dimension annotations */}
@@ -77,3 +91,6 @@ export function DimensionLayer({ dimensions, angleDimensions, stageScale, ss }: 
         </>
     );
 }
+
+/** DimensionLayer — React.memo'd để không re-render khi furniture drag (R2). */
+export const DimensionLayer = memo(DimensionLayerInner);
