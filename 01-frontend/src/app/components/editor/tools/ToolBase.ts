@@ -29,12 +29,9 @@ export type WallHandlers = {
     draggable: boolean;
     onMouseDown?: (e: KonvaEventObject<MouseEvent>) => void;
     onTap?: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onDragStart?: (e: any) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onDragMove?: (e: any) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onDragEnd?: (e: any) => void;
+    onDragStart?: (e: KonvaEventObject<MouseEvent>) => void;
+    onDragMove?: (e: KonvaEventObject<MouseEvent>) => void;
+    onDragEnd?: (e: KonvaEventObject<MouseEvent>) => void;
 };
 
 /**

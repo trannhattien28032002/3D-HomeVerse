@@ -2,7 +2,7 @@ import React from "react";
 import { Circle, Layer, Line, Text } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-import type { Wall2D } from "src/app/store/useFloorPlanSnapshot";
+import type { Wall2D } from "src/app/plan2d/types";
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import { toWorldX, toWorldZ, snapToNodeOrGrid, WALL_THICKNESS, HANDLE_HIDE_BELOW } from "./toolUtils";
 
@@ -11,7 +11,7 @@ import { toWorldX, toWorldZ, snapToNodeOrGrid, WALL_THICKNESS, HANDLE_HIDE_BELOW
 type WallDragOrigin = {
     startX: number; startY: number;
     endX: number;   endY: number;
-    startNodeId: number; endNodeId: number;
+    startNodeId: string; endNodeId: string;
     pointerStartX: number; pointerStartY: number;
 };
 
@@ -40,7 +40,7 @@ export class SelectTool implements ToolBase {
     /** Lưu trạng thái khi bắt đầu kéo wall body — cần để tính delta di chuyển. */
     private wallDragOrigin: WallDragOrigin | null = null;
     /** Lưu vị trí world ban đầu của node khi kéo endpoint handle. */
-    private nodeDragOrigin = new Map<number, { wx: number; wz: number }>();
+    private nodeDragOrigin = new Map<string, { wx: number; wz: number }>();
 
     update(ctx: ToolContext): void {
         this.ctx = ctx;
@@ -121,8 +121,13 @@ export class SelectTool implements ToolBase {
                 );
                 const actualDx = snappedStart.x - origin.startX;
                 const actualDy = snappedStart.y - origin.startY;
-                dispatch({ type: "MOVE_NODE", nodeId: origin.startNodeId, x: toWorldX(snappedStart.x, originX), z: toWorldZ(snappedStart.y, originY) });
-                dispatch({ type: "MOVE_NODE", nodeId: origin.endNodeId,   x: toWorldX(origin.endX + actualDx, originX), z: toWorldZ(origin.endY + actualDy, originY) });
+                // Tịnh tiến cứng: dời cả 2 node trong MỘT command atomic. Tường này
+                // rigid (cả 2 node dời) → item bám theo qua `t`; tường hàng xóm (chung
+                // 1 node) được reshape giữ item đứng yên — reconcile 1 lần trong handler.
+                dispatch({ type: "MOVE_NODES", moves: [
+                    { nodeId: origin.startNodeId, x: toWorldX(snappedStart.x, originX),     z: toWorldZ(snappedStart.y, originY) },
+                    { nodeId: origin.endNodeId,   x: toWorldX(origin.endX + actualDx, originX), z: toWorldZ(origin.endY + actualDy, originY) },
+                ] });
             },
 
             onDragEnd: (e: KonvaEventObject<MouseEvent>) => {
@@ -191,6 +196,7 @@ export class SelectTool implements ToolBase {
                             beginTransaction("move node");
                         }}
                         onDragMove={(ev: KonvaEventObject<MouseEvent>) => {
+                            // Resize endpoint: dời 1 node — handler tự reconcile giữ cửa/kệ đứng yên.
                             dispatch({ type: "MOVE_NODE", nodeId: node.id, x: toWorldX(ev.target.x(), originX), z: toWorldZ(ev.target.y(), originY) });
                         }}
                         onDragEnd={(ev: KonvaEventObject<MouseEvent>) => {
@@ -208,8 +214,8 @@ export class SelectTool implements ToolBase {
                             this.nodeDragOrigin.delete(node.id);
                             commitTransaction();
                         }}
-                        onMouseEnter={(ev: any) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "crosshair"; }}
-                        onMouseLeave={(ev: any) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "default"; }}
+                        onMouseEnter={(ev: KonvaEventObject<MouseEvent>) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "crosshair"; }}
+                        onMouseLeave={(ev: KonvaEventObject<MouseEvent>) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "default"; }}
                     />
                 ))}
 

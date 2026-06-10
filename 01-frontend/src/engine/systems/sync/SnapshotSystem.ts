@@ -40,8 +40,8 @@ export class SnapshotSystem extends System {
     private readonly nodes: NodeRegistry;
     /** Tham chiếu DimensionSystem để lấy lastDimensions sau khi system kia chạy xong. */
     private readonly dimSystem: DimensionSystem;
-    /** World.revision của snapshot phát gần nhất — bỏ qua rebuild khi không đổi. */
-    private _lastRevision = "";
+    /** World.revision của snapshot phát gần nhất — bỏ qua rebuild khi không đổi. R9: number (từ int counter). */
+    private _lastRevision: number = -1;
 
     constructor(events: EngineEvents, nodes: NodeRegistry, dimSystem: DimensionSystem) {
         super();
@@ -101,6 +101,7 @@ export class SnapshotSystem extends System {
             const geo = world.getComponent(e, RoomGeometry)!;
             rooms.push({
                 id: `room-${e}`,
+                key: geo.key,
                 area: geo.area,
                 polygon: geo.points.map(p => ({ x: p.x, z: p.z }))
             });

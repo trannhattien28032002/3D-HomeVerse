@@ -315,6 +315,9 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     };
 
     instanceRef.current = engineInstance;
+    // R9 (L1): DEV-only escape hatch. import.meta.env.DEV is statically false in
+    // production builds (Vite replaces it at build time) → dead-code eliminated.
+    // Confirmed: window.gameEngine is NOT reachable in production bundles.
     if (import.meta.env.DEV) window.gameEngine = engineInstance;
     return engineInstance;
 }
