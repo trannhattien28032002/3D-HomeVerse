@@ -4,11 +4,9 @@ import type { KonvaEventObject } from "konva/lib/Node";
 
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import { obbCorners, collidesWithFurniture, collidesWithWalls } from "./collision2D";
-import { getFootprint2D, getTopDownUrl } from "src/engine/catalog/FurnitureCatalog";
-import { ensureImage, getLoadedImage } from "src/app/components/editor/furnitureImages";
-import { TopDownSprite } from "src/app/components/editor/furnitureSprite";
+import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveAlignment, type AlignGuide } from "src/shared/geometry/alignment";
-import { buildWallSegments2D, buildFurnitureBoxes2D } from "src/app/components/editor/PlanView2D/wallSegments2D";
+import { buildWallSegments2D, buildFurnitureBoxes2D } from "src/app/components/editor/views/PlanView2D/wallSegments2D";
 
 /**
  * PlaceFurnitureTool — đặt nội thất trong PlanView2D (tab 2D) bằng ghost top-down.
@@ -18,14 +16,14 @@ import { buildWallSegments2D, buildFurnitureBoxes2D } from "src/app/components/e
  *   left-click  → dispatch PLACE_FURNITURE {x,z,rotY:0} → onComplete()
  *   right-click / Esc → onComplete() (hủy, không đặt)
  *
- * Ghost render: ảnh top-down PNG nếu catalog có → else Rect xám gạch đứt.
+ * Ghost render: Rect gạch đứt theo đúng footprint va chạm 3D (vàng = đặt được,
+ * đỏ = chồng tường/vật khác).
  */
 export class PlaceFurnitureTool implements ToolBase {
     private ctx!: ToolContext;
     private modelId: string | null = null;
     private onComplete: (() => void) | null = null;
     private footprint = { width: 0.8, depth: 0.8 };
-    private topDownUrl: string | undefined;
     /** Vị trí ghost world-space (mét), null khi con trỏ chưa di chuyển vào canvas. */
     private ghost: { x: number; z: number } | null = null;
     /** Đường gióng wall-snap hiện tại (world-space) để vẽ trong renderOverlay. */
@@ -42,8 +40,6 @@ export class PlaceFurnitureTool implements ToolBase {
         this.modelId = modelId;
         this.onComplete = onComplete;
         this.footprint = getFootprint2D(modelId);
-        this.topDownUrl = getTopDownUrl(modelId);
-        if (this.topDownUrl) ensureImage(this.topDownUrl);
         this.ghost = null;
         this.guides = [];
         this.colliding = false;
@@ -138,7 +134,6 @@ export class PlaceFurnitureTool implements ToolBase {
         const w = transform.toPxDim(this.footprint.width);
         const d = transform.toPxDim(this.footprint.depth);
 
-        const img = this.topDownUrl ? getLoadedImage(this.topDownUrl) : null;
         const bad = this.colliding;
         const crossColor = bad ? "#c81e1e" : "#7c5800";
 
@@ -156,30 +151,14 @@ export class PlaceFurnitureTool implements ToolBase {
                     />
                 ))}
                 <Group x={cx} y={cy} opacity={0.6} perfectDrawEnabled={false}>
-                    {img ? (
-                        <>
-                            <TopDownSprite image={img} url={this.topDownUrl} width={w} depth={d} />
-                            {/* Phủ đỏ + viền đỏ khi va chạm — sprite không đổi màu trực tiếp được. */}
-                            {bad && (
-                                <Rect
-                                    width={w} height={d}
-                                    offsetX={w / 2} offsetY={d / 2}
-                                    fill="rgba(200,30,30,0.38)"
-                                    stroke="#c81e1e"
-                                    strokeWidth={ss(2)}
-                                />
-                            )}
-                        </>
-                    ) : (
-                        <Rect
-                            width={w} height={d}
-                            offsetX={w / 2} offsetY={d / 2}
-                            fill={bad ? "rgba(200,30,30,0.22)" : "rgba(248,180,0,0.18)"}
-                            stroke={bad ? "#c81e1e" : "#7c5800"}
-                            strokeWidth={ss(1.5)}
-                            dash={[ss(6), ss(4)]}
-                        />
-                    )}
+                    <Rect
+                        width={w} height={d}
+                        offsetX={w / 2} offsetY={d / 2}
+                        fill={bad ? "rgba(200,30,30,0.22)" : "rgba(248,180,0,0.18)"}
+                        stroke={bad ? "#c81e1e" : "#7c5800"}
+                        strokeWidth={ss(1.5)}
+                        dash={[ss(6), ss(4)]}
+                    />
                 </Group>
                 {/* Tâm thập tự nhỏ để thấy điểm snap */}
                 <Rect x={cx - ss(5)} y={cy - ss(0.5)} width={ss(10)} height={ss(1)} fill={crossColor} />

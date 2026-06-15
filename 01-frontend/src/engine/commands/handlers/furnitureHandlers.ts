@@ -26,9 +26,8 @@ import { collectWallSegments } from "src/engine/adapters/wallSegments";
 import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
 import { findMountWall } from "src/engine/adapters/wallRefs";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
-import { wallItemOverlaps, occupancyLane, type WallItemRange } from "src/shared/geometry/wallMount";
-import { Query } from "src/engine/ecs/Query";
-import { World } from "src/engine/ecs/World";
+import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
+import { wallItemOverlaps, occupancyLane } from "src/shared/geometry/wallMount";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
 
@@ -49,7 +48,7 @@ type ResetMaterialCmd = Extract<EngineCommand, { type: "RESET_FURNITURE_MATERIAL
 // undo snapshot được chụp SAU khi entity đã thực sự tồn tại trong World.
 export function handlePlaceFurniture(command: PlaceFurnitureCmd, deps: DispatcherDeps): Promise<void> {
     const { world, scene, gltfLoader, modelRegistry, materialLibrary } = deps;
-    return spawnFurnitureGLB(world, scene, command.modelId, command.x, command.z, command.rotY, gltfLoader, modelRegistry, command.materials, materialLibrary)
+    return spawnFurnitureGLB(world, scene, command.modelId, command.x, command.z, command.rotY, gltfLoader, modelRegistry, command.materials, materialLibrary, command.y)
         .then(() => undefined)
         .catch(err => console.error("PLACE_FURNITURE failed:", err));
 }
@@ -96,7 +95,7 @@ export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDep
     // Chồng opening/kệ khác trên cùng tường → từ chối (giữ nguyên, markDirty để 2D snap lại).
     // Lane: cửa (opening) chiếm cả hai mặt; kệ chỉ chiếm mặt theo command.side.
     const lane = occupancyLane(wo ? "opening" : "mount", command.side);
-    const occupied = collectWallItemRanges(world, command.hostWallId, wallLen, command.entityId);
+    const occupied = collectOccupiedRanges(world, command.hostWallId, wallLen, command.entityId);
     if (wallItemOverlaps(t, halfWidthT, lane, occupied)) { world.markDirty(); return; }
 
     if (wo) {
@@ -109,37 +108,6 @@ export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDep
         wm!.side = command.side;
     }
     world.markDirty();
-}
-
-/**
- * Gom t-range của mọi wall item trên cùng tường (trừ entity đang kéo).
- * Bản sao thuần-ECS của `gizmoHandles.collectOccupiedRanges` (3D twin) — tránh kéo
- * three/addons (TransformControls) vào tầng command handler.
- */
-function collectWallItemRanges(
-    world: World,
-    hostWallId: string,
-    wallLen: number,
-    excludeEntity: string,
-): WallItemRange[] {
-    const ranges: WallItemRange[] = [];
-    for (const e of Query.entitiesWith(world, WallOpening)) {
-        if (e === excludeEntity) continue;
-        const wo = world.getComponent(e, WallOpening)!;
-        if (wo.hostWallId !== hostWallId) continue;
-        const halfT = (wo.width / 2) / wallLen;
-        ranges.push({ tMin: wo.t - halfT, tMax: wo.t + halfT, lane: occupancyLane("opening", wo.side) });
-    }
-    for (const e of Query.entitiesWith(world, WallMounted)) {
-        if (e === excludeEntity) continue;
-        const wm = world.getComponent(e, WallMounted)!;
-        if (wm.hostWallId !== hostWallId) continue;
-        const model = world.getComponent(e, Model3D);
-        if (!model) continue;
-        const halfT = (getFootprint2D(model.modelId).width / 2) / wallLen;
-        ranges.push({ tMin: wm.t - halfT, tMax: wm.t + halfT, lane: occupancyLane("mount", wm.side) });
-    }
-    return ranges;
 }
 
 // =================================================================

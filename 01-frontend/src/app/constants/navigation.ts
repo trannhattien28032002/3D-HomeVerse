@@ -7,7 +7,7 @@ export type NavItem = {
   icon: string;
   label: string;
   modes: Mode[];
-  /** Called on click. Receives setMode and the engine API (may be null before engine is ready). */
+  /** Gọi khi click. Nhận setMode và engine API (có thể null trước khi engine sẵn sàng). */
   action?: (setMode: (m: Mode) => void, engine: EngineApi | null) => void;
 };
 

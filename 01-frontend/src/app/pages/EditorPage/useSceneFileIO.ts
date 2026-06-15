@@ -21,7 +21,7 @@ import type { EngineInstance } from "src/engine/engineTypes";
 export type SceneFileIOResult = {
     handleSave: () => void;
     handleLoad: () => void;
-    fileInputRef: RefObject<HTMLInputElement>;
+    fileInputRef: RefObject<HTMLInputElement | null>;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
@@ -57,7 +57,11 @@ export function useSceneFileIO(engineRef: RefObject<EngineInstance | null>): Sce
                 if (validationFailed(result)) {
                     alert(`Cannot load scene: ${result.error}`);
                 } else {
-                    deserializeScene(raw as SceneDocument, eng);
+                    // deserializeScene async (C1) — spawn GLB tuần tự; báo lỗi nếu thất bại.
+                    void deserializeScene(raw as SceneDocument, eng).catch((err) => {
+                        console.error("[useSceneFileIO] deserialize failed:", err);
+                        alert("Failed to rebuild scene from file.");
+                    });
                 }
             } catch {
                 alert("Failed to read scene file. Make sure it is a valid .homeverseplan file.");

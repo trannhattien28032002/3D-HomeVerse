@@ -14,7 +14,7 @@
  *   - RESOLVE_INTERSECTIONS: splits crossing walls at intersection point
  *   - Dispatcher routing: all sync commands reach the correct handler
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import * as THREE from "three";
 
 import { World } from "src/engine/ecs/World";
@@ -41,7 +41,7 @@ function buildDeps(): { deps: DispatcherDeps; world: World; nodeRegistry: NodeRe
     const scene = new THREE.Scene();
     const meshRegistry = new MeshRegistry(scene);
     const materialRegistry = new MaterialRegistry();
-    const modelRegistry = new ModelRegistry();
+    const modelRegistry = new ModelRegistry(scene);
     const entityRegistry = new EntityRegistry(world, meshRegistry, modelRegistry);
     const nodeRegistry = new NodeRegistry();
     const wallEntityByWallId = new Map<string, string>();
@@ -175,6 +175,38 @@ describe("REMOVE_WALL", () => {
         // Should not throw
         expect(() => dispatch({ type: "REMOVE_WALL", wallId: "nonexistent" })).not.toThrow();
     });
+
+    it("cascade-disposes wall-items (WallOpening + WallMounted) hosted on the wall", () => {
+        const { deps, world } = buildDeps();
+        const { dispatch } = createDispatcher(deps);
+        addWall(dispatch, "w1", "nA", 0, 0, "nB", 4, 0);
+
+        const door = world.createEntity();
+        world.addComponent(door, new WallOpening("w1", 0.5, 0.9, 2.1, 0, 1));
+        const shelf = world.createEntity();
+        world.addComponent(shelf, new WallMounted("w1", 0.75, 1, 1.3));
+
+        dispatch({ type: "REMOVE_WALL", wallId: "w1" });
+
+        // Both wall-item entities are destroyed along with the wall.
+        expect(world.hasComponent(door, WallOpening)).toBe(false);
+        expect(world.hasComponent(shelf, WallMounted)).toBe(false);
+    });
+
+    it("does NOT dispose wall-items hosted on a different wall", () => {
+        const { deps, world } = buildDeps();
+        const { dispatch } = createDispatcher(deps);
+        addWall(dispatch, "w1", "nA", 0, 0, "nB", 4, 0);
+        addWall(dispatch, "w2", "nB", 4, 0, "nC", 8, 0);
+
+        const doorOnW2 = world.createEntity();
+        world.addComponent(doorOnW2, new WallOpening("w2", 0.5, 0.9, 2.1, 0, 1));
+
+        dispatch({ type: "REMOVE_WALL", wallId: "w1" });
+
+        // Door belongs to w2 → must survive removal of w1.
+        expect(world.hasComponent(doorOnW2, WallOpening)).toBe(true);
+    });
 });
 
 describe("UPDATE_WALL", () => {
@@ -209,7 +241,8 @@ describe("UPDATE_WALL", () => {
 
         // Manually add WallPolygon to simulate a built mesh
         const entity = deps.wallEntityByWallId.get("w1")!;
-        world.addComponent(entity, new WallPolygon([]));
+        const zp = { x: 0, z: 0 };
+        world.addComponent(entity, new WallPolygon([zp, zp, zp, zp]));
         expect(world.hasComponent(entity, WallPolygon)).toBe(true);
 
         dispatch({ type: "UPDATE_WALL", wallId: "w1", thickness: 0.3 });
@@ -255,7 +288,8 @@ describe("MOVE_NODE / MOVE_NODES", () => {
         addWall(dispatch, "w1", "nA", 0, 0, "nB", 3, 0);
 
         const entity = deps.wallEntityByWallId.get("w1")!;
-        world.addComponent(entity, new WallPolygon([]));
+        const zp = { x: 0, z: 0 };
+        world.addComponent(entity, new WallPolygon([zp, zp, zp, zp]));
 
         dispatch({ type: "MOVE_NODE", nodeId: "nA", x: 1, z: 0 });
 

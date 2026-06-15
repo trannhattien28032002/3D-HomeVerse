@@ -1,4 +1,4 @@
-/**
+    /**
  * SceneDocument — định dạng file lưu trữ scene HomeVerse (.homeverseplan).
  *
  * Chỉ lưu topology (nodes + walls) — KHÔNG lưu mesh, material, hay render state.
@@ -6,72 +6,108 @@
  *
  * Phiên bản hiện tại: v1. Bump version khi có breaking change, viết migration function.
  *
- * HomeVerse Scene Document — persistent file format.
- *
- * Design rules:
- *  - `version` is a discriminated literal so migration functions can switch on it.
- *  - Only topology is stored (nodes + walls). All geometry is regenerated from ECS
- *    by the normal system pipeline after deserialization.
- *  - No mesh data, no material data, no render state.
- *  - Add new optional fields inside the SAME version when backward-compatible.
- *    Bump version only on breaking changes; provide a migration function.
+ * Quy tắc thiết kế:
+ *  - `version` là literal phân biệt (discriminated) để hàm migration switch theo nó.
+ *  - Chỉ lưu topology (nodes + walls). Mọi geometry được ECS tái tạo qua pipeline
+ *    system bình thường sau khi deserialize.
+ *  - Không lưu mesh, không material, không render state.
+ *  - Thêm field optional MỚI trong CÙNG version nếu vẫn tương thích ngược.
+ *    Chỉ bump version khi có breaking change; kèm hàm migration.
  */
 
 // ── Node record ───────────────────────────────────────────────────────────────
 
 export type SceneNodeRecord = {
-    /** Stable numeric ID — must be unique within the document. */
-    id: number;
-    /** World-space X position (metres). */
+    /** ID uuid ổn định — phải duy nhất trong document. */
+    id: string;
+    /** Vị trí X world-space (mét). */
     x: number;
-    /** World-space Z position (metres). */
+    /** Vị trí Z world-space (mét). */
     z: number;
 };
 
 // ── Wall record ───────────────────────────────────────────────────────────────
 
 export type SceneWallRecord = {
-    /** Stable wall ID — must be unique within the document. */
-    wallId: number;
-    /** ID of the start node — must exist in the nodes array. */
-    startNodeId: number;
-    /** ID of the end node — must exist in the nodes array. */
-    endNodeId: number;
-    /** Wall thickness in metres (e.g. 0.15). */
+    /** ID tường uuid ổn định — phải duy nhất trong document. */
+    wallId: string;
+    /** ID node đầu — phải tồn tại trong mảng nodes. */
+    startNodeId: string;
+    /** ID node cuối — phải tồn tại trong mảng nodes. */
+    endNodeId: string;
+    /** Độ dày tường (mét, ví dụ 0.15). */
     thickness: number;
-    /** Wall height in metres (e.g. 3.2). */
+    /** Chiều cao tường (mét, ví dụ 3.2). */
     height: number;
+    /**
+     * Material PBR áp lên CẢ tường (file cũ, 1 material). Optional, đọc-back-compat:
+     * khi nạp, map thành cả 2 mặt. Không còn ghi mới — dùng `materialFaces`.
+     * @deprecated thay bằng materialFaces
+     */
+    material?: string;
+    /** Material PBR RIÊNG từng mặt tường (left/right → materials.json id). Optional. */
+    materialFaces?: { left?: string; right?: string };
 };
 
 // ── Furniture record ───────────────────────────────────────────────────────────
 
 export type SceneFurnitureRecord = {
-    /** Catalog model ID — must match a key in FurnitureCatalog. */
+    /** Model ID trong catalog — phải khớp một key trong FurnitureCatalog. */
     modelId: string;
-    /** World-space X position (metres). */
+    /** Vị trí X world-space (mét). */
     x: number;
-    /** World-space Z position (metres). */
+    /**
+     * Vị trí Y world-space (mét) — tâm-AABB theo chiều cao. Optional, tương thích
+     * ngược: file cũ không có → factory tự đặt đồ đứng trên sàn (sy/2). Lưu khi đồ
+     * được kê cao / treo (gizmo kéo trục Y) để giữ độ cao qua save/reload.
+     */
+    y?: number;
+    /** Vị trí Z world-space (mét). */
     z: number;
-    /** Yaw rotation in radians around world-Y axis. */
+    /** Góc yaw (radian) quanh trục world-Y. */
     rotY: number;
+    /** Material đã chọn cho từng slot: slotId → materialId (materials.json). Optional. */
+    materials?: Record<string, string>;
+};
+
+// ── Wall-item record (đồ bám tường: kệ treo, cửa, cửa sổ) ───────────────────────
+
+export type SceneWallItemRecord = {
+    /** Model ID trong catalog — phải khớp một key trong FurnitureCatalog. */
+    modelId: string;
+    /** wallId của bức tường đang bám — phải khớp một wall trong document. */
+    hostWallId: string;
+    /** Vị trí dọc tim tường (0..1). */
+    t: number;
+    /** Mặt tường (+1/−1). Item kiểu "opening" luôn dùng +1. */
+    side: number;
+    /** Material đã chọn cho từng slot: slotId → materialId (materials.json). Optional. */
+    materials?: Record<string, string>;
 };
 
 // ── Document root ─────────────────────────────────────────────────────────────
 
 export type SceneDocument = {
-    /** Schema version — always the literal 1 for this shape. */
+    /** Phiên bản schema — luôn là literal 1 với shape này. */
     version: 1;
     nodes: SceneNodeRecord[];
     walls: SceneWallRecord[];
-    /** Optional — omitted in old saves (treated as empty list on load). */
+    /** Optional — file lưu cũ không có (khi nạp coi như danh sách rỗng). */
     furniture?: SceneFurnitureRecord[];
+    /** Optional — đồ bám tường. File cũ không có → danh sách rỗng. */
+    wallItems?: SceneWallItemRecord[];
+    /**
+     * Material sàn theo roomKey (sorted nodeIds) → materialId (materials.json).
+     * Optional — phòng không có uuid bền nên dùng roomKey. File cũ không có.
+     */
+    floors?: Record<string, string>;
 };
 
-// ── Future-proofing ───────────────────────────────────────────────────────────
+// ── Chuẩn bị cho tương lai ──────────────────────────────────────────────────────
 
 /**
- * Union of all known document versions.
- * When version 2 is introduced, add `| SceneDocumentV2` here and write a
- * migrateV1toV2(doc: SceneDocument): SceneDocumentV2 function in migrations.ts.
+ * Union của mọi phiên bản document đã biết.
+ * Khi thêm version 2, bổ sung `| SceneDocumentV2` ở đây và viết hàm
+ * migrateV1toV2(doc: SceneDocument): SceneDocumentV2 trong migrations.ts.
  */
 export type AnySceneDocument = SceneDocument;

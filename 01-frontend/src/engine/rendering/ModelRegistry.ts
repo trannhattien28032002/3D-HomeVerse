@@ -1,31 +1,31 @@
 import * as THREE from "three";
 
 /**
- * Tracks GLB root Objects3D by ECS entity id.
+ * ModelRegistry — theo dõi Object3D gốc của GLB theo ECS entity id.
  *
- * Responsibilities:
- *   - Add / remove roots from the Three.js scene.
- *   - Does NOT dispose geometry — that is the responsibility of GLTFModelLoader's cache.
- *   - Cloned materials created during ghost preview are disposed by FurniturePlacementSystem.
+ * Trách nhiệm:
+ *   - Thêm / gỡ root khỏi scene Three.js.
+ *   - KHÔNG dispose geometry — đó là việc của cache trong GLTFModelLoader (dùng chung).
+ *   - Vật liệu clone tạo ra lúc ghost-preview do FurniturePlacementSystem dispose.
  */
 export class ModelRegistry {
-    private roots = new Map<number, THREE.Object3D>();
+    private roots = new Map<string, THREE.Object3D>();
     private scene: THREE.Scene;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
     }
 
-    register(entityId: number, root: THREE.Object3D): void {
+    register(entityId: string, root: THREE.Object3D): void {
         this.roots.set(entityId, root);
     }
 
-    get(entityId: number): THREE.Object3D | undefined {
+    get(entityId: string): THREE.Object3D | undefined {
         return this.roots.get(entityId);
     }
 
-    /** Remove the root from the scene. Does NOT dispose shared geometry. */
-    dispose(entityId: number): void {
+    /** Gỡ root khỏi scene. KHÔNG dispose geometry dùng chung. */
+    dispose(entityId: string): void {
         const root = this.roots.get(entityId);
         if (!root) return;
         this.scene.remove(root);

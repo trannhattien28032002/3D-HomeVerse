@@ -11,6 +11,11 @@
  *   Reads World.revision — incremented by every structural ECS mutation.
  *   If revision matches _lastRevision, skips the entire build and emit (O(1) per frame when idle).
  *
+ * Reference stability (perf):
+ *   Per-collection arrays are reused by reference when values haven't changed.
+ *   This lets downstream useMemo / React.memo short-circuit on unchanged collections
+ *   (e.g. only furniture moved → walls/rooms/nodes keep their prev reference).
+ *
  * Pipeline vị trí trong system order:
  *   WallGeometrySystem → DimensionSystem → SnapshotSystem → RenderSystem
  */
@@ -33,15 +38,101 @@ import { getTopDownUrl } from "src/engine/catalog/FurnitureCatalog";
 import { getEntityFootprint2D } from "src/engine/catalog/footprint";
 import { findOverlappingWallItems, type WallItemForOverlap } from "src/engine/utils/wallOccupancy";
 
-import { EngineEvents, type ECSSnapshot, type NodeSnapshot, type WallSnapshot, type NodeCapSnapshot, type RoomSnapshot, type FurnitureSnapshot } from "src/engine/events/EngineEvents";
+import {
+    EngineEvents,
+    type ECSSnapshot,
+    type NodeSnapshot,
+    type WallSnapshot,
+    type NodeCapSnapshot,
+    type RoomSnapshot,
+    type FurnitureSnapshot,
+    type DimensionSnapshot,
+    type AngleDimensionSnapshot,
+} from "src/engine/events/EngineEvents";
+
+// ── Reference-stability helpers ──────────────────────────────────────────────
+// Returns prev when every element is deeply equal, keeping the same JS reference
+// so downstream useMemo / React.memo can short-circuit without extra work.
+
+function reuseIfEqual<T>(next: T[], prev: T[] | undefined, eq: (a: T, b: T) => boolean): T[] {
+    if (prev && prev.length === next.length && next.every((v, i) => eq(v, prev[i]))) return prev;
+    return next;
+}
+
+function ptsEq(a: { x: number; z: number }[], b: { x: number; z: number }[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i].x !== b[i].x || a[i].z !== b[i].z) return false;
+    }
+    return true;
+}
+
+function nodeEq(a: NodeSnapshot, b: NodeSnapshot): boolean {
+    return a.id === b.id && a.x === b.x && a.z === b.z;
+}
+
+function wallEq(a: WallSnapshot, b: WallSnapshot): boolean {
+    if (
+        a.wallId !== b.wallId || a.startNodeId !== b.startNodeId ||
+        a.endNodeId !== b.endNodeId || a.thickness !== b.thickness ||
+        a.height !== b.height || a.cx !== b.cx || a.cz !== b.cz
+    ) return false;
+    if (!a.polygon && !b.polygon) return true;
+    if (!a.polygon || !b.polygon) return false;
+    return ptsEq(a.polygon, b.polygon);
+}
+
+function capEq(a: NodeCapSnapshot, b: NodeCapSnapshot): boolean {
+    return a.nodeId === b.nodeId && ptsEq(a.polygon, b.polygon);
+}
+
+function roomEq(a: RoomSnapshot, b: RoomSnapshot): boolean {
+    return a.id === b.id && a.key === b.key && a.area === b.area && ptsEq(a.polygon, b.polygon);
+}
+
+function dimEq(a: DimensionSnapshot, b: DimensionSnapshot): boolean {
+    return (
+        a.wallId === b.wallId && a.length === b.length &&
+        a.startX === b.startX && a.startZ === b.startZ &&
+        a.endX === b.endX && a.endZ === b.endZ &&
+        a.perpX === b.perpX && a.perpZ === b.perpZ
+    );
+}
+
+function angleDimEq(a: AngleDimensionSnapshot, b: AngleDimensionSnapshot): boolean {
+    return (
+        a.nodeId === b.nodeId && a.wallId1 === b.wallId1 && a.wallId2 === b.wallId2 &&
+        a.angle === b.angle && a.startAngle === b.startAngle && a.sweepAngle === b.sweepAngle &&
+        a.cornerX === b.cornerX && a.cornerZ === b.cornerZ &&
+        a.bisectorX === b.bisectorX && a.bisectorZ === b.bisectorZ
+    );
+}
+
+function furnitureEq(a: FurnitureSnapshot, b: FurnitureSnapshot): boolean {
+    return (
+        a.entityId === b.entityId && a.modelId === b.modelId &&
+        a.x === b.x && a.z === b.z && a.rotY === b.rotY &&
+        a.width === b.width && a.depth === b.depth &&
+        a.topDownUrl === b.topDownUrl &&
+        a.isWallItem === b.isWallItem && a.wallBehavior === b.wallBehavior &&
+        a.hostWallId === b.hostWallId && a.wallT === b.wallT &&
+        a.wallSide === b.wallSide && a.cutWidth === b.cutWidth &&
+        a.cutHeight === b.cutHeight && a.sill === b.sill &&
+        a.overlapping === b.overlapping
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export class SnapshotSystem extends System {
     private readonly events: EngineEvents;
     private readonly nodes: NodeRegistry;
     /** Tham chiếu DimensionSystem để lấy lastDimensions sau khi system kia chạy xong. */
     private readonly dimSystem: DimensionSystem;
-    /** World.revision của snapshot phát gần nhất — bỏ qua rebuild khi không đổi. R9: number (từ int counter). */
+    /** revision-guard: World.revision của snapshot phát gần nhất — bỏ qua rebuild khi không đổi. R9: number (từ int counter). */
     private _lastRevision: number = -1;
+    /** Snapshot phát lần gần nhất — dùng để so sánh reference-stability. */
+    private _prev: ECSSnapshot | null = null;
 
     constructor(events: EngineEvents, nodes: NodeRegistry, dimSystem: DimensionSystem) {
         super();
@@ -92,8 +183,6 @@ export class SnapshotSystem extends System {
         for (const [nodeId, pts] of this.nodes.nodeCaps) {
             caps.push({ nodeId, polygon: pts });
         }
-
-        this._lastRevision = world.revision;
 
         const rooms: RoomSnapshot[] = [];
         const roomEntities = Query.entitiesWith(world, RoomGeometry);
@@ -162,16 +251,28 @@ export class SnapshotSystem extends System {
             overlapIdx.forEach((k) => { wallItemEntries[k].overlapping = true; });
         }
 
+        // Reuse previous array references when content is identical so that
+        // React.memo / useMemo on unchanged collections can short-circuit.
+        const nodes2      = reuseIfEqual(nodeSnapshots,                       this._prev?.nodes,            nodeEq);
+        const walls2      = reuseIfEqual(walls,                               this._prev?.walls,            wallEq);
+        const caps2       = reuseIfEqual(caps,                                this._prev?.caps,             capEq);
+        const rooms2      = reuseIfEqual(rooms,                               this._prev?.rooms,            roomEq);
+        const dims2       = reuseIfEqual(this.dimSystem.lastDimensions,       this._prev?.dimensions,       dimEq);
+        const angleDims2  = reuseIfEqual(this.dimSystem.lastAngleDimensions,  this._prev?.angleDimensions,  angleDimEq);
+        const furniture2  = reuseIfEqual(furniture,                           this._prev?.furniture,        furnitureEq);
+
         const snapshot: ECSSnapshot = {
-            nodes: nodeSnapshots,
-            walls,
-            caps,
-            rooms,
-            dimensions: this.dimSystem.lastDimensions,
-            angleDimensions: this.dimSystem.lastAngleDimensions,
-            furniture
+            nodes:           nodes2,
+            walls:           walls2,
+            caps:            caps2,
+            rooms:           rooms2,
+            dimensions:      dims2,
+            angleDimensions: angleDims2,
+            furniture:       furniture2,
         };
 
+        this._prev = snapshot;
+        this._lastRevision = world.revision;
         this.events.emit("snapshot", snapshot);
     }
 }

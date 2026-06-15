@@ -45,6 +45,15 @@ export class WallGeometrySystem extends System {
     /** Metadata phát hiện thay đổi cho cap mesh (mesh thật nằm trong MeshRegistry). */
     private capMeta = new Map<string, { poly: Point2D[]; height: number }>();
 
+    /**
+     * revision-guard: world.revision của lần update() vừa hoàn tất — pre-filter rẻ để bỏ qua toàn
+     * bộ Query + hashing khi KHÔNG có thay đổi cấu trúc nào (frame idle). Lưu giá trị
+     * SAU các mutation của chính system (addComponent WallPolygon bump revision) nên
+     * frame idle kế tiếp sẽ khớp và skip. Mọi thay đổi topology (node move → markDirty,
+     * add/remove wall) đều bump revision → guard không bao giờ bỏ sót rebuild. (M1)
+     */
+    private _lastRevision = -1;
+
     private nodeCache = new Map<string, {
         hash: string;
         miterPoints: Map<string, { leftPoint: Point2D; rightPoint: Point2D }>;
@@ -60,6 +69,9 @@ export class WallGeometrySystem extends System {
     }
 
     update(world: World): void {
+        // Pre-filter idle frame: không có structural change nào kể từ lần chạy trước. (M1)
+        if (world.revision === this._lastRevision) return;
+
         const wallEntities = Query.entitiesWith(world, WallNodes, WallSize);
         this.nodeReg.nodeCaps.clear();
 
@@ -68,6 +80,7 @@ export class WallGeometrySystem extends System {
                 this.meshRegistry.dispose(`cap-${nodeId}`);
             }
             this.capMeta.clear();
+            this._lastRevision = world.revision;
             return;
         }
 
@@ -192,7 +205,16 @@ export class WallGeometrySystem extends System {
 
             if (transform) { transform.x = cx; transform.y = wallY; transform.z = cz; transform.rotY = rotY; }
             if (size) { size.length = len; }
-            if (collider) { collider.width = len / 2; }
+            // Đồng bộ ĐỦ 3 nửa-kích-thước AABB theo geometry hiện tại, nếu không box va chạm
+            // sẽ "kẹt" ở giá trị lúc tạo khi user đổi chiều cao (height) hoặc độ dày (thickness):
+            //   width  ↔ length (đổi khi node di chuyển)
+            //   height ↔ size.height   (đổi qua UPDATE_WALL)
+            //   depth  ↔ wn.thickness  (đổi qua UPDATE_WALL — nguồn sự thật là WallNodes)
+            if (collider) {
+                collider.width = len / 2;
+                collider.height = size.height / 2;
+                collider.depth = wn.thickness / 2;
+            }
 
             const changed = !existing || (() => {
                 for (let i = 0; i < 4; i++) {
@@ -215,6 +237,9 @@ export class WallGeometrySystem extends System {
 
             if (meshComp) rebuildWallMesh(meshComp.mesh, newPoly, size.height, wallY);
         }
+
+        // Lưu revision SAU mọi mutation của system (addComponent WallPolygon đã bump). (M1)
+        this._lastRevision = world.revision;
     }
 
     private updateCapMesh(nodeId: string, capPolygon: Point2D[], height: number): void {

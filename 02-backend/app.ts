@@ -15,6 +15,7 @@ import { versionsRouter } from './domains/versions/version.routes';
 import { libraryRouter } from './domains/library/library.routes';
 import { materialsRouter } from './domains/materials/materials.routes';
 import { sharingRouter, publicShareRouter } from './domains/sharing/sharing.routes';
+import { aiRouter } from './domains/ai/ai.routes';
 import { getOpenApiSpec } from './shared/openapi/openapi';
 
 export function createApp(): express.Express {
@@ -70,6 +71,8 @@ export function createApp(): express.Express {
   app.use('/projects', sharingRouter);
   // Public share token resolution (no auth required).
   app.use('/share', publicShareRouter);
+  // AI chat (WP1b) — dev-only proxy giữ GEMINI_API_KEY server-side.
+  app.use('/ai', aiRouter);
 
   // ── 404 handler ────────────────────────────────────────────────────────────
   app.use((_req: Request, _res: Response, next: NextFunction) => {

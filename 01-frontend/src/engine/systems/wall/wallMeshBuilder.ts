@@ -7,6 +7,7 @@
  */
 import * as THREE from "three";
 import type { Point2D } from "src/engine/components/wall/WallPolygon";
+import { classifyWallFaceGroups } from "src/engine/systems/wall/wallFaceGroups";
 
 /** Dựng ExtrudeGeometry từ đa giác XZ, xoay về không gian Y-up. */
 export function buildExtrudeGeo(polygon: Point2D[], depth: number, offsetY: number): THREE.ExtrudeGeometry {
@@ -29,7 +30,9 @@ export function rebuildWallMesh(
     wallY: number,
 ): void {
     if (mesh.geometry) mesh.geometry.dispose();
-    mesh.geometry = buildExtrudeGeo(worldPoly, height, wallY);
+    const geo = buildExtrudeGeo(worldPoly, height, wallY);
+    classifyWallFaceGroups(geo, worldPoly); // groups bất biến của geometry thân tường
+    mesh.geometry = geo;
     mesh.rotation.set(0, 0, 0);
     mesh.position.set(0, wallY, 0);
 }

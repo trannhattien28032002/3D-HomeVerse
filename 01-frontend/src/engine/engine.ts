@@ -165,6 +165,17 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
         setView: (preset) => orbit.setView(preset),
         rotateView: (angleDeg) => orbit.rotateBy(angleDeg),
         setGizmoMode: (mode) => gizmoSystem.setGizmoMode(mode),
+        clearSelection: () => gizmoSystem.clearSelection(),
+
+        captureScreenshot: () => {
+            // Bỏ chọn trước → ảnh sạch (không gizmo, không viền chọn).
+            gizmoSystem.clearSelection();
+            // Renderer KHÔNG bật preserveDrawingBuffer nên drawing buffer bị xoá sau khi
+            // trình duyệt composite. Phải render 1 frame rồi đọc canvas NGAY trong cùng
+            // tick đồng bộ, trước khi control trả về trình duyệt — nếu không ảnh sẽ đen.
+            composer.render();
+            return renderer.domElement.toDataURL("image/png");
+        },
 
         transaction(label, fn) {
             const inst = instanceRef.current;
@@ -202,7 +213,9 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
             const result = undoHistory.undo(serializeScene(inst));
             if (!result) return;
             if (result.kind === "snapshot") {
-                deserializeScene(result.snapshot, inst);
+                // deserializeScene async (C1) — fire-and-forget; generation guard bên trong
+                // xử lý undo/redo nhanh liên tiếp. Chỉ log nếu lỗi.
+                void deserializeScene(result.snapshot, inst).catch(err => console.error("[engine] undo deserialize failed:", err));
             } else {
                 // Command-inverse: dispatch ngược lại (không teardown mesh).
                 dispatch(result.command);
@@ -215,7 +228,7 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
             const result = undoHistory.redo(serializeScene(inst));
             if (!result) return;
             if (result.kind === "snapshot") {
-                deserializeScene(result.snapshot, inst);
+                void deserializeScene(result.snapshot, inst).catch(err => console.error("[engine] redo deserialize failed:", err));
             } else {
                 dispatch(result.command);
             }
@@ -261,10 +274,10 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
             return out;
         },
 
-        getWallMaterial(wallId) {
+        getWallMaterial(wallId, face) {
             const entityId = wallEntityByWallId.get(wallId);
             if (!entityId) return null;
-            return world.getComponent(entityId, SurfaceMaterial)?.materialId ?? null;
+            return world.getComponent(entityId, SurfaceMaterial)?.faces[face] ?? null;
         },
 
         getFloorMaterial(roomKey) {

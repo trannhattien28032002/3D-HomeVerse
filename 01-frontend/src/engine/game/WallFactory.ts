@@ -1,27 +1,35 @@
+/**
+ * WallFactory — tạo một wall entity với đầy đủ component cần thiết.
+ *
+ * Geometry ban đầu chỉ là BoxGeometry ước lượng (theo cx/cy/cz/length); hình
+ * dạng chính xác (cắt góc miter) do WallGeometrySystem dựng lại ở frame sau từ
+ * vị trí node. Tường mang WorldSpaceMesh nên RenderSystem không áp X/Z của Transform.
+ */
 import * as THREE from "three";
 
-import { Transform } from "src/engine/components/Transform";
-import { Mesh } from "src/engine/components/Mesh";
-import { ColliderAABB } from "src/engine/components/ColliderAABB";
-import { StaticBody } from "src/engine/components/StaticBody";
-import { WallSize } from "src/engine/components/WallSize";
-import { WallTag } from "src/engine/components/WallTag";
-import { Selectable } from "src/engine/components/Selectable";
-import { WallNodes } from "src/engine/components/WallNodes";
-import { WorldSpaceMesh } from "src/engine/components/WorldSpaceMesh";
+import { Transform } from "src/engine/components/core/Transform";
+import { Mesh } from "src/engine/components/render/Mesh";
+import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
+import { StaticBody } from "src/engine/components/physics/StaticBody";
+import { WallSize } from "src/engine/components/wall/WallSize";
+import { WallTag } from "src/engine/components/wall/WallTag";
+import { Selectable } from "src/engine/components/interaction/Selectable";
+import { WallNodes } from "src/engine/components/wall/WallNodes";
+import { WorldSpaceMesh } from "src/engine/components/render/WorldSpaceMesh";
 import { World } from "src/engine/ecs/World";
 import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
 import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import { WALL_DEFAULT_MATERIAL } from "src/engine/rendering/surfaceDefaults";
 
 export type CreateWallOptions = {
-    wallId?: number;
-    startNodeId: number;
-    endNodeId: number;
-    /** Center position (pre-computed or defaults to 0,0,0 — WallGeometrySystem will fix it) */
+    wallId?: string;
+    startNodeId: string;
+    endNodeId: string;
+    /** Vị trí tâm (tính sẵn hoặc mặc định 0,0,0 — WallGeometrySystem sẽ chỉnh lại) */
     cx?: number;
     cy?: number;
     cz?: number;
-    /** Initial length estimate — WallGeometrySystem will recompute from nodes */
+    /** Chiều dài ước lượng ban đầu — WallGeometrySystem sẽ tính lại từ node */
     length?: number;
     height?: number;
     thickness: number;
@@ -34,7 +42,7 @@ export function createWall(
     opts: CreateWallOptions,
     meshRegistry: MeshRegistry,
     materialRegistry: MaterialRegistry,
-): number {
+): string {
     const {
         wallId,
         startNodeId,
@@ -45,14 +53,14 @@ export function createWall(
         length = 1,
         height = 1,
         thickness,
-        color = 0xcccccc,
+        color = WALL_DEFAULT_MATERIAL.color,
     } = opts;
 
     const entity = world.createEntity();
 
-    // Initial geometry — WallGeometrySystem will rebuild from miter calc
+    // Geometry ban đầu — WallGeometrySystem sẽ dựng lại từ phép tính cắt góc miter
     const geometry = new THREE.BoxGeometry(length, height, thickness);
-    const material = materialRegistry.get({ color, metalness: 0, roughness: 0.9 });
+    const material = materialRegistry.get({ ...WALL_DEFAULT_MATERIAL, color });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(cx, cy, cz);
     mesh.castShadow = true;

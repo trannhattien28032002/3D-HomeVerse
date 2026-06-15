@@ -19,15 +19,18 @@
 import { useEffect, useRef, useState } from "react";
 import { EngineContext } from "src/app/engine/EngineContext";
 import type { EngineInstance } from "src/engine/engineTypes";
-import LoadingScreen from "src/app/components/editor/LoadingScreen";
-import TopNavBar from "src/app/components/editor/TopNavBar";
-import BottomNavBar from "src/app/components/editor/BottomNavBar";
-import BuildPanel from "src/app/components/editor/BuildPanel";
-import SceneView3D from "src/app/components/editor/SceneView3D";
-import PlanView2D from "src/app/components/editor/PlanView2D";
-import DecorCatalog from "src/app/components/editor/DecorCatalog";
-import MaterialSidebar from "src/app/components/editor/MaterialSidebar";
-import PlacementHint from "src/app/components/editor/PlacementHint";
+import LoadingScreen from "src/app/components/editor/overlays/LoadingScreen";
+import TopNavBar from "src/app/components/editor/navigation/TopNavBar";
+import BottomNavBar from "src/app/components/editor/navigation/BottomNavBar";
+import BuildPanel from "src/app/components/editor/panels/BuildPanel";
+import SceneView3D from "src/app/components/editor/views/SceneView3D";
+import PlanView2D from "src/app/components/editor/views/PlanView2D";
+import DecorCatalog from "src/app/components/editor/panels/DecorCatalog";
+import MaterialSidebar from "src/app/components/editor/panels/MaterialSidebar";
+import PlacementHint from "src/app/components/editor/overlays/PlacementHint";
+import WallPlacementHint from "src/app/components/editor/overlays/WallPlacementHint";
+import AIChatbot from "src/app/components/editor/overlays/AIChatbot";
+import SaveLoadModal from "src/app/components/editor/overlays/SaveLoadModal";
 import { useUIStore } from "src/app/store/useUIStore";
 import { useEditorShortcuts } from "src/app/hooks/useEditorShortcuts";
 import type { Mode } from "src/app/constants/navigation";
@@ -49,6 +52,11 @@ export default function EditorPage() {
     const isMaterialSidebarOpen = useUIStore((state) => state.isMaterialSidebarOpen);
     const openMaterialSidebar = useUIStore((state) => state.openMaterialSidebar);
     const closeMaterialSidebar = useUIStore((state) => state.closeMaterialSidebar);
+    const isChatbotOpen = useUIStore((state) => state.isChatbotOpen);
+    const closeChatbot = useUIStore((state) => state.closeChatbot);
+    const isSaveLoadOpen = useUIStore((state) => state.isSaveLoadOpen);
+    const closeSaveLoad = useUIStore((state) => state.closeSaveLoad);
+    const wallPlacementModelId = useUIStore((state) => state.wallPlacementModelId);
     const activeTool2D = useUIStore((state) => state.activeTool2D);
     const setTool2D = useUIStore((state) => state.setTool2D);
     const activeNav = (activeTool2D === "placing" || activeTool2D === "placing-wall") ? "decor" : activeTool2D === "draw" ? "build" : "select";
@@ -59,6 +67,8 @@ export default function EditorPage() {
     const [progress, setProgress] = useState(0);
     const [engineReady, setEngineReady] = useState(false);
     const [showLoader, setShowLoader] = useState(true);
+    const [showMaterialHint, setShowMaterialHint] = useState(false);
+    const materialHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         const id = setInterval(() => {
@@ -147,7 +157,12 @@ export default function EditorPage() {
                     engine={engine?.api ?? null}
                     onDecorClick={toggleDecorCatalog}
                     onColorClick={() => {
-                        if (!selected) return; // cần chọn object/tường/sàn trước
+                        if (!selected) {
+                            if (materialHintTimer.current) clearTimeout(materialHintTimer.current);
+                            setShowMaterialHint(true);
+                            materialHintTimer.current = setTimeout(() => setShowMaterialHint(false), 2500);
+                            return;
+                        }
                         if (isMaterialSidebarOpen) closeMaterialSidebar();
                         else openMaterialSidebar();
                     }}
@@ -169,7 +184,49 @@ export default function EditorPage() {
                     onSelect={onDecorSelect}
                 />
 
+                {showMaterialHint && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            bottom: 100,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            zIndex: 50,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "10px 20px",
+                            borderRadius: 9999,
+                            background: "rgba(241,238,229,0.95)",
+                            backdropFilter: "blur(12px)",
+                            WebkitBackdropFilter: "blur(12px)",
+                            border: "1px solid rgba(248,180,0,0.45)",
+                            boxShadow: "0 4px 20px rgba(124,88,0,0.18)",
+                            fontFamily: "'Nunito Sans', sans-serif",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#504532",
+                            whiteSpace: "nowrap",
+                            pointerEvents: "none",
+                            userSelect: "none",
+                            animation: "fadeInUp 0.2s ease",
+                        }}
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#f8b400", lineHeight: 1 }}>
+                            touch_app
+                        </span>
+                        Chọn một object, tường, hoặc sàn để đổi material
+                    </div>
+                )}
                 {isPlacing && <PlacementHint />}
+                {wallPlacementModelId && <WallPlacementHint />}
+                <AIChatbot isOpen={isChatbotOpen} onClose={closeChatbot} />
+                <SaveLoadModal
+                    isOpen={isSaveLoadOpen}
+                    onClose={closeSaveLoad}
+                    onSave={handleSave}
+                    onLoad={handleLoad}
+                />
                 {showLoader && (
                     <LoadingScreen
                         progress={progress}

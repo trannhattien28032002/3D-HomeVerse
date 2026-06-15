@@ -7,11 +7,14 @@ import { Mesh } from "src/engine/components/render/Mesh";
 import { Selectable } from "src/engine/components/interaction/Selectable";
 import { WallNodes } from "src/engine/components/wall/WallNodes";
 import { WallSize } from "src/engine/components/wall/WallSize";
+import { WallTag } from "src/engine/components/wall/WallTag";
 import { Model3D } from "src/engine/components/render/Model3D";
 import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 import { Transform } from "src/engine/components/core/Transform";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
+import { RoomGeometry } from "src/engine/components/room/RoomGeometry";
+import type { MeshRegistry } from "src/engine/rendering/MeshRegistry";
 import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import { snapAngleRad } from "src/shared/constants/placement";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
@@ -20,6 +23,7 @@ import { findMountWall, findWallEntity } from "src/engine/adapters/wallRefs";
 import { projectPointToWall, wallItemPose, wallNaturalRotY, occupancyLane, lanesConflict, wallItemOverlaps, type WallItemRange } from "src/shared/geometry/wallMount";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
+import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
 /**
@@ -30,6 +34,45 @@ import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
  * `__entity` để truy ngược entity từ kết quả raycast của Three.js.
  */
 export type MeshWithEntity = THREE.Object3D & { __entity?: string };
+
+/** Mesh tường có gắn ngược wallId để truy ngược từ kết quả raycast (chọn đổi material). */
+export type WallPickMesh = THREE.Object3D & { __wallId?: string };
+
+/** Mesh sàn phòng có gắn ngược roomKey để truy ngược từ raycast (chọn đổi material sàn). */
+export type RoomPickMesh = THREE.Object3D & { __roomKey?: string };
+
+/**
+ * Đổ vào `into` mọi mesh tường có WallTag, gắn `__wallId` để truy ngược.
+ * Dùng cho raycast chọn tường (chỉ để đổi material — KHÔNG attach gizmo).
+ */
+export function collectWallPickTargets(world: World, into: THREE.Object3D[]): void {
+    into.length = 0;
+    for (const e of Query.entitiesWith(world, Mesh, WallNodes, WallTag)) {
+        const meshComp = world.getComponent(e, Mesh);
+        const tag = world.getComponent(e, WallTag);
+        if (!meshComp || !tag) continue;
+        (meshComp.mesh as WallPickMesh).__wallId = tag.wallId;
+        into.push(meshComp.mesh);
+    }
+}
+
+/**
+ * Đổ vào `into` mọi mesh sàn phòng (lấy từ MeshRegistry theo `room-${entity}`),
+ * gắn `__roomKey` = RoomGeometry.key để truy ngược. Dùng cho raycast chọn sàn
+ * (chỉ để đổi material — KHÔNG attach gizmo). Sàn không có component Mesh nên
+ * phải tra qua MeshRegistry thay vì Query Mesh như tường.
+ */
+export function collectRoomPickTargets(world: World, meshRegistry: MeshRegistry, into: THREE.Object3D[]): void {
+    into.length = 0;
+    for (const e of Query.entitiesWith(world, RoomGeometry)) {
+        const geo = world.getComponent(e, RoomGeometry);
+        if (!geo) continue;
+        const mesh = meshRegistry.get(`room-${e}`);
+        if (!mesh) continue;
+        (mesh as RoomPickMesh).__roomKey = geo.key;
+        into.push(mesh);
+    }
+}
 
 /** Đổ vào `into` mọi mesh có thể raycast trong world (loại trừ tường). */
 export function collectPickTargets(world: World, into: THREE.Object3D[]): void {
@@ -78,8 +121,14 @@ export function resolveHitEntity(
 }
 
 /**
- * Kiểm tra một phép xoay có gây va chạm không; nếu có thì hoàn lại quaternion cũ.
- * Đánh dấu world dirty khi phép xoay được chấp nhận.
+ * Áp một phép xoay (yaw thô, radian) lên entity: snap 15°, kiểm tra va chạm;
+ * nếu đụng thì hoàn lại quaternion cũ. Đánh dấu world dirty khi được chấp nhận.
+ *
+ * `rawYaw` do GizmoSystem tự tính từ GÓC CON TRỎ quanh tâm vật (xem
+ * `_computePointerYaw`), KHÔNG trích từ `object.quaternion`. Lý do: rotate 1 trục
+ * của TransformControls tính góc bằng phép chiếu tuyến tính của độ dịch con trỏ
+ * (`_offset.dot(tangent)`), nên kéo gần trọn vòng sẽ co `_offset` về 0 → vật tự
+ * xoay ngược lại. Tính yaw từ góc con trỏ (kiểu vô-lăng) thì đơn điệu, không đảo.
  */
 export function applyRotateCheck(
     controls: TransformControls,
@@ -88,13 +137,13 @@ export function applyRotateCheck(
     collisionSystem: CannonCollisionSystem,
     entity: string,
     world: World,
+    rawYaw: number,
 ): void {
     const object = controls.object!;
 
-    // Furniture chỉ xoay quanh Y: trích yaw, snap về bội số ROT_STEP_DEG, dựng lại
-    // quaternion yaw-thuần. Đây vừa là hàng rào cuối sau setRotationSnap, vừa loại
-    // bỏ pitch/roll nếu người dùng lỡ kéo vòng X/Z (xem R3 trong SNAP-M-AUDIT-PLAN).
-    const yaw = snapAngleRad(2 * Math.atan2(object.quaternion.y, object.quaternion.w));
+    // Furniture chỉ xoay quanh Y: snap về bội số ROT_STEP_DEG, dựng lại quaternion
+    // yaw-thuần (loại bỏ pitch/roll). Hàng rào cuối sau setRotationSnap.
+    const yaw = snapAngleRad(rawYaw);
     const halfYaw = yaw / 2;
     object.quaternion.set(0, Math.sin(halfYaw), 0, Math.cos(halfYaw));
     const q = object.quaternion;
@@ -143,13 +192,16 @@ export function slideWallItem(
     x: number,
     z: number,
 ): { success: boolean; isOverlapping: boolean; intendedPose?: { x: number; y: number; z: number; qx: number; qy: number; qz: number; qw: number } } {
+    // `entity` là tham số (không lọc qua Query) → KHÔNG dùng `!`, guard thật. (M6)
     const wo = world.getComponent(entity, WallOpening);
     const wm = world.getComponent(entity, WallMounted);
-    const hostWallId = wo ? wo.hostWallId : wm!.hostWallId;
+    const hostWallId = wo ? wo.hostWallId : wm?.hostWallId;
+    if (hostWallId === undefined) return { success: false, isOverlapping: false };
     const wall = findMountWall(world, nodeReg, hostWallId);
     if (!wall) return { success: false, isOverlapping: false };
 
-    const model = world.getComponent(entity, Model3D)!;
+    const model = world.getComponent(entity, Model3D);
+    if (!model) return { success: false, isOverlapping: false };
     const halfWidth = getFootprint2D(model.modelId).width / 2;
     const { t, side, fits } = projectPointToWall(wall, x, z, halfWidth);
     if (!fits) return { success: false, isOverlapping: false };
@@ -290,36 +342,6 @@ export function flipWallItemByGizmo(
 // ---------------------------------------------------------------------------
 // Helpers nội bộ
 // ---------------------------------------------------------------------------
-
-/**
- * Gom t-range của mọi wall item trên cùng tường (trừ entity đang kéo).
- * wallLen (mét) dùng để chuyển width → halfWidthT.
- */
-export function collectOccupiedRanges(
-    world: World,
-    hostWallId: string,
-    wallLen: number,
-    excludeEntity: string,
-): WallItemRange[] {
-    const ranges: WallItemRange[] = [];
-    for (const e of Query.entitiesWith(world, WallOpening)) {
-        if (e === excludeEntity) continue;
-        const wo = world.getComponent(e, WallOpening)!;
-        if (wo.hostWallId !== hostWallId) continue;
-        const halfT = (wo.width / 2) / wallLen;
-        ranges.push({ tMin: wo.t - halfT, tMax: wo.t + halfT, lane: occupancyLane("opening", wo.side) });
-    }
-    for (const e of Query.entitiesWith(world, WallMounted)) {
-        if (e === excludeEntity) continue;
-        const wm = world.getComponent(e, WallMounted)!;
-        if (wm.hostWallId !== hostWallId) continue;
-        const model = world.getComponent(e, Model3D);
-        if (!model) continue;
-        const halfT = (getFootprint2D(model.modelId).width / 2) / wallLen;
-        ranges.push({ tMin: wm.t - halfT, tMax: wm.t + halfT, lane: occupancyLane("mount", wm.side) });
-    }
-    return ranges;
-}
 
 /** Đường gióng wall-snap (sát sàn) để vẽ. */
 type AlignGuide = { x1: number; z1: number; x2: number; z2: number };

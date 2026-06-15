@@ -10,6 +10,11 @@ type Params = {
     setSelectedWallIds: (ids: Set<string>) => void;
     selectedFurnitureId: string | null;
     setSelectedFurnitureId: (id: string | null) => void;
+    /** Tập object/furniture đang chọn (multi-select) — cho Ctrl+A và xóa hàng loạt. */
+    selectedFurnitureIds: Set<string>;
+    setSelectedFurnitureIds: (ids: Set<string>) => void;
+    /** Action atomic của store: chọn cả tường + object cùng lúc (bỏ qua mutual-exclusion). */
+    selectAll2D: (wallIds: Set<string>, furnitureIds: Set<string>) => void;
     activeTool2D: ToolId;
     setTool2D: (m: WallToolId) => void;
     walls: Wall2D[];
@@ -43,28 +48,31 @@ type Shortcut = {
 // ─── Actions ────────────────────────────────────────────────────────────────
 // Pure-ish: chỉ đọc/ghi qua ctx, không đóng over biến ngoài → dễ test độc lập.
 
-/** Xóa nội thất đang chọn, hoặc nếu không có thì xóa các tường đang chọn. */
+/**
+ * Xóa toàn bộ selection đang có: mọi object/furniture VÀ mọi tường được chọn.
+ * Thường 2 set loại trừ nhau, nhưng sau Ctrl+A cả hai cùng có → xóa hết trong 1 transaction.
+ */
 function deleteSelection(ctx: ShortcutCtx): void {
-    const { engine, selectedFurnitureId, setSelectedFurnitureId, selectedWallIds, setSelectedWallIds } = ctx;
+    const { engine, selectedFurnitureIds, setSelectedFurnitureIds, selectedWallIds, setSelectedWallIds } = ctx;
     if (!engine) return;
-    if (selectedFurnitureId != null) {
-        engine.api.transaction("delete furniture 2D", () => {
-            engine.api.dispatch({ type: "DELETE_FURNITURE", entityId: selectedFurnitureId });
-        });
-        setSelectedFurnitureId(null);
-    } else if (selectedWallIds.size > 0) {
-        engine.api.transaction("delete walls", () => {
-            for (const id of selectedWallIds) {
-                engine.api.dispatch({ type: "REMOVE_WALL", wallId: id });
-            }
-        });
-        setSelectedWallIds(new Set());
-    }
+    const hasFurniture = selectedFurnitureIds.size > 0;
+    const hasWalls = selectedWallIds.size > 0;
+    if (!hasFurniture && !hasWalls) return;
+    engine.api.transaction("delete selection 2D", () => {
+        // Xóa furniture trước (tránh wall-item mồ côi khi tường host bị xóa cùng lượt).
+        for (const id of selectedFurnitureIds) engine.api.dispatch({ type: "DELETE_FURNITURE", entityId: id });
+        for (const id of selectedWallIds)      engine.api.dispatch({ type: "REMOVE_WALL", wallId: id });
+    });
+    if (hasFurniture) setSelectedFurnitureIds(new Set());
+    if (hasWalls) setSelectedWallIds(new Set());
 }
 
-/** Chọn toàn bộ tường (Ctrl/Cmd+A, chỉ khi đang ở tool select). */
-function selectAllWalls(ctx: ShortcutCtx): void {
-    ctx.setSelectedWallIds(new Set(ctx.walls.map((w) => w.id)));
+/** Chọn toàn bộ tường + object (Ctrl/Cmd+A, chỉ khi đang ở tool select). */
+function selectAll(ctx: ShortcutCtx): void {
+    ctx.selectAll2D(
+        new Set(ctx.walls.map((w) => w.id)),
+        new Set(ctx.furniture.map((f) => f.entityId)),
+    );
 }
 
 /**
@@ -76,18 +84,21 @@ function selectAllWalls(ctx: ShortcutCtx): void {
 function cancelAndDeselect(ctx: ShortcutCtx): void {
     ctx.activeTool.onCancel();
     ctx.setSelectedWallIds(new Set());
+    ctx.setSelectedFurnitureIds(new Set());
     if (ctx.activeTool2D === "draw") ctx.setTool2D("select");
 }
 
 function undo(ctx: ShortcutCtx): void {
     ctx.engine?.api.undo();
     ctx.setSelectedWallIds(new Set());
+    ctx.setSelectedFurnitureIds(new Set());
     ctx.activeTool.onCancel();
 }
 
 function redo(ctx: ShortcutCtx): void {
     ctx.engine?.api.redo();
     ctx.setSelectedWallIds(new Set());
+    ctx.setSelectedFurnitureIds(new Set());
     ctx.activeTool.onCancel();
 }
 
@@ -107,7 +118,7 @@ function flipSelectedDoor(ctx: ShortcutCtx): void {
 const PLAN_SHORTCUTS: Shortcut[] = [
     { key: "Delete",    run: deleteSelection },
     { key: "Backspace", run: deleteSelection },
-    { key: "a", ctrl: true, preventDefault: true, when: (c) => c.activeTool2D === "select", run: selectAllWalls },
+    { key: "a", ctrl: true, preventDefault: true, when: (c) => c.activeTool2D === "select", run: selectAll },
     { key: "Escape",    run: cancelAndDeselect },
     { key: "z", ctrl: true, shift: false, preventDefault: true, run: undo },
     { key: "z", ctrl: true, shift: true,  preventDefault: true, run: redo },
@@ -134,7 +145,7 @@ export function usePlanShortcuts(params: Params): void {
     const getActiveToolRef = useRef(params.getActiveTool);
     getActiveToolRef.current = params.getActiveTool;
 
-    const { engine, selectedWallIds, selectedFurnitureId, activeTool2D, walls, furniture } = params;
+    const { engine, selectedWallIds, selectedFurnitureId, selectedFurnitureIds, activeTool2D, walls, furniture } = params;
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -153,9 +164,9 @@ export function usePlanShortcuts(params: Params): void {
 
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-        // walls: Ctrl+A đọc nó để dựng full selection set.
-        // furniture: phím F (flip door) đọc hostWallId/wallT/wallSide từ snapshot.
+        // walls/furniture: Ctrl+A đọc để dựng full selection set; F (flip) đọc wall-item.
+        // selectedFurnitureIds: deleteSelection đọc set mới nhất để xóa hàng loạt.
         // engine: undo/redo phải đóng over instance hiện tại.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [engine, selectedWallIds, selectedFurnitureId, activeTool2D, walls, furniture]);
+    }, [engine, selectedWallIds, selectedFurnitureId, selectedFurnitureIds, activeTool2D, walls, furniture]);
 }

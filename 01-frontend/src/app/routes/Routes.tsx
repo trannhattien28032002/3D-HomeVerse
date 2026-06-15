@@ -1,7 +1,14 @@
-﻿import { BrowserRouter, Route, Routes as RouterRoutes } from "react-router-dom";
-import HomePage from "src/app/pages/HomePage";
-import EditorPage from "src/app/pages/EditorPage";
-import ProjectsPage from "src/app/pages/ProjectsPage";
+﻿/**
+ * Cấu hình routing toàn app.
+ * Routes:
+ *   /                → HomePage (landing page)
+ *   /project/:id     → EditorPage (editor 3D/2D)
+ *   /projects        → ProjectsPage (danh sách dự án)
+ */
+import { BrowserRouter, Route, Routes as RouterRoutes } from "react-router-dom";
+import HomePage from "src/app/pages/HomePage/HomePage";
+import EditorPage from "src/app/pages/EditorPage/EditorPage";
+import ProjectsPage from "src/app/pages/ProjectPage/ProjectsPage";
 
 export default function AppRoutes() {
   return (

@@ -1,3 +1,20 @@
+/**
+ * Hook đăng ký phím tắt toàn cục cho editor.
+ *
+ * Bảng phím tắt:
+ *   Ctrl+S   → save scene
+ *   Ctrl+O   → mở file scene
+ *   V        → tool Select
+ *   B        → tool Draw wall
+ *   F        → mở/đóng Decor Catalog
+ *   Tab      → chuyển 2D ↔ 3D
+ *   Q        → Gizmo Translate (3D, không placing)
+ *   W        → Gizmo Rotate (3D, không placing)
+ *   Escape   → hủy placement
+ *
+ * Dùng paramsRef để tránh stale closure: handler luôn đọc giá trị params mới nhất
+ * mà không cần re-register event listener khi props thay đổi.
+ */
 import { useEffect, useRef } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
 import type { Mode } from "src/app/constants/navigation";

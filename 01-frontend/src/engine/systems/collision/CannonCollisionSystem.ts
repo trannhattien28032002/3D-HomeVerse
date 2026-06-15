@@ -47,11 +47,25 @@ import {
 const _cannonPos = new CANNON.Vec3();
 const _cannonQuat = new CANNON.Quaternion();
 
+/**
+ * Co nhỏ probe (mét) trên mỗi nửa-cạnh trước khi test overlap — tránh false-positive
+ * khi hai box CHẠM SÁT mép (touching). Dùng chung cho mọi đường tạo probe để hai
+ * code path không bao giờ phân kỳ. (H5)
+ */
+const PROBE_SHRINK = 0.002;
+
 export class CannonCollisionSystem extends System {
     public readonly physicsWorld: CANNON.World;
     private probeBody: CANNON.Body;
     private staticEntries = new Map<string, StaticEntry>();
     private dynamicEntries = new Map<string, DynamicEntry>();
+    /** Các CollisionType đã cảnh báo "không hỗ trợ" — warn 1 lần/loại trong DEV. (M3) */
+    private _warnedCollisionTypes = new Set<number>();
+    /** revision-guard: World.revision đã sync lần cuối — tránh rebuild query mỗi frame khi scene idle. */
+    private _lastRevision: number = -1;
+    /** Cache danh sách entity ID tĩnh/động — rebuild chỉ khi revision đổi. */
+    private _staticEids: string[] = [];
+    private _dynamicEids: string[] = [];
 
     constructor() {
         super();
@@ -66,33 +80,44 @@ export class CannonCollisionSystem extends System {
     }
 
     update(world: World): void {
-        // The floor is a StaticBody with a huge thin collider. It must NOT participate in
-        // furniture overlap tests — otherwise items sitting flush on the ground (rugs, lamps)
-        // read as permanently colliding. Exclude any Grounded entity from the physics world.
-        const staticEids = Query.entitiesWith(world, Transform, ColliderAABB, StaticBody)
-            .filter(id => !world.hasComponent(id, Grounded));
-        const dynamicEids = Query.entitiesWith(world, Transform, ColliderAABB, DynamicBody);
+        if (world.revision !== this._lastRevision) {
+            // The floor is a StaticBody with a huge thin collider. It must NOT participate in
+            // furniture overlap tests — otherwise items sitting flush on the ground (rugs, lamps)
+            // read as permanently colliding. Exclude any Grounded entity from the physics world.
+            this._staticEids = Query.entitiesWith(world, Transform, ColliderAABB, StaticBody)
+                .filter(id => !world.hasComponent(id, Grounded));
+            this._dynamicEids = Query.entitiesWith(world, Transform, ColliderAABB, DynamicBody);
 
-        gcStaticBodies(this.staticEntries, staticEids, this.physicsWorld);
-        gcDynamicEntries(this.dynamicEntries, dynamicEids);
+            gcStaticBodies(this.staticEntries, this._staticEids, this.physicsWorld);
+            gcDynamicEntries(this.dynamicEntries, this._dynamicEids);
 
-        for (const id of staticEids) {
-            const t = world.getComponent(id, Transform)!;
-            const c = world.getComponent(id, ColliderAABB)!;
-            if (!this.staticEntries.has(id)) {
-                this.staticEntries.set(id, createStaticBody(t, c, this.physicsWorld));
-            } else {
-                syncStaticEntry(this.staticEntries.get(id)!, t, c);
+            for (const id of this._staticEids) {
+                const t = world.getComponent(id, Transform)!;
+                const c = world.getComponent(id, ColliderAABB)!;
+                if (!this.staticEntries.has(id)) {
+                    this.staticEntries.set(id, createStaticBody(t, c, this.physicsWorld));
+                } else {
+                    syncStaticEntry(this.staticEntries.get(id)!, t, c);
+                }
             }
+
+            // Init entry cho dynamic entities mới thêm vào (addComponent(DynamicBody) bump revision).
+            for (const id of this._dynamicEids) {
+                if (!this.dynamicEntries.has(id)) {
+                    const t = world.getComponent(id, Transform)!;
+                    this.dynamicEntries.set(id, { safePos: new Vector3(t.x, t.y, t.z) });
+                }
+            }
+
+            this._lastRevision = world.revision;
         }
 
-        for (const id of dynamicEids) {
+        // Early-out: đại đa số frame không có đồ vật đang kéo → skip sweep hoàn toàn.
+        if (this._dynamicEids.length === 0) return;
+
+        for (const id of this._dynamicEids) {
             const t = world.getComponent(id, Transform)!;
             const c = world.getComponent(id, ColliderAABB)!;
-
-            if (!this.dynamicEntries.has(id)) {
-                this.dynamicEntries.set(id, { safePos: new Vector3(t.x, t.y, t.z) });
-            }
             const { safePos } = this.dynamicEntries.get(id)!;
 
             const { qx, qy, qz, qw } = t;
@@ -133,7 +158,9 @@ export class CannonCollisionSystem extends System {
 
         const initiallyOverlapping = this.testOverlap(safeX, safeY, safeZ, qx, qy, qz, qw, entityId);
         if (initiallyOverlapping) {
-            console.warn('[Cannon] initiallyOverlapping bypass for entity', entityId, 'at', safeX, safeY, safeZ);
+            // clampMovement chạy mỗi mousemove khi drag → gate DEV để không spam console
+            // production khi item kẹt overlap. (L4)
+            if (import.meta.env.DEV) console.warn('[Cannon] initiallyOverlapping bypass for entity', entityId, 'at', safeX, safeY, safeZ);
             return new Vector3(targetX, targetY, targetZ);
         }
 
@@ -174,10 +201,9 @@ export class CannonCollisionSystem extends System {
         qw: number,
         ignoreEntityId: string = ""
     ): boolean {
-        const shrink = 0.002;
-        const hw = Math.max(0.01, width / 2 - shrink);
-        const hh = Math.max(0.01, height / 2 - shrink);
-        const hd = Math.max(0.01, depth / 2 - shrink);
+        const hw = Math.max(0.01, width / 2 - PROBE_SHRINK);
+        const hh = Math.max(0.01, height / 2 - PROBE_SHRINK);
+        const hd = Math.max(0.01, depth / 2 - PROBE_SHRINK);
         updateProbeShape(this.probeBody, hw, hh, hd);
         return this.testOverlap(targetX, targetY, targetZ, qx, qy, qz, qw, ignoreEntityId);
     }
@@ -197,12 +223,11 @@ export class CannonCollisionSystem extends System {
     }
 
     private prepareProbe(c: ColliderAABB): void {
-        const shrink = 0.002;
         updateProbeShape(
             this.probeBody,
-            Math.max(0.01, c.width - shrink),
-            Math.max(0.01, c.height - shrink),
-            Math.max(0.01, c.depth - shrink),
+            Math.max(0.01, c.width - PROBE_SHRINK),
+            Math.max(0.01, c.height - PROBE_SHRINK),
+            Math.max(0.01, c.depth - PROBE_SHRINK),
         );
     }
 
@@ -256,6 +281,13 @@ export class CannonCollisionSystem extends System {
                         break;
 
                     default:
+                        // Chỉ boxBox được hỗ trợ. Nếu sau này thêm shape khác (sphere…),
+                        // va chạm sẽ bị BỎ QUA âm thầm → đồ xuyên nhau. Cảnh báo (1 lần/loại,
+                        // chỉ DEV) để lỗi này không lọt im lặng. (M3)
+                        if (import.meta.env.DEV && !this._warnedCollisionTypes.has(type)) {
+                            this._warnedCollisionTypes.add(type);
+                            console.warn(`[CannonCollisionSystem] narrowTest: unsupported shape pair (type=${type}) — collision ignored. Only boxBox is handled.`);
+                        }
                         hit = false;
                         break;
                 }

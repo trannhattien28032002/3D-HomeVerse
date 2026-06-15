@@ -7,13 +7,18 @@
  * Extracted từ `dispatcher.ts` ở Đợt 3 (REFACTOR-PLAN.md). Mỗi handler là pure
  * function nhận `(command, deps)` — testable mà không cần instantiate dispatcher.
  */
-import { WallNodes } from "src/engine/components/WallNodes";
-import { WallSize } from "src/engine/components/WallSize";
-import { WallPolygon } from "src/engine/components/WallPolygon";
+import { WallNodes } from "src/engine/components/wall/WallNodes";
+import { WallSize } from "src/engine/components/wall/WallSize";
+import { WallPolygon } from "src/engine/components/wall/WallPolygon";
+import { WallMounted } from "src/engine/components/wall/WallMounted";
+import { WallOpening } from "src/engine/components/wall/WallOpening";
+import { Query } from "src/engine/ecs/Query";
 import { createWall } from "src/engine/game/WallFactory";
+import { v4 as uuidv4 } from "uuid";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
 import { splitWallAt } from "src/engine/commands/handlers/wallTopology";
+import { DEFAULT_WALL_HEIGHT, DEFAULT_WALL_CENTER_Y } from "src/shared/constants/wall";
 
 type AddWallCmd = Extract<EngineCommand, { type: "ADD_WALL" }>;
 type RemoveWallCmd = Extract<EngineCommand, { type: "REMOVE_WALL" }>;
@@ -28,16 +33,16 @@ type ResolveIntersectionsCmd = Extract<EngineCommand, { type: "RESOLVE_INTERSECT
 //   1. Validate: cả hai node phải tồn tại.
 //   2. Kiểm tra duplicate: không tạo tường trùng (A→B đã có thì skip).
 //   3. createWall → ECS entity với đầy đủ component.
-//   4. Kết nối hai node + đăng ký wallEntityByWallId + cập nhật maxWallIdRef.
+//   4. Kết nối hai node + đăng ký wallEntityByWallId.
 //   5. Invalidate WallPolygon của tường hàng xóm tại hai đầu node.
 export function handleAddWall(command: AddWallCmd, deps: DispatcherDeps): void {
-    const { world, scene, nodeRegistry, wallEntityByWallId, maxWallIdRef, meshRegistry, materialRegistry } = deps;
+    const { world, scene, nodeRegistry, wallEntityByWallId, meshRegistry, materialRegistry } = deps;
 
     const sn = nodeRegistry.get(command.startNodeId);
     const en = nodeRegistry.get(command.endNodeId);
     if (!sn || !en) {
-        // WARNING: Nếu UI gọi ADD_WALL trước ENSURE_NODE, sẽ bị warn ở đây.
-        console.warn(`ADD_WALL: node ${command.startNodeId} or ${command.endNodeId} not found`);
+        // WARNING: Nếu UI gọi ADD_WALL trước ENSURE_NODE, sẽ bị warn ở đây. Gate DEV. (L4)
+        if (import.meta.env.DEV) console.warn(`ADD_WALL: node ${command.startNodeId} or ${command.endNodeId} not found`);
         return;
     }
 
@@ -50,11 +55,11 @@ export function handleAddWall(command: AddWallCmd, deps: DispatcherDeps): void {
         if (!wn) return false;
         return (
             (wn.startNodeId === command.startNodeId && wn.endNodeId === command.endNodeId) ||
-            (wn.startNodeId === command.endNodeId   && wn.endNodeId === command.startNodeId)
+            (wn.startNodeId === command.endNodeId && wn.endNodeId === command.startNodeId)
         );
     });
     if (pairAlreadyExists) {
-        console.warn(`ADD_WALL: wall between node ${command.startNodeId} and ${command.endNodeId} already exists — skipped.`);
+        if (import.meta.env.DEV) console.warn(`ADD_WALL: wall between node ${command.startNodeId} and ${command.endNodeId} already exists — skipped.`);
         return;
     }
 
@@ -69,17 +74,15 @@ export function handleAddWall(command: AddWallCmd, deps: DispatcherDeps): void {
         wallId: command.wallId,
         startNodeId: command.startNodeId,
         endNodeId: command.endNodeId,
-        cx, cy: 1.6, cz,
+        cx, cy: DEFAULT_WALL_CENTER_Y, cz,
         length,
-        height: 3.2,
+        height: DEFAULT_WALL_HEIGHT,
         thickness: command.thickness,
     }, meshRegistry, materialRegistry);
 
     nodeRegistry.connectWall(command.startNodeId, command.wallId);
     nodeRegistry.connectWall(command.endNodeId, command.wallId);
     wallEntityByWallId.set(command.wallId, entity);
-
-    if (command.wallId > maxWallIdRef.value) maxWallIdRef.value = command.wallId;
 
     // Invalidate WallPolygon các tường hàng xóm — cách vẽ joint thay đổi.
     for (const nodeId of [command.startNodeId, command.endNodeId]) {
@@ -99,10 +102,11 @@ export function handleAddWall(command: AddWallCmd, deps: DispatcherDeps): void {
 // REMOVE_WALL — Xóa tường và dọn dẹp tài nguyên
 // =================================================================
 // Thứ tự cleanup:
-//   1. Ngắt kết nối topology trong nodeRegistry.
-//   2. Dispose qua entityRegistry (mesh + destroyEntity).
-//   3. Xóa wallEntityByWallId entry.
-//   4. Xóa orphan node — node không còn tường nào kết nối.
+//   1. Cascade dispose cửa/kệ bám tường (WallOpening + WallMounted).
+//   2. Ngắt kết nối topology trong nodeRegistry.
+//   3. Dispose qua entityRegistry (mesh + destroyEntity).
+//   4. Xóa wallEntityByWallId entry.
+//   5. Xóa orphan node — node không còn tường nào kết nối.
 //
 // WARNING: Không invalidate WallPolygon của tường hàng xóm — TODO cũ.
 export function handleRemoveWall(command: RemoveWallCmd, deps: DispatcherDeps): void {
@@ -111,8 +115,23 @@ export function handleRemoveWall(command: RemoveWallCmd, deps: DispatcherDeps): 
     const entity = wallEntityByWallId.get(command.wallId);
     if (entity == null) return; // no-op
 
+    // ─── Cascade: xóa cửa/kệ bám tường này ─────────────────────────────────────
+    // Quan hệ tường→item là một chiều (item lưu hostWallId, tường KHÔNG giữ danh
+    // sách item) → phải quét ngược như splitWallAt. Dùng disposeEntity (KHÔNG phải
+    // world.destroyEntity trần) để gỡ cả GLB khỏi scene + modelRegistry, tránh model
+    // lơ lửng. Undo-safe: REMOVE_WALL chạy trong transaction snapshot-based đã chụp
+    // các item này trước khi xóa.
+    const wallItemEntities: string[] = [];
+    for (const e of Query.entitiesWith(world, WallOpening)) {
+        if (world.getComponent(e, WallOpening)!.hostWallId === command.wallId) wallItemEntities.push(e);
+    }
+    for (const e of Query.entitiesWith(world, WallMounted)) {
+        if (world.getComponent(e, WallMounted)!.hostWallId === command.wallId) wallItemEntities.push(e);
+    }
+    for (const id of wallItemEntities) entityRegistry.disposeEntity(id);
+
     const wn = world.getComponent(entity, WallNodes);
-    const affectedNodeIds: number[] = [];
+    const affectedNodeIds: string[] = [];
 
     if (wn) {
         nodeRegistry.disconnectWall(wn.startNodeId, command.wallId);
@@ -175,7 +194,7 @@ export function handleSplitWall(command: SplitWallCmd, deps: DispatcherDeps): vo
 //   3. Với mỗi giao điểm: split tường cũ, split nửa sau tường mới.
 //   4. currentWallId ← nửa sau sau mỗi lần split.
 export function handleResolveIntersections(command: ResolveIntersectionsCmd, deps: DispatcherDeps): void {
-    const { world, nodeRegistry, wallEntityByWallId, maxWallIdRef } = deps;
+    const { world, nodeRegistry, wallEntityByWallId } = deps;
 
     const newEnt = wallEntityByWallId.get(command.wallId);
     if (newEnt == null) return;
@@ -188,7 +207,7 @@ export function handleResolveIntersections(command: ResolveIntersectionsCmd, dep
 
     const EPS = 1e-4;
 
-    type IXPoint = { t: number; existingWallId: number; x: number; z: number };
+    type IXPoint = { t: number; existingWallId: string; x: number; z: number };
     const intersections: IXPoint[] = [];
 
     const ux = en.x - sn.x, uz = en.z - sn.z;
@@ -202,9 +221,9 @@ export function handleResolveIntersections(command: ResolveIntersectionsCmd, dep
         // Bỏ qua tường đã chia sẻ node — kết nối tại endpoint, không cắt nhau.
         const sharesNode =
             wn.startNodeId === newWn.startNodeId ||
-            wn.endNodeId   === newWn.startNodeId ||
-            wn.startNodeId === newWn.endNodeId   ||
-            wn.endNodeId   === newWn.endNodeId;
+            wn.endNodeId === newWn.startNodeId ||
+            wn.startNodeId === newWn.endNodeId ||
+            wn.endNodeId === newWn.endNodeId;
         if (sharesNode) continue;
 
         const p1 = nodeRegistry.get(wn.startNodeId);
@@ -236,11 +255,12 @@ export function handleResolveIntersections(command: ResolveIntersectionsCmd, dep
         const newNodeId = nodeRegistry.createNode(ix.x, ix.z);
         world.markDirty();
 
-        // Split tường cũ
-        splitWallAt(ix.existingWallId, maxWallIdRef.value + 1, newNodeId, ix.x, ix.z, deps);
-        // Split currentWallId (nửa sau của tường mới)
-        splitWallAt(currentWallId, maxWallIdRef.value + 1, newNodeId, ix.x, ix.z, deps);
+        // Split tường cũ — nửa sau nhận uuid riêng.
+        splitWallAt(ix.existingWallId, uuidv4(), newNodeId, ix.x, ix.z, deps);
+        // Split currentWallId (tường mới) — nửa sau là phần tiếp tục quét giao điểm kế.
+        const nextHalfId = uuidv4();
+        splitWallAt(currentWallId, nextHalfId, newNodeId, ix.x, ix.z, deps);
 
-        currentWallId = maxWallIdRef.value;
+        currentWallId = nextHalfId;
     }
 }

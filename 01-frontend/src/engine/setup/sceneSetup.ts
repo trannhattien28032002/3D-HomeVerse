@@ -1,3 +1,10 @@
+/**
+ * sceneSetup — dựng nền tảng Three.js: Scene, Camera, Renderer.
+ *
+ * Bao gồm: lưới sàn (grid), trục toạ độ (axes), fog, tone mapping ACES, và nạp
+ * HDRI studio.exr làm environment map cho phản chiếu PBR. Các lựa chọn (FOV 45°,
+ * grid 0.5m/ô, fog) đều theo quy ước trực quan hoá kiến trúc — xem comment inline.
+ */
 import * as THREE from "three";
 import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
 
@@ -12,20 +19,20 @@ export function createScene(canvas: HTMLCanvasElement): SceneBundle {
     const axesHelper = new THREE.AxesHelper(100);
     axesHelper.renderOrder = 2;
     scene.add(axesHelper);
-    // 50m extent, 100 divisions → 0.5m per cell.
-    // A standard double bed (1.4m × 2m) occupies ~3×4 cells; a room (5m × 4m) is 10×8 cells.
-    // This does not affect world units, snapping, or dimensions — purely visual density.
+    // Phủ 50m, 100 ô chia → 0.5m mỗi ô.
+    // Giường đôi (1.4m × 2m) chiếm ~3×4 ô; một phòng (5m × 4m) là 10×8 ô.
+    // Không ảnh hưởng world units, snapping hay dimension — chỉ là mật độ trực quan.
     const gridHelper = new THREE.GridHelper(50, 100, 0xb0a090, 0xd0c8bc);
     gridHelper.position.y = -0.001;
     gridHelper.renderOrder = 1;
     scene.add(gridHelper);
-    // Fog pulled back so it doesn't clip rooms at 20m; still softens the background.
+    // Fog kéo ra xa để không cắt phòng ở 20m; vẫn làm dịu hậu cảnh.
     scene.fog = new THREE.Fog(0xf0f0f0, 40, 80);
     scene.background = new THREE.Color(0xf0f0f0);
 
-    // FOV 45° matches architectural visualization convention (≈50mm lens on full-frame).
-    // 75° (Three.js default) is a game-camera setting that makes rooms read as toy-scale.
-    // Camera pulled back proportionally so the same scene fits at the narrower angle.
+    // FOV 45° theo quy ước trực quan hoá kiến trúc (≈ống kính 50mm trên full-frame).
+    // 75° (mặc định Three.js) là kiểu camera game khiến phòng trông như đồ chơi.
+    // Camera kéo lùi tương ứng để cùng cảnh vừa khít ở góc hẹp hơn.
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 12, 16);
     camera.lookAt(0, 0, 0);

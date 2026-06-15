@@ -1,77 +1,132 @@
 /**
- * deserializeScene — clears the current scene and rebuilds it from a SceneDocument
- * by dispatching standard engine commands.
+ * deserializeScene — xoá scene hiện tại và dựng lại từ một SceneDocument bằng
+ * cách dispatch các command engine chuẩn.
  *
- * Strategy:
- *  1. Snapshot all current wall IDs (Map is mutated during removal).
- *  2. Dispatch REMOVE_WALL for each — the dispatcher auto-deletes orphaned nodes.
- *  3. Dispatch ENSURE_NODE for every node in the document.
- *  4. Dispatch ADD_WALL for every wall in the document.
+ * Chiến lược:
+ *  1. Chụp tất cả wallId hiện tại (Map bị mutate trong lúc xoá).
+ *  2. Dispatch REMOVE_WALL cho từng tường — dispatcher tự xoá node mồ côi.
+ *  3. Dispatch ENSURE_NODE cho mọi node trong document.
+ *  4. Dispatch ADD_WALL cho mọi tường trong document.
  *
- * Why dispatcher commands (not direct ECS mutation):
- *  - All validation and side-effects (AABB recompute, polygon invalidation, etc.)
- *    run through the same paths as normal user editing.
- *  - maxWallIdRef and NodeRegistry.nextId are self-correcting via the dispatcher.
+ * Vì sao dùng command dispatcher (không mutate ECS trực tiếp):
+ *  - Mọi validation và side-effect (recompute AABB, invalidate polygon...) đi qua
+ *    đúng các đường mà thao tác chỉnh sửa bình thường của người dùng đi qua.
+ *  - Node/wall id là uuid bền vững trong document — không cần đồng bộ counter nào.
  *
- * Why RESOLVE_INTERSECTIONS is NOT dispatched:
- *  - The saved scene was already topologically consistent. Re-running resolution
- *    would create extra nodes/walls not in the document, corrupting the load.
+ * Vì sao KHÔNG dispatch RESOLVE_INTERSECTIONS:
+ *  - Scene đã lưu vốn nhất quán topology. Chạy lại phân giải giao cắt sẽ tạo thêm
+ *    node/wall không có trong document → hỏng dữ liệu khi nạp.
  *
- * Isolated nodes (nodes with no walls) are preserved — they are created by
- * ENSURE_NODE and will remain in the registry. This matches the serialize
- * behaviour which includes all registry nodes.
+ * Node cô lập (không nối tường nào) được giữ lại — chúng do ENSURE_NODE tạo và ở
+ * lại trong registry. Khớp với hành vi serialize (vốn lưu mọi node của registry).
  */
 
 import type { EngineInstance } from "src/engine/engineTypes";
 import type { SceneDocument } from "./SceneDocument";
-import { FurnitureTag } from "src/engine/components/FurnitureTag";
+import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Query } from "src/engine/ecs/Query";
+import { DEFAULT_WALL_HEIGHT } from "src/shared/constants/wall";
 
-export function deserializeScene(doc: SceneDocument, engine: EngineInstance): void {
+/**
+ * Generation token (C1) — tăng mỗi lần deserializeScene được gọi. Mỗi lần chạy chụp
+ * giá trị này vào biến local `myGen`; trước mỗi lần spawn GLB (async) ta kiểm tra
+ * `myGen === _generation`. Nếu một deserialize MỚI đã bắt đầu (undo/redo nhanh liên
+ * tiếp) thì _generation đã tăng → lần chạy cũ dừng ngay, không spawn tiếp vào scene
+ * đã bị lần mới xoá sạch. Cùng nguyên lý với guard `this.modelId !== modelId` trong
+ * FurniturePlacementSystem.begin().
+ */
+let _generation = 0;
+
+/**
+ * Dựng lại scene từ SceneDocument. ASYNC (C1): furniture/wall-item được spawn qua
+ * `dispatchAsync` và await TUẦN TỰ — thay cho fire-and-forget sync `dispatch` cũ
+ * (vốn in cảnh báo "undo will NOT be undo-safe" và để promise GLB chạy tự do).
+ *
+ * Nhờ vậy luồng thường (nạp file, undo/redo một bước) là tất định và undo-safe:
+ * mọi entity đã tồn tại khi promise resolve, không có spawn chồng giữa hai scene.
+ *
+ * Race còn lại (rất hẹp): nếu một deserialize mới chen vào đúng lúc một promise GLB
+ * chưa-cache của lần cũ đang bay, lần cũ có thể spawn TỐI ĐA một entity sót trước khi
+ * generation guard chặn — so với hành vi cũ (interleave nhiều entity). Trade-off chấp
+ * nhận được; đóng hẳn cần generation token luồn xuống tận FurnitureFactory.
+ */
+export async function deserializeScene(doc: SceneDocument, engine: EngineInstance): Promise<void> {
+    const myGen = ++_generation;
     const dispatch = engine.api.dispatch;
+    const dispatchAsync = engine.api.dispatchAsync;
 
-    // ── 1. Clear existing scene ───────────────────────────────────────────────
-    // Remove all furniture first (snapshot entity ids before iterating — world
-    // is mutated by each DELETE_FURNITURE dispatch).
+    // ── 1. Xoá scene hiện tại ─────────────────────────────────────────────────
+    // Xoá toàn bộ furniture trước (chụp entity id trước khi lặp — world bị
+    // mutate bởi mỗi lần dispatch DELETE_FURNITURE).
     const existingFurniture = [...Query.entitiesWith(engine.world, FurnitureTag)];
     for (const entityId of existingFurniture) {
         dispatch({ type: "DELETE_FURNITURE", entityId });
     }
 
-    // Snapshot the wall IDs first — the Map is mutated by each REMOVE_WALL dispatch.
+    // Chụp wallId trước — Map bị mutate bởi mỗi lần dispatch REMOVE_WALL.
     const existingWallIds = [...engine.wallEntityByWallId.keys()];
     for (const wallId of existingWallIds) {
         dispatch({ type: "REMOVE_WALL", wallId });
     }
 
-    // ── 2. Restore nodes ──────────────────────────────────────────────────────
-    // All nodes must exist before any ADD_WALL is dispatched.
+    // Xoá registry material sàn — nếu không, entry cũ còn sót sẽ bị RoomSystem áp lại
+    // sau khi phòng được phát hiện lại (làm hỏng undo và lúc nạp scene mới).
+    // doc.floors (bước 6) sẽ nạp lại đúng tập material.
+    engine.floorMaterials.clear();
+
+    // ── 2. Khôi phục node ─────────────────────────────────────────────────────
+    // Mọi node phải tồn tại trước khi dispatch bất kỳ ADD_WALL nào.
     for (const node of doc.nodes) {
         dispatch({ type: "ENSURE_NODE", nodeId: node.id, x: node.x, z: node.z });
     }
 
-    // ── 3. Restore walls ──────────────────────────────────────────────────────
+    // ── 3. Khôi phục tường ────────────────────────────────────────────────────
     for (const wall of doc.walls) {
         dispatch({
-            type:        "ADD_WALL",
-            wallId:      wall.wallId,
+            type: "ADD_WALL",
+            wallId: wall.wallId,
             startNodeId: wall.startNodeId,
-            endNodeId:   wall.endNodeId,
-            thickness:   wall.thickness,
+            endNodeId: wall.endNodeId,
+            thickness: wall.thickness,
         });
 
-        // Restore wall height if it differs from the factory default (3.2 m).
-        // ADD_WALL always creates walls at the factory default height; UPDATE_WALL
-        // is the correct command to override it without a mesh rebuild cycle.
-        if (Math.abs(wall.height - 3.2) > 1e-4) {
+        // Khôi phục chiều cao tường nếu khác mặc định factory (DEFAULT_WALL_HEIGHT).
+        // ADD_WALL luôn tạo tường ở chiều cao mặc định; UPDATE_WALL là command
+        // đúng để ghi đè mà không cần chu trình rebuild mesh.
+        if (Math.abs(wall.height - DEFAULT_WALL_HEIGHT) > 1e-4) {
             dispatch({ type: "UPDATE_WALL", wallId: wall.wallId, height: wall.height });
         }
+
+        // Khôi phục material bề mặt tường RIÊNG từng mặt. ADD_WALL tạo Mesh đồng bộ
+        // (WallFactory) nên SET_WALL_MATERIAL áp được ngay; material giữ qua rebuild sau.
+        // File cũ chỉ có `material` đơn → map thành CẢ 2 mặt (giữ diện mạo cũ).
+        const faces = wall.materialFaces ?? (wall.material ? { left: wall.material, right: wall.material } : undefined);
+        if (faces?.left) dispatch({ type: "SET_WALL_MATERIAL", wallId: wall.wallId, materialId: faces.left, face: "left" });
+        if (faces?.right) dispatch({ type: "SET_WALL_MATERIAL", wallId: wall.wallId, materialId: faces.right, face: "right" });
     }
 
-    // ── 4. Restore furniture ──────────────────────────────────────────────────
-    // PLACE_FURNITURE is fire-and-forget (async GLB load). Furniture appears after
-    // the GLB promise resolves — typically instant on repeat loads due to loader cache.
+    // ── 4. Khôi phục furniture ────────────────────────────────────────────────
+    // dispatchAsync + await tuần tự: entity tồn tại xong mới sang item kế. Guard
+    // generation trước mỗi spawn để dừng nếu một deserialize mới đã chen vào (C1).
     for (const f of (doc.furniture ?? [])) {
-        dispatch({ type: "PLACE_FURNITURE", modelId: f.modelId, x: f.x, z: f.z, rotY: f.rotY });
+        if (myGen !== _generation) return;
+        await dispatchAsync({ type: "PLACE_FURNITURE", modelId: f.modelId, x: f.x, y: f.y, z: f.z, rotY: f.rotY, materials: f.materials });
+    }
+
+    // ── 5. Khôi phục đồ bám tường ─────────────────────────────────────────────
+    // Phải SAU khi tường được tạo (bước 3) vì PLACE_WALL_ITEM suy Transform từ
+    // topology tường theo hostWallId. Cũng await tuần tự + guard generation.
+    for (const w of (doc.wallItems ?? [])) {
+        if (myGen !== _generation) return;
+        await dispatchAsync({ type: "PLACE_WALL_ITEM", modelId: w.modelId, hostWallId: w.hostWallId, t: w.t, side: w.side, materials: w.materials });
+    }
+
+    // ── 6. Khôi phục material sàn ─────────────────────────────────────────────
+    // SET_FLOOR_MATERIAL ghi vào registry roomKey→materialId; RoomSystem re-apply
+    // khi dựng lại mesh sàn (phòng được phát hiện sau khi tường tồn tại). Ghi registry
+    // bền nên thứ tự với việc phát hiện phòng không quan trọng.
+    if (myGen !== _generation) return;
+    for (const [roomKey, materialId] of Object.entries(doc.floors ?? {})) {
+        dispatch({ type: "SET_FLOOR_MATERIAL", roomKey, materialId });
     }
 }

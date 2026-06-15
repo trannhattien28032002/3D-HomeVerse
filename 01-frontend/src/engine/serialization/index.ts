@@ -1,6 +1,6 @@
 /**
- * Public surface of the serialization module.
- * Import from "src/engine/serialization" — do not import internal files directly.
+ * Bề mặt public của module serialization (barrel export).
+ * Import từ "src/engine/serialization" — đừng import trực tiếp các file nội bộ.
  */
 
 export type { SceneDocument, SceneNodeRecord, SceneWallRecord, AnySceneDocument } from "./SceneDocument";

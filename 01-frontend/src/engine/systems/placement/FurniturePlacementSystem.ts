@@ -5,6 +5,7 @@ import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { EngineEvents } from "src/engine/events/EngineEvents";
 import { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
 import { GhostMaterialSet } from "src/engine/rendering/GhostMaterials";
+import { createGuideLine, setGuideLine, disposeGuideLine } from "src/engine/rendering/guideLine";
 import { getAssetPath, getBoundingBox, getFootprint2D, getPlacement, type PlacementSpec } from "src/engine/catalog/FurnitureCatalog";
 import { resolveCollisionFootprint } from "src/engine/catalog/footprint";
 import type { ModelTemplate } from "src/engine/rendering/GLTFModelLoader";
@@ -12,7 +13,7 @@ import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollis
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import { projectPointToWall, wallItemPose, wallItemOverlaps, occupancyLane, type MountWall } from "src/shared/geometry/wallMount";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
-import { collectOccupiedRanges } from "src/engine/systems/gizmo/gizmoHandles";
+import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
 import { collectWallSegments } from "src/engine/adapters/wallSegments";
 import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
 import { Query } from "src/engine/ecs/Query";
@@ -114,16 +115,7 @@ export class FurniturePlacementSystem {
         this.nodeRegistry = nodeRegistry;
         this.wallOpeningPreview = new WallOpeningPreview(scene);
 
-        const guideGeom = new THREE.BufferGeometry();
-        guideGeom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
-        this.guideLine = new THREE.Line(
-            guideGeom,
-            new THREE.LineBasicMaterial({ color: 0xf8b400, depthTest: false, transparent: true }),
-        );
-        this.guideLine.renderOrder = 999;
-        this.guideLine.visible = false;
-        this.guideLine.frustumCulled = false;
-        this.scene.add(this.guideLine);
+        this.guideLine = createGuideLine(this.scene); // đường gióng dùng chung (L5)
     }
 
     /** Vào chế độ đặt cho model cho trước. Huỷ phiên đặt đang chạy (nếu có) trước. */
@@ -246,6 +238,10 @@ export class FurniturePlacementSystem {
         this.active = false;
         this.modelId = null;
         this.placement = null;
+        // Gỡ thuộc tính __wallEntity đã gắn lên mesh thật (trong MeshRegistry) lúc begin().
+        // Nếu không xoá, một tường bị xoá rồi tái tạo với entity id khác có thể để mesh giữ
+        // entity id cũ (stale) → raycast placement lần sau trả về entity đã chết. (H3)
+        for (const m of this.wallPickMeshes) delete (m as WallPickMesh).__wallEntity;
         this.wallPickMeshes = [];
         this.wallHit = null;
         this.ghostBaseOffsetY = 0;
@@ -300,6 +296,19 @@ export class FurniturePlacementSystem {
     };
 
     /**
+     * Dọn mọi state của wall-ghost về "không hợp lệ": ẩn ghost, clear wallHit, tô đỏ
+     * (invalid), ẩn preview CSG. Gọi ở mọi nhánh fail của updateWallGhost để 4 đường
+     * thoát luôn reset đồng nhất (thêm state mới chỉ cần sửa 1 chỗ).
+     */
+    private clearWallGhost(ghost: THREE.Group): void {
+        ghost.visible = false;
+        this.wallHit = null;
+        this.setWallInvalid();
+        this.wallOpeningPreview.hide();
+        this.activePreviewWallId = null;
+    }
+
+    /**
      * Ghost cho item bám tường: raycast mặt tường, chiếu lên tim tường để lấy (t, side),
      * đặt ghost áp/nhúng tường. Đặt this.wallHit (null = không hợp lệ → chặn đặt).
      * Với item loại "opening": hiển thị preview CSG tường bị khoét.
@@ -310,22 +319,14 @@ export class FurniturePlacementSystem {
 
         const hits = this.raycaster.intersectObjects(this.wallPickMeshes, false);
         if (hits.length === 0) {
-            ghost.visible = false;
-            this.wallHit = null;
-            this.setWallInvalid();
-            this.wallOpeningPreview.hide();
-            this.activePreviewWallId = null;
+            this.clearWallGhost(ghost);
             return;
         }
 
         const hit = hits[0];
         const wallEntity = (hit.object as WallPickMesh).__wallEntity;
         if (wallEntity == null) {
-            ghost.visible = false;
-            this.wallHit = null;
-            this.setWallInvalid();
-            this.wallOpeningPreview.hide();
-            this.activePreviewWallId = null;
+            this.clearWallGhost(ghost);
             return;
         }
 
@@ -333,21 +334,13 @@ export class FurniturePlacementSystem {
         const wn = this.world.getComponent(wallEntity, WallNodes);
         const sizeC = this.world.getComponent(wallEntity, WallSize);
         if (!tag || !wn) {
-            ghost.visible = false;
-            this.wallHit = null;
-            this.setWallInvalid();
-            this.wallOpeningPreview.hide();
-            this.activePreviewWallId = null;
+            this.clearWallGhost(ghost);
             return;
         }
         const a = this.nodeRegistry.get(wn.startNodeId);
         const b = this.nodeRegistry.get(wn.endNodeId);
         if (!a || !b) {
-            ghost.visible = false;
-            this.wallHit = null;
-            this.setWallInvalid();
-            this.wallOpeningPreview.hide();
-            this.activePreviewWallId = null;
+            this.clearWallGhost(ghost);
             return;
         }
 
@@ -452,16 +445,7 @@ export class FurniturePlacementSystem {
 
     /** Vẽ đường gióng wall-snap (sát sàn); ẩn nếu không có. */
     private updateGuide(guides: { x1: number; z1: number; x2: number; z2: number }[]): void {
-        if (guides.length === 0) {
-            this.guideLine.visible = false;
-            return;
-        }
-        const g = guides[0];
-        const pos = this.guideLine.geometry.getAttribute("position") as THREE.BufferAttribute;
-        pos.setXYZ(0, g.x1, 0.02, g.z1);
-        pos.setXYZ(1, g.x2, 0.02, g.z2);
-        pos.needsUpdate = true;
-        this.guideLine.visible = true;
+        setGuideLine(this.guideLine, guides);
     }
 
     private onMouseDown = (e: MouseEvent): void => {
@@ -491,8 +475,6 @@ export class FurniturePlacementSystem {
 
     dispose(): void {
         this.cleanup();
-        this.scene.remove(this.guideLine);
-        this.guideLine.geometry.dispose();
-        (this.guideLine.material as THREE.Material).dispose();
+        disposeGuideLine(this.scene, this.guideLine);
     }
 }

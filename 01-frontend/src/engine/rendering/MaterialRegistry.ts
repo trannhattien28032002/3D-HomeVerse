@@ -8,9 +8,11 @@ export type MaterialSignature = {
 };
 
 /**
- * Shared material pool keyed by signature. Materials with identical parameters
- * return the same instance — no duplicate MeshStandardMaterial allocations.
- * releaseAll() disposes every cached material; call only on engine shutdown.
+ * MaterialRegistry — pool vật liệu dùng chung, đánh khoá theo "chữ ký" (signature).
+ *
+ * Vật liệu có cùng tham số (màu/metalness/roughness/side) trả về cùng một instance
+ * → không cấp phát trùng MeshStandardMaterial, tiết kiệm bộ nhớ GPU.
+ * releaseAll() dispose mọi vật liệu cache; chỉ gọi khi engine tắt.
  */
 export class MaterialRegistry {
     private materials = new Map<string, THREE.MeshStandardMaterial>();

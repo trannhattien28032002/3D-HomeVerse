@@ -49,6 +49,8 @@ type JsonCatalogEntry = {
     id: string;
     name: string;
     category?: string;
+    /** Ảnh thumbnail catalog (dùng cho preview ở Material Sidebar / DecorCatalog). */
+    thumbnailUrl?: string;
     modelUrl?: string;
     boundingBox?: { width?: number; depth?: number; height?: number };
     collisionBox?: { width?: number; depth?: number; height?: number };

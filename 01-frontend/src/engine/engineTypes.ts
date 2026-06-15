@@ -11,6 +11,7 @@ import type { EngineEvents } from "src/engine/events/EngineEvents";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import type { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
+import type { WallFace } from "src/engine/components/render/SurfaceMaterial";
 
 /** Tên camera preset — xem định nghĩa góc nhìn cụ thể trong OrbitControlSystem.ts */
 export type CameraPreset = "plan" | "perspective" | "eye-level";
@@ -38,6 +39,14 @@ export type EngineApi = {
     rotateView: (angleDeg: number) => void;
     /** Chuyển gizmo 3D giữa translate (di chuyển) và rotate (xoay). No-op khi đang drag. */
     setGizmoMode: (mode: "translate" | "rotate") => void;
+    /** Bỏ chọn mọi thứ trong 3D (gỡ gizmo + dọn viền chọn + đồng bộ store). */
+    clearSelection: () => void;
+    /**
+     * Chụp khung hình 3D hiện tại tại đúng vị trí camera đang đứng.
+     * Tự bỏ chọn trước khi chụp để ảnh không dính gizmo / viền chọn.
+     * Trả về data URL PNG — render đồng bộ 1 frame rồi đọc canvas ngay trong cùng tick.
+     */
+    captureScreenshot: () => string;
     // ── Transaction + Undo ──────────────────────────────────────────────────
     /** Gom tất cả dispatch() bên trong fn() thành một entry undo duy nhất. */
     transaction: (label: string, fn: () => void) => void;
@@ -84,8 +93,8 @@ export type EngineApi = {
     // ── Material read ─────────────────────────────────────────────────────────
     /** Trả về map slotId → materialId hiện tại của entity (đồ nội thất). */
     getEntityMaterials: (entityId: string) => Record<string, string>;
-    /** Trả về materialId hiện tại của tường, hoặc null nếu chưa đổi. */
-    getWallMaterial: (wallId: string) => string | null;
+    /** Trả về materialId hiện tại của MỘT MẶT tường (left/right), hoặc null nếu chưa đổi. */
+    getWallMaterial: (wallId: string, face: WallFace) => string | null;
     /** Trả về materialId hiện tại của sàn phòng (theo roomKey), hoặc null. */
     getFloorMaterial: (roomKey: string) => string | null;
 };

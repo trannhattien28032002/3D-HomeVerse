@@ -1,9 +1,11 @@
 import * as THREE from "three";
 
 /**
- * Central registry that owns Three.js mesh lifecycle.
- * Systems register meshes here on creation; disposal goes through this registry.
- * Does NOT dispose materials — those are owned by MaterialRegistry.
+ * MeshRegistry — registry trung tâm quản lý vòng đời mesh Three.js.
+ *
+ * System đăng ký mesh tại đây khi tạo; mọi việc huỷ đều đi qua registry này
+ * (gỡ khỏi scene + dispose geometry). KHÔNG dispose vật liệu — vật liệu thuộc
+ * quyền MaterialRegistry (dùng chung nên không huỷ ở đây).
  */
 export class MeshRegistry {
     private meshes = new Map<string, THREE.Mesh>();
@@ -25,7 +27,7 @@ export class MeshRegistry {
         return this.meshes.has(key);
     }
 
-    /** Remove mesh from scene and dispose its geometry. No-op if key is unknown. */
+    /** Gỡ mesh khỏi scene và dispose geometry. No-op nếu key không tồn tại. */
     dispose(key: string): void {
         const mesh = this.meshes.get(key);
         if (!mesh) return;
@@ -34,7 +36,7 @@ export class MeshRegistry {
         this.meshes.delete(key);
     }
 
-    /** Dispose every registered mesh. Called once on engine shutdown. */
+    /** Dispose mọi mesh đã đăng ký. Gọi một lần khi engine tắt. */
     disposeAll(): void {
         for (const mesh of this.meshes.values()) {
             this.scene.remove(mesh);
