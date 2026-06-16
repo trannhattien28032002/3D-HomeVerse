@@ -13,7 +13,7 @@ import { WallPolygon } from "src/engine/components/wall/WallPolygon";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { Query } from "src/engine/ecs/Query";
-import { createWall } from "src/engine/game/WallFactory";
+import { createWall } from "src/engine/factories/WallFactory";
 import { v4 as uuidv4 } from "uuid";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";

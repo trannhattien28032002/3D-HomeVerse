@@ -16,6 +16,7 @@
  * audit thực tế, hook làm nhiều việc hơn null-check (xem dưới). Pragmatic
  * choice: rename để tên đúng nghĩa, giữ logic.
  */
+import { useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useEngineOrNull } from "src/app/engine/EngineContext";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
@@ -41,63 +42,68 @@ export type EngineApi = {
 export function useEngineApi(): EngineApi {
     const engine = useEngineOrNull();
 
-    function dispatch(cmd: EngineCommand) {
-        if (!engine) {
-            console.warn("[useEngineApi] dispatch called before engine init:", cmd.type);
-            return;
-        }
-        engine.api.dispatch(cmd);
-    }
+    // PERF: memoize the facade so its methods keep stable identity across renders.
+    // engine is stable after init, so deps=[engine]. Without this, every render
+    // produced fresh function identities, busting React.memo on layers that receive
+    // dispatch/record*Undo as props (e.g. FurnitureLayer) — re-rendering all objects
+    // on every pan/zoom frame regardless of other memoization.
+    return useMemo<EngineApi>(() => ({
+        dispatch(cmd: EngineCommand) {
+            if (!engine) {
+                console.warn("[useEngineApi] dispatch called before engine init:", cmd.type);
+                return;
+            }
+            engine.api.dispatch(cmd);
+        },
 
-    function dispatchAsync(cmd: EngineCommand): Promise<void> {
-        if (!engine) {
-            console.warn("[useEngineApi] dispatchAsync called before engine init:", cmd.type);
-            return Promise.resolve();
-        }
-        return engine.api.dispatchAsync(cmd);
-    }
+        dispatchAsync(cmd: EngineCommand): Promise<void> {
+            if (!engine) {
+                console.warn("[useEngineApi] dispatchAsync called before engine init:", cmd.type);
+                return Promise.resolve();
+            }
+            return engine.api.dispatchAsync(cmd);
+        },
 
-    function withTransaction(label: string, fn: () => void) {
-        if (!engine) { fn(); return; }
-        engine.api.transaction(label, fn);
-    }
+        withTransaction(label: string, fn: () => void) {
+            if (!engine) { fn(); return; }
+            engine.api.transaction(label, fn);
+        },
 
-    function asyncTransaction(label: string, fn: () => Promise<void>): Promise<void> {
-        if (!engine) return fn();
-        return engine.api.asyncTransaction(label, fn);
-    }
+        asyncTransaction(label: string, fn: () => Promise<void>): Promise<void> {
+            if (!engine) return fn();
+            return engine.api.asyncTransaction(label, fn);
+        },
 
-    function beginTransaction(label: string) {
-        engine?.api.beginTransaction(label);
-    }
+        beginTransaction(label: string) {
+            engine?.api.beginTransaction(label);
+        },
 
-    function commitTransaction() {
-        engine?.api.commitTransaction();
-    }
+        commitTransaction() {
+            engine?.api.commitTransaction();
+        },
 
-    function cancelTransaction() {
-        engine?.api.cancelTransaction();
-    }
+        cancelTransaction() {
+            engine?.api.cancelTransaction();
+        },
 
-    function recordMoveUndo(entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) {
-        engine?.api.recordMoveUndo(entityId, fromX, fromZ, toX, toZ);
-    }
+        recordMoveUndo(entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) {
+            engine?.api.recordMoveUndo(entityId, fromX, fromZ, toX, toZ);
+        },
 
-    function recordRotateUndo(entityId: string, fromRotY: number, toRotY: number) {
-        engine?.api.recordRotateUndo(entityId, fromRotY, toRotY);
-    }
+        recordRotateUndo(entityId: string, fromRotY: number, toRotY: number) {
+            engine?.api.recordRotateUndo(entityId, fromRotY, toRotY);
+        },
 
-    function recordWallItemMoveUndo(entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) {
-        engine?.api.recordWallItemMoveUndo(entityId, fromHostWallId, fromT, fromSide, toHostWallId, toT, toSide);
-    }
+        recordWallItemMoveUndo(entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) {
+            engine?.api.recordWallItemMoveUndo(entityId, fromHostWallId, fromT, fromSide, toHostWallId, toT, toSide);
+        },
 
-    function nextNodeId() {
-        return engine?.nodes.newNodeId() ?? uuidv4();
-    }
+        nextNodeId() {
+            return engine?.nodes.newNodeId() ?? uuidv4();
+        },
 
-    function nextWallId() {
-        return engine?.api.getNextIds()?.wallId ?? uuidv4();
-    }
-
-    return { dispatch, dispatchAsync, withTransaction, asyncTransaction, beginTransaction, commitTransaction, cancelTransaction, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo, nextNodeId, nextWallId };
+        nextWallId() {
+            return engine?.api.getNextIds()?.wallId ?? uuidv4();
+        },
+    }), [engine]);
 }

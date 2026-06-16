@@ -30,8 +30,8 @@ import { Mesh } from "src/engine/components/render/Mesh";
 import { Transform } from "src/engine/components/core/Transform";
 import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
-import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 
 import { type WallAtNode, computeMiters } from "src/engine/systems/wall/wallCornerJoiner";
 import { buildExtrudeGeo, rebuildWallMesh } from "src/engine/systems/wall/wallMeshBuilder";

@@ -17,8 +17,8 @@ import { Selectable } from "src/engine/components/interaction/Selectable";
 import { WallNodes } from "src/engine/components/wall/WallNodes";
 import { WorldSpaceMesh } from "src/engine/components/render/WorldSpaceMesh";
 import { World } from "src/engine/ecs/World";
-import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import { WALL_DEFAULT_MATERIAL } from "src/engine/rendering/surfaceDefaults";
 
 export type CreateWallOptions = {

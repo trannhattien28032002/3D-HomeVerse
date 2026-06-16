@@ -86,7 +86,7 @@ export function materialsForSlot(allowedCategories: string[]): MaterialItem[] {
  *   - Sàn:   sàn gỗ, ốp, đá, bê tông, lát, nền.
  * Lọc xuống các category thật có trong materials.json để không hiện chip rỗng.
  */
-export const WALL_CATEGORIES: string[] = ["plaster", "brick", "tile", "stone", "wood", "concrete"]
+export const WALL_CATEGORIES: string[] = ["plaster", "brick", "tile", "stone", "wood", "concrete", "plastic"]
     .filter((c) => AVAILABLE_CATEGORIES.has(c));
 
 export const FLOOR_CATEGORIES: string[] = ["woodfloor", "tile", "stone", "concrete", "paving", "ground"]

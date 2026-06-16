@@ -8,10 +8,10 @@ import { StaticBody } from "src/engine/components/physics/StaticBody";
 import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Model3D } from "src/engine/components/render/Model3D";
-import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
-import { ModelRegistry } from "src/engine/rendering/ModelRegistry";
+import { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import type { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
 import { applyMaterialToSlot } from "src/engine/rendering/materialApply";
 import { getAssetPath, getBoundingBox, getPlacement } from "src/engine/catalog/FurnitureCatalog";
@@ -56,6 +56,42 @@ export function getFurnitureSize(modelId: string): [number, number, number] {
 }
 
 /**
+ * Ngưỡng (mét) để một item được phép ĐỔ BÓNG. Item có cạnh lớn nhất nhỏ hơn ngưỡng
+ * (đồ trang trí để bàn: máy xay, lò vi sóng, khối dao…) sẽ KHÔNG cast shadow —
+ * chúng gần như không tạo bóng nhìn thấy được, nhưng mỗi shadow-caster lại bắt
+ * shadow-map render thêm một lượt. So với cạnh lớn nhất của bounding box (không
+ * phải footprint) nên đồ cao-mảnh như đèn cây / cây cảnh vẫn cast bình thường. (HG-03)
+ */
+const SHADOW_CASTER_MIN_SIZE = 0.6;
+
+/**
+ * Gán cờ bóng đổ cho mọi mesh con của một model (HG-03).
+ *
+ * - `castShadow`: chỉ bật khi item đủ lớn (≥ SHADOW_CASTER_MIN_SIZE), trừ khi
+ *   `forceNoCast` (cửa/cửa sổ là opening nằm phẳng trong tường — bóng vô nghĩa).
+ *   Giảm số caster ⇒ shadow-map pass nhẹ đi, tỉ lệ thuận số đồ trong phòng.
+ * - `receiveShadow`: luôn TẮT trên nội thất/wall-item. Bề mặt nhận bóng là sàn +
+ *   tường (GroundFactory/WallFactory/RoomSystem/WallGeometrySystem đã bật receive),
+ *   nên contact-shadow dưới đồ vẫn hiển thị; chỉ bỏ phần đồ-nhận-bóng-từ-đồ
+ *   (thứ yếu) để cắt chi phí sample shadow-map ở main pass.
+ */
+function applyShadowFlags(
+    root: THREE.Object3D,
+    size: THREE.Vector3 | [number, number, number],
+    opts?: { forceNoCast?: boolean },
+): void {
+    const [sx, sy, sz] = Array.isArray(size) ? size : [size.x, size.y, size.z];
+    const castShadow =
+        !opts?.forceNoCast && Math.max(sx, sy, sz) >= SHADOW_CASTER_MIN_SIZE;
+    root.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = castShadow;
+            child.receiveShadow = false;
+        }
+    });
+}
+
+/**
  * Spawn một entity nội thất cố định tại (x, z) trên sàn bằng placeholder BoxGeometry.
  * Đường spawn cũ — đường chính hiện dùng spawnFurnitureGLB. Trả về ECS entity id.
  */
@@ -75,8 +111,7 @@ export function spawnFurniture(
     const material = materialRegistry.get({ color: 0xa0856a, metalness: 0, roughness: 0.8 });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    applyShadowFlags(mesh, [w, h, d]);
     scene.add(mesh);
 
     const entity = world.createEntity();
@@ -127,12 +162,7 @@ export async function spawnFurnitureGLB(
         root.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
     }
 
-    root.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-        }
-    });
+    applyShadowFlags(root, template.size);
 
     scene.add(root);
 
@@ -223,12 +253,8 @@ export async function spawnWallItemGLB(
     const half = pose.rotY / 2;
     root.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
 
-    root.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-        }
-    });
+    // Cửa/cửa sổ là opening nằm phẳng trong tường ⇒ không cast; kệ treo theo size-gate.
+    applyShadowFlags(root, template.size, { forceNoCast: isOpening });
 
     scene.add(root);
 

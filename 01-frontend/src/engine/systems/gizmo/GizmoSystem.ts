@@ -25,8 +25,10 @@ import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { EngineEvents } from "src/engine/events/EngineEvents";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CachedClientRect } from "src/shared/dom/cachedRect";
 import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
+import { PointerRotateTracker } from "src/engine/systems/gizmo/pointerRotate";
 import { SNAP_M, ROT_STEP_RAD } from "src/shared/constants/placement";
 import { type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import { collectWallSegments } from "src/engine/adapters/wallSegments";
@@ -34,12 +36,7 @@ import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import {
     type MeshWithEntity,
-    type WallPickMesh,
-    type RoomPickMesh,
-    collectPickTargets,
-    collectWallPickTargets,
-    collectRoomPickTargets,
-    resolveHitEntity,
+    resolvePick,
     applyRotateCheck,
     isWallItem,
     slideWallItem,
@@ -50,8 +47,10 @@ import { GizmoHeld } from "src/engine/components/interaction/GizmoHeld";
 import { Model3D } from "src/engine/components/render/Model3D";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { wallNaturalRotY } from "src/shared/geometry/wallMount";
-import { WallOpeningPreview } from "src/engine/systems/wall/WallOpeningPreview";
-import type { OpeningCut } from "src/engine/systems/wall/wallOpeningCutter";
+import {
+    WallOpeningPreviewController,
+    collectExistingOpenings,
+} from "src/engine/systems/wall/WallOpeningPreviewController";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { Mesh } from "src/engine/components/render/Mesh";
 import { WallPolygon } from "src/engine/components/wall/WallPolygon";
@@ -60,7 +59,8 @@ import { WallTag } from "src/engine/components/wall/WallTag";
 import { WallNodes } from "src/engine/components/wall/WallNodes";
 import { Query } from "src/engine/ecs/Query";
 import { findMountWall } from "src/engine/adapters/wallRefs";
-import type { MeshRegistry } from "src/engine/rendering/MeshRegistry";
+import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
 
 /**
  * True khi focus đang ở một ô nhập liệu (input/textarea/contentEditable).
@@ -80,6 +80,8 @@ export class GizmoSystem extends System {
     private overlayScene: THREE.Scene;
     private controls: TransformControls;
     private rendererDomElement: HTMLCanvasElement;
+    /** LW-03: rect canvas cache — PointerRotateTracker đọc mỗi frame khi rotate. */
+    private rectCache: CachedClientRect;
     /** OrbitControls của scene — tắt khi đang kéo gizmo để không xoay camera. */
     private orbitControls: OrbitControls;
 
@@ -101,6 +103,8 @@ export class GizmoSystem extends System {
     private collisionSystem: CannonCollisionSystem;
     private dragGhostController: DragGhostController;
     private nodeRegistry: NodeRegistry;
+    /** On-demand render (CR-03): báo cần vẽ lại khi gizmo đổi (hover/attach/detach/drag). */
+    private scheduler?: RenderScheduler;
     private currentMode: "translate" | "rotate" = "translate";
 
     /** Đường gióng wall-snap (world-space) hiển thị khi mép vật áp tường. */
@@ -116,24 +120,11 @@ export class GizmoSystem extends System {
 
     // --- Rotate "vô-lăng": tự tính yaw từ góc con trỏ quanh tâm vật ---------
     // (xem applyRotateCheck) — tránh đảo chiều khi kéo gần trọn vòng.
-    /** Vị trí con trỏ mới nhất (clientX/clientY), cập nhật ở capture-phase. */
-    private lastPointerClient = { x: 0, y: 0 };
-    /** Yaw của vật lúc bắt đầu rotate-drag (radian). */
-    private rotateStartYaw = 0;
-    /** Góc con trỏ đo lần trước (radian) — để cộng dồn delta unwrap qua ±π. */
-    private rotatePrevPointerAngle = 0;
-    /** Tổng góc con trỏ đã quay từ lúc bắt đầu (radian, đơn điệu). */
-    private rotateAccumAngle = 0;
-    /** Dấu chiều quay: +1 hoặc -1 (đổi nếu xoay ngược cảm giác mong đợi). */
-    private static readonly ROTATE_POINTER_SIGN = -1;
-    private _tmpWorldPos = new THREE.Vector3();
+    /** Toán rotate vô-lăng (tracking con trỏ + cộng dồn góc) — xem pointerRotate.ts. */
+    private readonly pointerRotate: PointerRotateTracker;
 
-    /** Preview CSG tường cho door/window khi kéo gizmo. */
-    private readonly wallOpeningPreview: WallOpeningPreview;
-    /** wallId đang được preview — để detect khi thay đổi tường. */
-    private activePreviewWallId: string | null = null;
-    /** Hash của existing openings lúc begin() lần cuối — để detect thay đổi cần rebuild. */
-    private activePreviewOpeningsHash = "";
+    /** Preview CSG tường cho door/window khi kéo gizmo (begin-vs-update qua controller). */
+    private readonly openingPreview: WallOpeningPreviewController;
 
     setCommandCallbacks(
         beginTransaction: (label: string) => void,
@@ -156,17 +147,21 @@ export class GizmoSystem extends System {
         events?: EngineEvents,
         collisionSystem?: CannonCollisionSystem,
         dragGhostController?: DragGhostController,
+        scheduler?: RenderScheduler,
     ) {
         super();
+        this.scheduler = scheduler;
 
         this.camera = camera;
         this.scene = scene;
         this.overlayScene = overlayScene;
         this.rendererDomElement = renderer.domElement;
+        this.rectCache = new CachedClientRect(this.rendererDomElement);
+        this.pointerRotate = new PointerRotateTracker(camera, this.rectCache);
         this.orbitControls = orbitControls;
         this.nodeRegistry = nodeRegistry;
         this.meshRegistry = meshRegistry;
-        this.wallOpeningPreview = new WallOpeningPreview(scene);
+        this.openingPreview = new WallOpeningPreviewController(scene);
 
         this.controls = new TransformControls(camera, renderer.domElement);
         this.controls.setMode("translate");
@@ -188,6 +183,9 @@ export class GizmoSystem extends System {
 
         this.controls.addEventListener("dragging-changed", this.onDraggingChanged);
         this.controls.addEventListener("objectChange", this.onObjectChange);
+        // On-demand render: gizmo phát "change" khi hover đổi trục, lúc kéo, và mỗi
+        // updateMatrixWorld → cần vẽ lại frame đó (các thay đổi này không bump revision).
+        this.controls.addEventListener("change", this.requestRender);
 
         this.rendererDomElement.addEventListener("mousedown", this.onMouseDown);
         // Chuột phải = bỏ chọn mọi thứ (và chặn menu ngữ cảnh mặc định của trình duyệt).
@@ -199,10 +197,14 @@ export class GizmoSystem extends System {
         window.addEventListener("pointermove", this.onPointerTrack, true);
     }
 
+    /** Báo RenderScheduler cần vẽ lại 1 frame (on-demand render — CR-03). */
+    private requestRender = () => {
+        this.scheduler?.requestRender();
+    };
+
     /** Lưu vị trí con trỏ mới nhất cho rotate "vô-lăng". */
     private onPointerTrack = (event: PointerEvent) => {
-        this.lastPointerClient.x = event.clientX;
-        this.lastPointerClient.y = event.clientY;
+        this.pointerRotate.trackPointer(event.clientX, event.clientY);
     };
 
     /**
@@ -260,7 +262,9 @@ export class GizmoSystem extends System {
                 this.dragFurnitureBoxes = collectFurnitureBoxes(this.world, entity);
             } else {
                 // Rotate "vô-lăng": chốt yaw gốc + góc con trỏ gốc làm mốc cộng dồn.
-                this._beginPointerRotate(entity);
+                const tr = this.world.getComponent(entity, Transform);
+                const startYaw = tr ? 2 * Math.atan2(tr.qy, tr.qw) : 0;
+                this.pointerRotate.begin(object, startYaw);
             }
             this.events?.emit("draggingChanged", { entityId: entity, dragging: true });
             return;
@@ -277,15 +281,13 @@ export class GizmoSystem extends System {
             }
             // Sau rotate: snap quaternion về wall-derived rotY theo side đã flip.
             if (this.currentMode === "rotate") {
-                this._snapWallItemRotation(e);
+                this.snapWallItemRotation(e);
             }
             // Sau translate: dọn ghost (ghost được tạo ở drag-start cho translate).
             if (this.currentMode === "translate") {
                 this.dragGhostController?.end();
             }
-            this.wallOpeningPreview.dispose();
-            this.activePreviewWallId = null;
-            this.activePreviewOpeningsHash = "";
+            this.openingPreview.clear();
             this.onCommitTransaction?.();
             this.events?.emit("draggingChanged", { entityId: e, dragging: false });
             this.draggingEntity = null;
@@ -337,7 +339,7 @@ export class GizmoSystem extends System {
                 // CSG preview cho door/window khi kéo gizmo.
                 const wo = this.world.getComponent(entity, WallOpening);
                 if (wo) {
-                    this._updateGizmoOpeningPreview(wo.hostWallId, wo.t, wo.width, wo.height, wo.sill, entity);
+                    this.updateOpeningPreview(wo.hostWallId, wo.t, wo.width, wo.height, wo.sill, entity);
                 }
             }
             return;
@@ -351,7 +353,7 @@ export class GizmoSystem extends System {
         // tránh đảo chiều khi kéo gần trọn vòng). Kiểm tra footprint OBB đã xoay;
         // chặn nếu chồng lên thứ gì đó.
         if (this.currentMode === "rotate") {
-            const rawYaw = this._computePointerYaw();
+            const rawYaw = this.pointerRotate.computeYaw(object);
             applyRotateCheck(this.controls, transform, collider, this.collisionSystem, entity, this.world, rawYaw);
             return;
         }
@@ -381,6 +383,7 @@ export class GizmoSystem extends System {
         this.onDeleteEntity?.(entity);
         this.controls.detach();
         this.events?.emit("entitySelected", { entityId: null });
+        this.requestRender();
     };
 
     private onMouseDown = (event: MouseEvent) => {
@@ -388,7 +391,13 @@ export class GizmoSystem extends System {
         // onContextMenu xử lý (tránh attach gizmo chớp nháy rồi lại detach).
         if (event.button !== 0) return;
 
-        const rect = (event.target as HTMLElement).getBoundingClientRect();
+        // attach/detach của TransformControls KHÔNG phát "change" → tự báo vẽ lại
+        // để gizmo + viền chọn cập nhật ngay sau click.
+        this.requestRender();
+
+        // LW-03: listener gắn trên rendererDomElement nên event.target chính là canvas
+        // (không có child) → dùng rect cache thay vì getBoundingClientRect() mỗi click.
+        const rect = this.rectCache.get();
 
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -397,62 +406,32 @@ export class GizmoSystem extends System {
 
         if (this.controls.dragging) return;
 
-        collectPickTargets(this.world, this.pickObjects);
-        // recursive=true để Three.js bắt được cả mesh con bên trong Group GLB
-        const furnitureHits = this.raycaster.intersectObjects(this.pickObjects, true);
-
-        // Tường: raycast riêng (collectPickTargets loại trừ tường). Chỉ để chọn đổi
-        // material → KHÔNG attach gizmo, không di chuyển/xoay được.
-        collectWallPickTargets(this.world, this.wallPickObjects);
-        const wallHits = this.raycaster.intersectObjects(this.wallPickObjects, false);
-
-        // Sàn phòng: raycast riêng (mesh từ MeshRegistry). Ưu tiên thấp nhất — chỉ
-        // để chọn đổi material sàn, KHÔNG attach gizmo.
-        collectRoomPickTargets(this.world, this.meshRegistry, this.roomPickObjects);
-        const roomHits = this.raycaster.intersectObjects(this.roomPickObjects, false);
-
-        const furnitureDist = furnitureHits[0]?.distance ?? Infinity;
-        const wallDist = wallHits[0]?.distance ?? Infinity;
-        const roomDist = roomHits[0]?.distance ?? Infinity;
-
         // Mỗi click chỉ phát ĐÚNG MỘT sự kiện chọn — setSelected (phía UI) thay thế
         // toàn bộ selection nên không cần phát kèm null để dọn loại còn lại.
+        const pick = resolvePick(this.raycaster, this.world, this.meshRegistry, {
+            furniture: this.pickObjects,
+            wall: this.wallPickObjects,
+            room: this.roomPickObjects,
+        });
 
-        // Không trúng gì → bỏ chọn.
-        if (furnitureDist === Infinity && wallDist === Infinity && roomDist === Infinity) {
-            this.controls.detach();
-            this.events?.emit("entitySelected", { entityId: null });
-            return;
-        }
-
-        // Sàn là bề mặt gần nhất (đứng trước cả tường & đồ) → chọn sàn để đổi material.
-        // Đồ/tường luôn nằm trên sàn nên khi click trúng chúng, hit của chúng gần camera
-        // hơn → sàn không "cướp" click. Detach gizmo (sàn không di chuyển/xoay được).
-        if (roomDist < furnitureDist && roomDist < wallDist) {
-            const roomKey = (roomHits[0].object as RoomPickMesh).__roomKey ?? null;
-            this.controls.detach();
-            this.events?.emit("floorSelected", { roomKey });
-            return;
-        }
-
-        // Tường ở gần hơn furniture → chọn tường để đổi material. Detach gizmo nên
-        // tường KHÔNG di chuyển/xoay được.
-        if (wallDist < furnitureDist) {
-            const wallId = (wallHits[0].object as WallPickMesh).__wallId ?? null;
-            this.controls.detach();
-            this.events?.emit("wallSelected", { wallId });
-            return;
-        }
-
-        // Furniture ở gần hơn → giữ luồng cũ (attach gizmo).
-        const resolved = resolveHitEntity(furnitureHits[0].object as MeshWithEntity, this.world);
-        if (resolved) {
-            this.controls.attach(resolved.attachTarget);
-            this._applyGizmoAxes(resolved.entityId);
-            this.events?.emit("entitySelected", { entityId: resolved.entityId });
-        } else {
-            this.controls.detach();
-            this.events?.emit("entitySelected", { entityId: null });
+        switch (pick.kind) {
+            case "none":
+                this.controls.detach();
+                this.events?.emit("entitySelected", { entityId: null });
+                return;
+            case "floor":
+                this.controls.detach();
+                this.events?.emit("floorSelected", { roomKey: pick.roomKey });
+                return;
+            case "wall":
+                this.controls.detach();
+                this.events?.emit("wallSelected", { wallId: pick.wallId });
+                return;
+            case "furniture":
+                this.controls.attach(pick.attachTarget);
+                this.applyGizmoAxes(pick.entityId);
+                this.events?.emit("entitySelected", { entityId: pick.entityId });
+                return;
         }
     };
 
@@ -473,6 +452,7 @@ export class GizmoSystem extends System {
         this.events?.emit("entitySelected", { entityId: null });
         this.events?.emit("wallSelected", { wallId: null });
         this.events?.emit("floorSelected", { roomKey: null });
+        this.requestRender();
     }
 
     /** Vẽ đường gióng wall-snap (sát sàn) từ guide đầu tiên; ẩn nếu không có. */
@@ -488,7 +468,7 @@ export class GizmoSystem extends System {
      * Snap quaternion của wall-item về wall-derived rotY theo side hiện tại.
      * Gọi khi kết thúc drag rotate để xác nhận chiều quay cuối cùng.
      */
-    private _snapWallItemRotation(entity: string): void {
+    private snapWallItemRotation(entity: string): void {
         const wo = this.world.getComponent(entity, WallOpening);
         const wm = this.world.getComponent(entity, WallMounted);
         const hostWallId = wo ? wo.hostWallId : wm?.hostWallId;
@@ -505,52 +485,15 @@ export class GizmoSystem extends System {
         this.world.markDirty();
     }
 
-    /**
-     * Góc con trỏ hiện tại quanh tâm vật (đo trên màn hình, radian).
-     * Chiếu world-position của object về pixel rồi atan2(dy, dx) so với con trỏ.
-     */
-    private _pointerAngleAroundObject(): number {
-        const obj = this.controls.object;
-        if (!obj) return 0;
-        obj.getWorldPosition(this._tmpWorldPos);
-        this._tmpWorldPos.project(this.camera); // → NDC
-        const rect = this.rendererDomElement.getBoundingClientRect();
-        const cx = rect.left + (this._tmpWorldPos.x * 0.5 + 0.5) * rect.width;
-        const cy = rect.top + (-this._tmpWorldPos.y * 0.5 + 0.5) * rect.height;
-        return Math.atan2(this.lastPointerClient.y - cy, this.lastPointerClient.x - cx);
-    }
-
-    /** Chốt mốc rotate "vô-lăng" lúc bắt đầu kéo: yaw gốc + góc con trỏ gốc. */
-    private _beginPointerRotate(entity: string): void {
-        const tr = this.world.getComponent(entity, Transform);
-        this.rotateStartYaw = tr ? 2 * Math.atan2(tr.qy, tr.qw) : 0;
-        this.rotateAccumAngle = 0;
-        this.rotatePrevPointerAngle = this._pointerAngleAroundObject();
-    }
-
-    /**
-     * Yaw thô (radian) cho frame hiện tại = yaw gốc + tổng góc con trỏ đã quay.
-     * Delta mỗi frame được unwrap về [-π, π] rồi cộng dồn → đơn điệu, không đảo
-     * dù kéo qua mốc ±π hay quay nhiều vòng.
-     */
-    private _computePointerYaw(): number {
-        const ang = this._pointerAngleAroundObject();
-        let d = ang - this.rotatePrevPointerAngle;
-        while (d > Math.PI) d -= 2 * Math.PI;
-        while (d < -Math.PI) d += 2 * Math.PI;
-        this.rotateAccumAngle += d;
-        this.rotatePrevPointerAngle = ang;
-        return this.rotateStartYaw + GizmoSystem.ROTATE_POINTER_SIGN * this.rotateAccumAngle;
-    }
-
     setGizmoMode(mode: "translate" | "rotate"): void {
         if (this.controls.dragging) return;
         this.currentMode = mode;
         this.controls.setMode(mode);
         // Trục gizmo phụ thuộc cả mode → áp lại cho entity đang gắn (nếu có).
         const entity = (this.controls.object as MeshWithEntity | undefined)?.__entity;
-        if (entity != null) this._applyGizmoAxes(entity);
+        if (entity != null) this.applyGizmoAxes(entity);
         this.events?.emit("gizmoModeChanged", { mode });
+        this.requestRender();
     }
 
     /**
@@ -560,7 +503,7 @@ export class GizmoSystem extends System {
      *   - Wall-item + translate: trượt dọc tường (X/Z, sẽ chiếu về tim tường); kệ (mount)
      *     thêm Y để kéo lên/xuống đổi cao độ, cửa/cửa sổ khoá Y (cao độ theo sill).
      */
-    private _applyGizmoAxes(entity: string): void {
+    private applyGizmoAxes(entity: string): void {
         if (!isWallItem(this.world, entity)) {
             this.controls.showX = true;
             this.controls.showY = true;
@@ -580,15 +523,15 @@ export class GizmoSystem extends System {
     }
 
     dispose() {
-        this.wallOpeningPreview.dispose();
-        this.activePreviewWallId = null;
-        this.activePreviewOpeningsHash = "";
+        this.openingPreview.clear();
         this.dragGhostController?.end();
+        this.controls.removeEventListener("change", this.requestRender);
         this.rendererDomElement.removeEventListener("mousedown", this.onMouseDown);
         this.rendererDomElement.removeEventListener("contextmenu", this.onContextMenu);
         window.removeEventListener("keydown", this.onKeyDown);
         window.removeEventListener("pointerdown", this.onPointerTrack, true);
         window.removeEventListener("pointermove", this.onPointerTrack, true);
+        this.rectCache.dispose();
         this.controls.detach();
         this.overlayScene.remove(this.controls.getHelper());
         this.controls.dispose();
@@ -597,9 +540,10 @@ export class GizmoSystem extends System {
 
     /**
      * Cập nhật preview CSG tường khi kéo gizmo door/window.
-     * Khi wallId thay đổi hoặc existing openings hash thay đổi → begin() lại.
+     * Resolve mesh/poly/size + wall theo hostWallId rồi uỷ cho controller quyết định
+     * begin-vs-update.
      */
-    private _updateGizmoOpeningPreview(
+    private updateOpeningPreview(
         hostWallId: string,
         t: number,
         cutWidth: number,
@@ -622,29 +566,15 @@ export class GizmoSystem extends System {
         const wall = findMountWall(this.world, this.nodeRegistry, hostWallId);
         if (!wall) return;
 
-        // Chỉ gom LỖ THẬT (WallOpening) trên tường, trừ entity đang kéo — KHÔNG dùng
-        // occupancy (gồm cả kệ WallMounted). Kệ không khoét tường; nếu trừ kệ vào baseGeo
-        // sẽ thấy tường THỦNG ngay tại vị trí kệ trong lúc kéo cửa. Mỗi lỗ giữ đúng
-        // width/height/sill của chính nó (không ép theo cửa đang kéo).
-        const existingOpenings: OpeningCut[] = [];
-        for (const e of Query.entitiesWith(this.world, WallOpening)) {
-            if (e === excludeEntity) continue;
-            const wo = this.world.getComponent(e, WallOpening)!;
-            if (wo.hostWallId !== hostWallId) continue;
-            existingOpenings.push({ t: wo.t, width: wo.width, height: wo.height, sill: wo.sill });
-        }
-        const openingsHash = existingOpenings
-            .map(o => `${o.t.toFixed(4)},${o.width.toFixed(3)},${o.height.toFixed(3)},${o.sill.toFixed(3)}`)
-            .sort()
-            .join("|");
-
-        if (this.activePreviewWallId !== hostWallId || this.activePreviewOpeningsHash !== openingsHash) {
-            this.wallOpeningPreview.begin(meshComp.mesh, poly.points, size.height, wall, existingOpenings);
-            this.activePreviewWallId = hostWallId;
-            this.activePreviewOpeningsHash = openingsHash;
-        }
-
-        this.wallOpeningPreview.update({ t, width: cutWidth, height: cutHeight, sill });
+        this.openingPreview.update({
+            wallId: hostWallId,
+            wallMesh: meshComp.mesh,
+            poly: poly.points,
+            wallHeight: size.height,
+            wall,
+            existingOpenings: collectExistingOpenings(this.world, hostWallId, excludeEntity),
+            ghostOpening: { t, width: cutWidth, height: cutHeight, sill },
+        });
     }
 
     update(world: World): void {

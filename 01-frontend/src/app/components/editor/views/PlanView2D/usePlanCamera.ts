@@ -5,7 +5,7 @@
  * Trả về stateScaleRef / stagePosRef để các handler đọc giá trị tức thì
  * mà không bị stale closure (ref không trigger re-render).
  */
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 const GRID_SIZE            = 100;
 const ANNOTATION_SCALE_MIN = 0.35;
@@ -62,9 +62,15 @@ export function usePlanCamera(originX: number, originY: number): PlanCamera {
         setStagePos(newPos);
     }
 
-    const eff = Math.max(ANNOTATION_SCALE_MIN, stageScale);
-    const ss  = (px: number) => px / eff;
-    const sh  = (px: number) => px / stageScale;
+    // PERF: ss/sh depend only on stageScale, which is unchanged during pan. Wrapping
+    // in useCallback keeps their identity stable across pan re-renders, so the memoized
+    // layers that receive them as props (Room/Furniture/Handle/Dimension) bail out
+    // instead of re-mapping every object each mousemove frame.
+    const ss = useCallback(
+        (px: number) => px / Math.max(ANNOTATION_SCALE_MIN, stageScale),
+        [stageScale],
+    );
+    const sh = useCallback((px: number) => px / stageScale, [stageScale]);
 
     const gridSizePx  = GRID_SIZE * stageScale;
     const gridOffsetX = ((originX * stageScale + stagePos.x) % gridSizePx + gridSizePx) % gridSizePx;

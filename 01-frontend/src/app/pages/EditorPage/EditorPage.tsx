@@ -125,6 +125,7 @@ export default function EditorPage() {
         toggleDecorCatalog,
         onSave: handleSave,
         onLoad: handleLoad,
+        selectedObjectId: selected?.kind === "object" ? selected.id : null,
     });
 
     return (

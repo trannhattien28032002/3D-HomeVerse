@@ -18,7 +18,7 @@ import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Model3D } from "src/engine/components/render/Model3D";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
-import { spawnFurnitureGLB, spawnWallItemGLB } from "src/engine/game/FurnitureFactory";
+import { spawnFurnitureGLB, spawnWallItemGLB } from "src/engine/factories/FurnitureFactory";
 import { applyMaterialToSlot, resetSlotToOriginal } from "src/engine/rendering/materialApply";
 import { snapAngleRad } from "src/shared/constants/placement";
 import { resolveAlignment } from "src/shared/geometry/alignment";

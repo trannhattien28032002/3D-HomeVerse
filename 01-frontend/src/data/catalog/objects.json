@@ -728,6 +728,52 @@
       ]
     },
     {
+      "id": "carpet-A-01",
+      "name": "Carpet A",
+      "category": "carpets",
+      "modelUrl": "/models/carpets/carpet-A-01.glb",
+      "thumbnailUrl": "/thumbnails/carpets/carpet-A-thumbnail.webp",
+      "boundingBox": {
+        "width": 2,
+        "depth": 1.4,
+        "height": 0.05
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Carpet A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Carpet A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
       "id": "carpet-B-01",
       "name": "Carpet B",
       "category": "carpets",
@@ -921,6 +967,67 @@
       ]
     },
     {
+      "id": "chair-E-01",
+      "name": "Chair E",
+      "category": "chairs",
+      "modelUrl": "/models/chairs/chair-E-01.glb",
+      "thumbnailUrl": "/thumbnails/chairs/chair-E-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.45,
+        "depth": 0.5,
+        "height": 0.95
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Chair E",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Chair E",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Chair E",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
       "id": "door-c",
       "name": "Door C",
       "category": "doors",
@@ -988,6 +1095,62 @@
           "meshName": "Door C",
           "materialName": "Component 3",
           "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "door-b",
+      "name": "Door B",
+      "category": "doors",
+      "modelUrl": "/models/doors/door-b.glb",
+      "thumbnailUrl": "/thumbnails/doors/door-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.9,
+        "depth": 0.12,
+        "height": 2.1
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "opening",
+        "cut": {
+          "width": 0.9,
+          "height": 2.05,
+          "sill": 0
+        },
+        "embed": "center"
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Door B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Door B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
         }
       ]
     },
@@ -1596,12 +1759,40 @@
         "depth": 0.32,
         "height": 1.22
       },
-      "placement": {
-        "constraint": "wall",
-        "wallBehavior": "mount",
-        "mountHeight": 1.2,
-        "faceGap": 0
-      }
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Television B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Television B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
     },
     {
       "id": "blender",
@@ -2228,6 +2419,79 @@
           "meshName": "Kitchen Roll",
           "materialName": "Component 2",
           "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "knife-block",
+      "name": "Knife Block",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/knife-block.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/knife-block-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.15,
+        "depth": 0.22,
+        "height": 0.3
+      }
+    },
+    {
+      "id": "microwave",
+      "name": "Microwave",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/microwave.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/microwave-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.52,
+        "depth": 0.4,
+        "height": 0.32
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Microwave",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Microwave",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Microwave",
+          "materialName": "Component 3",
+          "slotId": "component-3"
         }
       ]
     },
@@ -3013,7 +3277,7 @@
       "name": "Hoover",
       "category": "miscellaneous",
       "modelUrl": "/models/miscellaneous/hoover.glb",
-      "thumbnailUrl": "/thumbnails/miscellaneous/alarm-clock-thumbnail.webp",
+      "thumbnailUrl": "/thumbnails/miscellaneous/hoover-thumbnail.webp",
       "boundingBox": {
         "width": 0.26,
         "depth": 0.26,

@@ -6,7 +6,7 @@
  * gốc do factory dựng (materialRegistry.get trả về cùng instance theo signature).
  */
 import * as THREE from "three";
-import type { MaterialSignature } from "src/engine/rendering/MaterialRegistry";
+import type { MaterialSignature } from "src/engine/registries/MaterialRegistry";
 
 /** Material mặc định của thân tường (khớp createWall). */
 export const WALL_DEFAULT_MATERIAL: MaterialSignature = {

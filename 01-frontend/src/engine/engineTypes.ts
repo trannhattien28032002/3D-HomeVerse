@@ -17,6 +17,22 @@ import type { WallFace } from "src/engine/components/render/SurfaceMaterial";
 export type CameraPreset = "plan" | "perspective" | "eye-level";
 
 /**
+ * Dữ liệu copy của một món nội thất ĐẶT SÀN — đủ để tái tạo bản sao qua PLACE_FURNITURE.
+ * Chỉ áp dụng cho đồ đặt sàn (không phải cửa/kệ bám tường). Plain data → giữ được
+ * trong clipboard ngoài React state, dán lại nhiều lần.
+ */
+export type FurnitureClipboard = {
+    modelId: string;
+    x: number;
+    y: number;
+    z: number;
+    /** Góc yaw quanh trục Y (radian). */
+    rotY: number;
+    /** Map slotId → variantId các material đã đổi (rỗng nếu dùng material gốc). */
+    materials: Record<string, string>;
+};
+
+/**
  * Public API của engine — React layer chỉ được dùng các method này.
  * Không truy cập World hay NodeRegistry trực tiếp từ UI.
  */
@@ -97,6 +113,12 @@ export type EngineApi = {
     getWallMaterial: (wallId: string, face: WallFace) => string | null;
     /** Trả về materialId hiện tại của sàn phòng (theo roomKey), hoặc null. */
     getFloorMaterial: (roomKey: string) => string | null;
+    /**
+     * Đọc dữ liệu copy của một entity ĐẶT SÀN (modelId + transform + materials).
+     * Trả về null nếu entity không phải đồ đặt sàn (vd cửa/kệ bám tường, hoặc không
+     * có Model3D) → caller (Ctrl+C) bỏ qua, không copy.
+     */
+    getFurnitureClipboard: (entityId: string) => FurnitureClipboard | null;
 };
 
 /**

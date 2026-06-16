@@ -41,6 +41,7 @@ import { TOOL_IDS, type ToolId, type WallToolId, createToolInstances } from "src
 
 import { usePlanCamera } from "./usePlanCamera";
 import { usePlanInput } from "./usePlanInput";
+import { useVisibleFurniture } from "./useVisibleFurniture";
 import { RoomLayer } from "./RoomLayer";
 import { WallLayer } from "./WallLayer";
 import { FurnitureLayer } from "./FurnitureLayer";
@@ -91,7 +92,10 @@ export default function PlanView2D() {
     // (e.g. xóa qua Delete shortcut rồi undo). Guard reactive, không phải sync logic.
     useEffect(() => {
         if (selectedFurnitureIds.size === 0) return;
-        const alive = [...selectedFurnitureIds].filter(id => furniture.some(f => f.entityId === id));
+        // MD-04: O(furniture + selection) — build a Set of live ids once instead of
+        // furniture.some() inside filter() (which was O(selection × furniture)).
+        const live = new Set(furniture.map(f => f.entityId));
+        const alive = [...selectedFurnitureIds].filter(id => live.has(id));
         if (alive.length !== selectedFurnitureIds.size) setSelectedFurnitureIds(new Set(alive));
     }, [furniture, selectedFurnitureIds, setSelectedFurnitureIds]);
 
@@ -195,6 +199,15 @@ export default function PlanView2D() {
         [walls, nodeById, transform],
     );
 
+    // ── Phase 2 perf: viewport culling + label LOD ────────────────────────────
+    // Chỉ render furniture cắt khung nhìn (object đang chọn luôn được giữ để
+    // Transformer còn node bám). Chi phí vẽ + hit-graph → O(số object trong khung).
+    const visibleFurniture = useVisibleFurniture(
+        furniture, stagePos, stageScale, viewportWidth, viewportHeight, selectedFurnitureIds,
+    );
+    // Ẩn nhãn modelId khi zoom xa: vừa không đọc được, vừa tốn (Text Konva nặng khi N lớn).
+    const showFurnitureLabels = stageScale >= 0.4;
+
     // ── ToolContext ──────────────────────────────────────────────────────────
     activeTool.update({
         nodes, walls, furniture, transform,
@@ -232,7 +245,7 @@ export default function PlanView2D() {
             >
                 <RoomLayer rooms={rooms} stageScale={stageScale} activeTool2D={activeTool2D} onSelectRoom={handleSelectRoom} ss={ss} />
                 <WallLayer walls={walls} caps={caps} furniture={furniture} activeTool={activeTool} activeTool2D={activeTool2D} nodeById={nodeById} selectedWallIds={selectedWallIds} />
-                <FurnitureLayer furniture={furniture} isSelectMode={isSelectMode} selectedFurnitureIds={selectedFurnitureIds} setSelectedFurnitureIds={setSelectedFurnitureIds} dragTransactionOpenRef={dragTransactionOpenRef} recordMoveUndo={recordMoveUndo} recordRotateUndo={recordRotateUndo} recordWallItemMoveUndo={recordWallItemMoveUndo} dispatch={dispatch} transform={transform} wallSegments={wallSegments} walls={walls} nodeById={nodeById} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
+                <FurnitureLayer furniture={furniture} renderFurniture={visibleFurniture} showLabels={showFurnitureLabels} isSelectMode={isSelectMode} selectedFurnitureIds={selectedFurnitureIds} setSelectedFurnitureIds={setSelectedFurnitureIds} dragTransactionOpenRef={dragTransactionOpenRef} recordMoveUndo={recordMoveUndo} recordRotateUndo={recordRotateUndo} recordWallItemMoveUndo={recordWallItemMoveUndo} dispatch={dispatch} transform={transform} wallSegments={wallSegments} walls={walls} nodeById={nodeById} furnitureNodeRefs={furnitureNodeRefs} ss={ss} />
                 <HandleLayer transformerRef={transformerRef} furnitureNodeRefs={furnitureNodeRefs} selectedFurnitureId={selectedFurnitureId} isSelectMode={isSelectMode} furniture={furniture} selectedIsWallItem={selectedIsWallItem} ss={ss} />
                 <DimensionLayer dimensions={dimensions} angleDimensions={angleDimensions} stageScale={stageScale} ss={ss} />
                 <OverlayLayer activeTool={activeTool} transform={transform} />

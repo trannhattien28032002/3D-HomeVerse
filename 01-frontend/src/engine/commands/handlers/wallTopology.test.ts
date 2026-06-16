@@ -10,9 +10,9 @@ import * as THREE from "three";
 
 import { World } from "src/engine/ecs/World";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
-import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
-import { createWall } from "src/engine/game/WallFactory";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
+import { createWall } from "src/engine/factories/WallFactory";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { splitWallAt } from "src/engine/commands/handlers/wallTopology";

@@ -16,7 +16,7 @@ import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { Query } from "src/engine/ecs/Query";
 import { recomputeWallAABB } from "src/engine/utils/wallHelpers";
-import { createWall } from "src/engine/game/WallFactory";
+import { createWall } from "src/engine/factories/WallFactory";
 import { DEFAULT_WALL_HEIGHT, DEFAULT_WALL_CENTER_Y } from "src/shared/constants/wall";
 import { remapWallItemOnSplit } from "src/shared/geometry/wallMount";
 import type { World } from "src/engine/ecs/World";

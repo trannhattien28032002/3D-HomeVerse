@@ -88,7 +88,7 @@ export class WallOpeningPreview {
         this.lastT = null;
 
         // Pre-compute baseGeo = wall − old_holes.
-        this.baseGeo = this._buildBaseGeo(poly, height, existingOpenings);
+        this.baseGeo = this.buildBaseGeo(poly, height, existingOpenings);
 
         // previewMesh dùng chung material với wall thật (không clone — chỉ hiển thị).
         const mat = Array.isArray(wallMesh.material)
@@ -226,7 +226,7 @@ export class WallOpeningPreview {
      * Nếu không có lỗ cũ, trả về geometry tường đặc.
      * offsetY = height / 2 (khớp quy ước WorldSpaceMesh).
      */
-    private _buildBaseGeo(
+    private buildBaseGeo(
         poly: Point2D[],
         height: number,
         existingOpenings: OpeningCut[],

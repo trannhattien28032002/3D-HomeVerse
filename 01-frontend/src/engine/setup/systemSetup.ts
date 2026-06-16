@@ -30,9 +30,10 @@ import { RenderSystem } from "src/engine/systems/scene/RenderSystem";
 import { DimensionSystem } from "src/engine/systems/annotation/DimensionSystem";
 import { SnapshotSystem } from "src/engine/systems/sync/SnapshotSystem";
 import { CollisionDebugSystem } from "src/engine/systems/collision/CollisionDebugSystem";
-import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
+import { RenderScheduler } from "src/engine/rendering/RenderScheduler";
 import { createPostprocessing } from "src/engine/setup/postprocessSetup";
 import type { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import type { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
@@ -46,6 +47,8 @@ export type SystemBundle = {
     composer: EffectComposer;
     /** Pass viền chọn — SelectionHighlight cập nhật selectedObjects. */
     outlinePass: OutlinePass;
+    /** Cờ on-demand render (CR-03) — engine chuyển cho SelectionHighlight/Placement + resize. */
+    renderScheduler: RenderScheduler;
 };
 
 export function createSystems(
@@ -60,6 +63,8 @@ export function createSystems(
     materialLibrary: MaterialLibrary,
     floorMaterials: Map<string, string>,
 ): SystemBundle {
+    const renderScheduler = new RenderScheduler();
+
     const orbit = new OrbitControlSystem(camera, renderer, scene);
     world.addSystem(orbit);
 
@@ -71,7 +76,7 @@ export function createSystems(
     // vào mask outline nếu nằm chung scene chính). Xem RenderSystem + GizmoSystem.
     const overlayScene = new THREE.Scene();
 
-    const gizmoSystem = new GizmoSystem(camera, scene, renderer, orbit.controls as OrbitControls, nodeRegistry, meshRegistry, overlayScene, events, collisionSystem, dragGhostController);
+    const gizmoSystem = new GizmoSystem(camera, scene, renderer, orbit.controls as OrbitControls, nodeRegistry, meshRegistry, overlayScene, events, collisionSystem, dragGhostController, renderScheduler);
     world.addSystem(gizmoSystem);
 
     world.addSystem(collisionSystem);
@@ -88,12 +93,12 @@ export function createSystems(
     world.addSystem(dimensionSystem);
 
     const { composer, outlinePass } = createPostprocessing(renderer, scene, camera);
-    world.addSystem(new RenderSystem(composer, renderer, camera, overlayScene));
+    world.addSystem(new RenderSystem(composer, renderer, camera, overlayScene, outlinePass, scene, renderScheduler));
     world.addSystem(new SnapshotSystem(events, nodeRegistry, dimensionSystem));
 
     if (import.meta.env.DEV) {
         world.addSystem(new CollisionDebugSystem(scene));
     }
 
-    return { orbit, gizmoSystem, collisionSystem, dragGhostController, composer, outlinePass };
+    return { orbit, gizmoSystem, collisionSystem, dragGhostController, composer, outlinePass, renderScheduler };
 }

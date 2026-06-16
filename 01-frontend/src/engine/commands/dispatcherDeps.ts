@@ -9,11 +9,11 @@
 import type * as THREE from "three";
 import type { World } from "src/engine/ecs/World";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
-import type { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import type { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import type { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import type { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
 import type { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
-import type { ModelRegistry } from "src/engine/rendering/ModelRegistry";
+import type { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import type { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import type { EntityRegistry } from "src/engine/registries/EntityRegistry";
 

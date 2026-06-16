@@ -30,10 +30,11 @@ type Props = {
 
 function DimensionLayerInner({ dimensions, angleDimensions, stageScale, ss }: Props) {
     return (
-        <>
+        // Phase 3: linear + angle annotations gộp 1 Layer (cả 2 đều non-interactive)
+        // — giảm số canvas Konva. Z-order giữ nguyên: linear dims trước, angle arcs sau.
+        <Layer listening={false}>
             {/* Linear dimension annotations */}
-            <Layer listening={false}>
-                {stageScale >= DIM_HIDE_BELOW && dimensions.filter(d => d.length >= MIN_DIM_LENGTH_M).map(dim => {
+            {stageScale >= DIM_HIDE_BELOW && dimensions.filter(d => d.length >= MIN_DIM_LENGTH_M).map(dim => {
                     const ox = dim.perpX * DIM_OFFSET;
                     const oy = dim.perpY * DIM_OFFSET;
                     const x1 = dim.startX + ox, y1 = dim.startY + oy;
@@ -64,11 +65,9 @@ function DimensionLayerInner({ dimensions, angleDimensions, stageScale, ss }: Pr
                         </Group>
                     );
                 })}
-            </Layer>
 
             {/* Angle arc annotations */}
-            <Layer listening={false}>
-                {stageScale >= ANGLE_HIDE_BELOW && angleDimensions.map((adim, i) => {
+            {stageScale >= ANGLE_HIDE_BELOW && angleDimensions.map((adim, i) => {
                     const arcR = ss(ANGLE_ARC_RADIUS);
                     const lx   = adim.cx + adim.bisectorX * (arcR + ss(14));
                     const ly   = adim.cy + adim.bisectorY * (arcR + ss(14));
@@ -87,8 +86,7 @@ function DimensionLayerInner({ dimensions, angleDimensions, stageScale, ss }: Pr
                         </Group>
                     );
                 })}
-            </Layer>
-        </>
+        </Layer>
     );
 }
 

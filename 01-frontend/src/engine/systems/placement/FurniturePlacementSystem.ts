@@ -6,29 +6,17 @@ import type { EngineEvents } from "src/engine/events/EngineEvents";
 import { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
 import { GhostMaterialSet } from "src/engine/rendering/GhostMaterials";
 import { createGuideLine, setGuideLine, disposeGuideLine } from "src/engine/rendering/guideLine";
-import { getAssetPath, getBoundingBox, getFootprint2D, getPlacement, type PlacementSpec } from "src/engine/catalog/FurnitureCatalog";
+import { getAssetPath, getBoundingBox, getPlacement, type PlacementSpec } from "src/engine/catalog/FurnitureCatalog";
 import { resolveCollisionFootprint } from "src/engine/catalog/footprint";
 import type { ModelTemplate } from "src/engine/rendering/GLTFModelLoader";
 import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
-import { projectPointToWall, wallItemPose, wallItemOverlaps, occupancyLane, type MountWall } from "src/shared/geometry/wallMount";
-import { resolveWallItemDims } from "src/engine/catalog/wallItem";
-import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
 import { collectWallSegments } from "src/engine/adapters/wallSegments";
 import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
-import { Query } from "src/engine/ecs/Query";
-import { Mesh } from "src/engine/components/render/Mesh";
-import { WallTag } from "src/engine/components/wall/WallTag";
-import { WallNodes } from "src/engine/components/wall/WallNodes";
-import { WallSize } from "src/engine/components/wall/WallSize";
-import { WallPolygon } from "src/engine/components/wall/WallPolygon";
-import { WallOpening } from "src/engine/components/wall/WallOpening";
-import { WallOpeningPreview } from "src/engine/systems/wall/WallOpeningPreview";
+import { WallItemGhost } from "src/engine/systems/placement/WallItemGhost";
 import type { World } from "src/engine/ecs/World";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
-
-/** Mesh tường có gắn ngược entity id để truy ngược wallId từ kết quả raycast. */
-type WallPickMesh = THREE.Object3D & { __wallEntity?: string };
+import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
 
 /**
  * FurniturePlacementSystem — chế độ đặt nội thất bằng ghost xem-trước trong 3D.
@@ -53,6 +41,8 @@ export class FurniturePlacementSystem {
     private readonly collisionSystem: CannonCollisionSystem;
     private readonly world: World;
     private readonly nodeRegistry: NodeRegistry;
+    /** On-demand render (CR-03): ghost bám con trỏ KHÔNG bump revision → tự báo cần vẽ. */
+    private readonly scheduler?: RenderScheduler;
 
     /** Đường gióng wall-snap (sát sàn), ẩn cho tới khi mép ghost áp tường. */
     private readonly guideLine: THREE.Line;
@@ -71,18 +61,10 @@ export class FurniturePlacementSystem {
     private placement: PlacementSpec | null = null;
     /** Offset Y gốc của ghost sau chuẩn-hoá-pivot (đáy ở world 0 khi position.y = offset). */
     private ghostBaseOffsetY = 0;
-    /** Mesh tường để raycast khi đặt item bám tường (gom 1 lần lúc begin). */
-    private wallPickMeshes: WallPickMesh[] = [];
-    /** Kết quả bám tường hợp lệ hiện tại (null = chưa hợp lệ → chặn đặt). */
-    private wallHit: { hostWallId: string; t: number; side: number } | null = null;
     /** Vật liệu ghost (clone trong suốt + tint va chạm) — dùng chung với DragGhostController. */
     private ghostMaterialSet: GhostMaterialSet | null = null;
-    /** Preview CSG tường cho item loại "opening" (Door/Window). */
-    private readonly wallOpeningPreview: WallOpeningPreview;
-    /** wallId của tường đang được preview — dùng để detect khi ghost chuyển sang tường khác. */
-    private activePreviewWallId: string | null = null;
-    /** Hash của existing openings lúc begin() lần cuối — force re-begin khi openings thay đổi. */
-    private activePreviewOpeningsHash = "";
+    /** Luồng ghost bám tường (cửa/cửa sổ/kệ) — sở hữu wallHit + preview CSG. */
+    private readonly wallItemGhost: WallItemGhost;
 
     private readonly floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     private readonly raycaster = new THREE.Raycaster();
@@ -101,7 +83,9 @@ export class FurniturePlacementSystem {
         nodeRegistry: NodeRegistry,
         asyncTransaction: (label: string, fn: () => Promise<void>) => Promise<void>,
         dispatchAsync: (cmd: EngineCommand) => Promise<void>,
+        scheduler?: RenderScheduler,
     ) {
+        this.scheduler = scheduler;
         this.scene = scene;
         this.camera = camera;
         this.domElement = domElement;
@@ -113,7 +97,14 @@ export class FurniturePlacementSystem {
         this.collisionSystem = collisionSystem;
         this.world = world;
         this.nodeRegistry = nodeRegistry;
-        this.wallOpeningPreview = new WallOpeningPreview(scene);
+        this.wallItemGhost = new WallItemGhost({
+            world,
+            nodeRegistry,
+            raycaster: this.raycaster,
+            scene,
+            setColliding: this.setColliding,
+            hideGuide: () => { this.guideLine.visible = false; },
+        });
 
         this.guideLine = createGuideLine(this.scene); // đường gióng dùng chung (L5)
     }
@@ -129,14 +120,8 @@ export class FurniturePlacementSystem {
         this.wallSegments = collectWallSegments(this.world, this.nodeRegistry);
         this.furnitureBoxes = collectFurnitureBoxes(this.world);
         // Item bám tường: gom mesh tường để raycast (gắn ngược entity id).
-        this.wallPickMeshes = [];
         if (this.placement.constraint === "wall") {
-            for (const e of Query.entitiesWith(this.world, WallNodes, Mesh)) {
-                const meshComp = this.world.getComponent(e, Mesh);
-                if (!meshComp) continue;
-                (meshComp.mesh as WallPickMesh).__wallEntity = e;
-                this.wallPickMeshes.push(meshComp.mesh);
-            }
+            this.wallItemGhost.collectWalls();
         }
 
         // Tắt orbit để camera không xoay khi click/kéo trong lúc đặt.
@@ -175,6 +160,7 @@ export class FurniturePlacementSystem {
             this.scene.add(ghost);
             this.ghostRoot = ghost;
             this.events.emit("placementReady", { modelId });
+            this.scheduler?.requestRender();
         }).catch((err) => {
             this.events.emit("placementError", { modelId, error: String(err) });
             this.cleanup();
@@ -213,10 +199,8 @@ export class FurniturePlacementSystem {
     }
 
     private cleanup(): void {
-        // Dispose preview tường (restore wall thật) trước khi gỡ ghost.
-        this.wallOpeningPreview.dispose();
-        this.activePreviewWallId = null;
-        this.activePreviewOpeningsHash = "";
+        // Dọn state wall-ghost (preview CSG + gỡ __wallEntity + wallHit) trước khi gỡ ghost.
+        this.wallItemGhost.reset();
 
         if (this.ghostRoot) {
             this.scene.remove(this.ghostRoot);
@@ -238,31 +222,38 @@ export class FurniturePlacementSystem {
         this.active = false;
         this.modelId = null;
         this.placement = null;
-        // Gỡ thuộc tính __wallEntity đã gắn lên mesh thật (trong MeshRegistry) lúc begin().
-        // Nếu không xoá, một tường bị xoá rồi tái tạo với entity id khác có thể để mesh giữ
-        // entity id cũ (stale) → raycast placement lần sau trả về entity đã chết. (H3)
-        for (const m of this.wallPickMeshes) delete (m as WallPickMesh).__wallEntity;
-        this.wallPickMeshes = [];
-        this.wallHit = null;
         this.ghostBaseOffsetY = 0;
+        // Ghost vừa bị gỡ (huỷ đặt không bump revision) → vẽ lại để ghost biến mất.
+        this.scheduler?.requestRender();
     }
 
-    private applyGhostTint(colliding: boolean): void {
+    /** Đặt trạng thái va chạm + tint ghost (dedup theo isColliding). Dùng chung floor & wall. */
+    private setColliding = (colliding: boolean): void => {
+        if (colliding === this.isColliding) return;
+        this.isColliding = colliding;
         this.ghostMaterialSet?.setColliding(colliding);
-    }
+    };
 
     private onMouseMove = (e: MouseEvent): void => {
         const ghost = this.ghostRoot;
         if (!ghost) return;
+        // Ghost di chuyển theo con trỏ không bump revision → báo cần vẽ lại frame này.
+        this.scheduler?.requestRender();
         const rect = this.domElement.getBoundingClientRect();
         this.ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         this.ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
         this.raycaster.setFromCamera(this.ndc, this.camera);
         if (!this.template || !this.modelId) return; // ghost chỉ tồn tại khi template đã nạp
 
-        // Item bám tường: raycast mặt tường thay vì mặt sàn (nhánh riêng).
+        // Item bám tường: uỷ cho WallItemGhost (raycast mặt tường thay vì mặt sàn).
         if (this.placement?.constraint === "wall") {
-            this.updateWallGhost();
+            this.wallItemGhost.update({
+                ghost,
+                template: this.template,
+                modelId: this.modelId,
+                placement: this.placement,
+                ghostBaseOffsetY: this.ghostBaseOffsetY,
+            });
             return;
         }
 
@@ -289,159 +280,8 @@ export class FurniturePlacementSystem {
             ghost.position.x, testY, ghost.position.z,
             fp.width, fp.depth, fp.height, 0, 0, 0, 1,
         );
-        if (colliding !== this.isColliding) {
-            this.isColliding = colliding;
-            this.applyGhostTint(colliding);
-        }
+        this.setColliding(colliding);
     };
-
-    /**
-     * Dọn mọi state của wall-ghost về "không hợp lệ": ẩn ghost, clear wallHit, tô đỏ
-     * (invalid), ẩn preview CSG. Gọi ở mọi nhánh fail của updateWallGhost để 4 đường
-     * thoát luôn reset đồng nhất (thêm state mới chỉ cần sửa 1 chỗ).
-     */
-    private clearWallGhost(ghost: THREE.Group): void {
-        ghost.visible = false;
-        this.wallHit = null;
-        this.setWallInvalid();
-        this.wallOpeningPreview.hide();
-        this.activePreviewWallId = null;
-    }
-
-    /**
-     * Ghost cho item bám tường: raycast mặt tường, chiếu lên tim tường để lấy (t, side),
-     * đặt ghost áp/nhúng tường. Đặt this.wallHit (null = không hợp lệ → chặn đặt).
-     * Với item loại "opening": hiển thị preview CSG tường bị khoét.
-     */
-    private updateWallGhost(): void {
-        const ghost = this.ghostRoot;
-        if (!ghost || !this.template || !this.modelId || !this.placement) return;
-
-        const hits = this.raycaster.intersectObjects(this.wallPickMeshes, false);
-        if (hits.length === 0) {
-            this.clearWallGhost(ghost);
-            return;
-        }
-
-        const hit = hits[0];
-        const wallEntity = (hit.object as WallPickMesh).__wallEntity;
-        if (wallEntity == null) {
-            this.clearWallGhost(ghost);
-            return;
-        }
-
-        const tag = this.world.getComponent(wallEntity, WallTag);
-        const wn = this.world.getComponent(wallEntity, WallNodes);
-        const sizeC = this.world.getComponent(wallEntity, WallSize);
-        if (!tag || !wn) {
-            this.clearWallGhost(ghost);
-            return;
-        }
-        const a = this.nodeRegistry.get(wn.startNodeId);
-        const b = this.nodeRegistry.get(wn.endNodeId);
-        if (!a || !b) {
-            this.clearWallGhost(ghost);
-            return;
-        }
-
-        const wall: MountWall = { wallId: tag.wallId, ax: a.x, az: a.z, bx: b.x, bz: b.z, thickness: wn.thickness };
-        const halfWidth = getFootprint2D(this.modelId).width / 2;
-        const { t, side, fits } = projectPointToWall(wall, hit.point.x, hit.point.z, halfWidth);
-
-        // Pose qua nguồn chân lý chung (depth từ footprint catalog), khớp đúng lúc spawn.
-        const sy = this.template.size.y;
-        const dims = resolveWallItemDims(this.modelId, sy);
-        const pose = wallItemPose(wall, t, side, dims);
-
-        ghost.position.set(pose.x, this.ghostBaseOffsetY + pose.baseY, pose.z);
-        const half = pose.rotY / 2;
-        ghost.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
-        ghost.visible = true;
-        this.guideLine.visible = false;
-
-        // Hợp lệ: tường đủ dài (fits) + lỗ/kệ nằm gọn trong chiều cao tường + không overlap.
-        const wallHeight = sizeC?.height ?? Infinity;
-        const topExtent = dims.behavior === "opening" ? (this.placement.cut?.height ?? sy) : sy;
-        const topY = pose.baseY + topExtent;
-        const heightOk = pose.baseY >= -1e-3 && topY <= wallHeight + 1e-3;
-
-        // Chống chồng lấn: kiểm tra t-range ghost có overlap với items đã đặt.
-        const wallLen = Math.hypot(wall.bx - wall.ax, wall.bz - wall.az) || 1e-6;
-        const halfWidthT = halfWidth / wallLen;
-        const occupied = collectOccupiedRanges(this.world, wall.wallId, wallLen, "");
-        const lane = occupancyLane(dims.behavior, side);
-        const overlapFree = !wallItemOverlaps(t, halfWidthT, lane, occupied);
-
-        const valid = fits && heightOk && overlapFree;
-
-        this.wallHit = valid ? { hostWallId: wall.wallId, t, side } : null;
-        const colliding = !valid;
-        if (colliding !== this.isColliding) {
-            this.isColliding = colliding;
-            this.applyGhostTint(colliding);
-        }
-
-        // CSG Preview: chỉ cho item loại "opening" (Door/Window).
-        if (dims.behavior === "opening") {
-            this._updateOpeningPreview(wallEntity, wall, sizeC, t, dims);
-        }
-    }
-
-    /**
-     * Cập nhật preview CSG tường cho item loại "opening".
-     * Tách thành method riêng để giữ updateWallGhost() gọn.
-     */
-    private _updateOpeningPreview(
-        wallEntity: string,
-        wall: MountWall,
-        sizeC: WallSize | undefined,
-        t: number,
-        dims: ReturnType<typeof resolveWallItemDims>,
-    ): void {
-        const meshComp = this.world.getComponent(wallEntity, Mesh);
-        const poly = this.world.getComponent(wallEntity, WallPolygon);
-        const size = sizeC ?? this.world.getComponent(wallEntity, WallSize);
-        if (!meshComp || !poly || !size) { this.wallOpeningPreview.hide(); return; }
-
-        // Gom các lỗ đã commit trên tường này (không tính ghost hiện tại).
-        const existingOpenings = Query.entitiesWith(this.world, WallOpening)
-            .map((e) => this.world.getComponent(e, WallOpening)!)
-            .filter((wo) => wo.hostWallId === wall.wallId)
-            .map((wo) => ({ t: wo.t, width: wo.width, height: wo.height, sill: wo.sill }));
-
-        // Tính hash để detect thay đổi openings mà không rebuild mỗi frame.
-        const openingsHash = existingOpenings.map(o => o.t.toFixed(4)).join(",");
-
-        // Nếu ghost chuyển sang tường khác hoặc openings thay đổi → begin() lại (pre-compute baseGeo mới).
-        if (this.activePreviewWallId !== wall.wallId || this.activePreviewOpeningsHash !== openingsHash) {
-            this.wallOpeningPreview.begin(
-                meshComp.mesh,
-                poly.points,
-                size.height,
-                wall,
-                existingOpenings,
-            );
-            this.activePreviewWallId = wall.wallId;
-            this.activePreviewOpeningsHash = openingsHash;
-        }
-
-        // Tính thông số lỗ ghost từ catalog (width = footprint, height/sill từ dims).
-        const ghostOpening = {
-            t,
-            width: getFootprint2D(this.modelId!).width,
-            height: dims.height > 0 ? dims.height : (this.template?.size.y ?? 2.1),
-            sill: dims.sill,
-        };
-        this.wallOpeningPreview.update(ghostOpening);
-    }
-
-    /** Đánh dấu ghost bám tường ở trạng thái không hợp lệ (tô đỏ). */
-    private setWallInvalid(): void {
-        if (!this.isColliding) {
-            this.isColliding = true;
-            this.applyGhostTint(true);
-        }
-    }
 
     /** Vẽ đường gióng wall-snap (sát sàn); ẩn nếu không có. */
     private updateGuide(guides: { x1: number; z1: number; x2: number; z2: number }[]): void {
@@ -454,8 +294,9 @@ export class FurniturePlacementSystem {
         if (e.button === 0) {
             // Item bám tường: chỉ đặt khi có wallHit hợp lệ.
             if (this.placement?.constraint === "wall") {
-                if (!this.wallHit) return;
-                this.confirmWallItem(this.wallHit.hostWallId, this.wallHit.t, this.wallHit.side);
+                const hit = this.wallItemGhost.hit;
+                if (!hit) return;
+                this.confirmWallItem(hit.hostWallId, hit.t, hit.side);
                 return;
             }
             if (this.isColliding) return;

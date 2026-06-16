@@ -19,7 +19,8 @@ import * as THREE from "three";
 import type { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import type { World } from "src/engine/ecs/World";
 import type { EngineEvents } from "src/engine/events/EngineEvents";
-import type { MeshRegistry } from "src/engine/rendering/MeshRegistry";
+import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
 import { Query } from "src/engine/ecs/Query";
 import { Model3D } from "src/engine/components/render/Model3D";
 import { Mesh } from "src/engine/components/render/Mesh";
@@ -44,6 +45,8 @@ export class SelectionHighlight {
     private readonly world: World;
     private readonly wallEntityByWallId: Map<string, string>;
     private readonly meshRegistry: MeshRegistry;
+    /** On-demand render (CR-03): đổi viền chọn tường/sàn không bump revision → tự báo cần vẽ. */
+    private readonly scheduler?: RenderScheduler;
 
     constructor(
         outlinePass: OutlinePass,
@@ -51,11 +54,13 @@ export class SelectionHighlight {
         wallEntityByWallId: Map<string, string>,
         meshRegistry: MeshRegistry,
         events: EngineEvents,
+        scheduler?: RenderScheduler,
     ) {
         this.outlinePass = outlinePass;
         this.world = world;
         this.wallEntityByWallId = wallEntityByWallId;
         this.meshRegistry = meshRegistry;
+        this.scheduler = scheduler;
 
         this.offs.push(events.on("entitySelected", ({ entityId }) => {
             this.current = entityId ? { kind: "object", id: entityId } : null;
@@ -111,6 +116,8 @@ export class SelectionHighlight {
             this.outlinePass.visibleEdgeColor.copy(c);
             this.outlinePass.hiddenEdgeColor.copy(c).multiplyScalar(0.35);
         }
+        // Viền chọn đổi (kể cả về rỗng) → vẽ lại để OutlinePass cập nhật/tắt.
+        this.scheduler?.requestRender();
     }
 
     dispose(): void {

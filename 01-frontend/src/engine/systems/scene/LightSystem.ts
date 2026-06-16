@@ -20,6 +20,15 @@ import { LightHandle } from "src/engine/components/lighting/LightHandle";
 export class LightSystem extends System {
     private scene: THREE.Scene;
 
+    /**
+     * revision-guard: World.revision đã xử lý lần cuối — bỏ qua frame idle. (HG-02)
+     * Lazy-create đèn gọi world.addComponent (bump revision), nên những frame đầu
+     * vẫn chạy. Đèn được tạo/đổi qua addComponent hoặc Transform (đều bump revision),
+     * nên khi revision không đổi thì không có gì cần đồng bộ lại — đèn THREE giữ
+     * nguyên màu/cường độ/vị trí từ lần chạy trước.
+     */
+    private _lastRevision = -1;
+
     constructor(scene: THREE.Scene) {
         super();
         this.scene = scene;
@@ -27,6 +36,9 @@ export class LightSystem extends System {
 
     update(world: World, deltaTime: number): void {
         void deltaTime;
+
+        // Pre-filter idle frame: không có structural change nào kể từ lần chạy trước. (HG-02)
+        if (world.revision === this._lastRevision) return;
 
         const ambients = Query.entitiesWith(world, AmbientLightComponent);
 
@@ -102,5 +114,9 @@ export class LightSystem extends System {
                 );
             }
         }
+
+        // Đọc lại revision SAU lazy-create (addComponent đã bump): frame kế tiếp
+        // so khớp với giá trị hậu-tạo và skip đúng.
+        this._lastRevision = world.revision;
     }
 }

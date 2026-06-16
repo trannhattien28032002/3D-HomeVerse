@@ -25,20 +25,20 @@ const DIM_HIDE_BELOW = 0.25;
 
 function RoomLayerInner({ rooms, stageScale, activeTool2D, onSelectRoom, ss }: Props) {
     return (
-        <>
+        // Phase 3: room fills + area labels gộp 1 Layer — giảm số canvas Konva.
+        // Layer listening theo tool; nhãn luôn non-interactive (Group listening={false}).
+        // Z-order giữ nguyên: fills trước, labels sau.
+        <Layer listening={activeTool2D === "select"}>
             {/* Room fills — click chọn phòng (để đổi material sàn) */}
-            <Layer listening={activeTool2D === "select"}>
-                {rooms.map(room => (
-                    <Line key={room.id} points={room.polygon.flatMap(p => [p.x, p.y])} closed
-                        fill="rgba(248,180,0,0.10)" stroke="rgba(124,88,0,0.18)" strokeWidth={2} lineJoin="round"
-                        onClick={e => { e.cancelBubble = true; onSelectRoom(room.key); }}
-                    />
-                ))}
-            </Layer>
+            {rooms.map(room => (
+                <Line key={room.id} points={room.polygon.flatMap(p => [p.x, p.y])} closed
+                    fill="rgba(248,180,0,0.10)" stroke="rgba(124,88,0,0.18)" strokeWidth={2} lineJoin="round"
+                    onClick={e => { e.cancelBubble = true; onSelectRoom(room.key); }}
+                />
+            ))}
 
-            {/* Room area labels */}
-            <Layer listening={false}>
-                {stageScale >= DIM_HIDE_BELOW && rooms.map(room => {
+            {/* Room area labels — non-interactive */}
+            {stageScale >= DIM_HIDE_BELOW && rooms.map(room => {
                     const fs   = ss(11);
                     const pw   = ss(4);
                     const sw   = ss(0.5);
@@ -46,7 +46,7 @@ function RoomLayerInner({ rooms, stageScale, activeTool2D, onSelectRoom, ss }: P
                     const lblW = room.label.length * fs * 0.62 + pw * 2;
                     const lblH = fs * 1.4 + pw;
                     return (
-                        <Group key={`area-${room.id}`}>
+                        <Group key={`area-${room.id}`} listening={false}>
                             <Rect
                                 x={room.centroidX} y={room.centroidY}
                                 width={lblW} height={lblH}
@@ -69,8 +69,7 @@ function RoomLayerInner({ rooms, stageScale, activeTool2D, onSelectRoom, ss }: P
                         </Group>
                     );
                 })}
-            </Layer>
-        </>
+        </Layer>
     );
 }
 

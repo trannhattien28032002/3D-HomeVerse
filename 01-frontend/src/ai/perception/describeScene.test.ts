@@ -9,10 +9,10 @@ import * as THREE from "three";
 
 import { World } from "src/engine/ecs/World";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
-import { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import { EntityRegistry } from "src/engine/registries/EntityRegistry";
-import { ModelRegistry } from "src/engine/rendering/ModelRegistry";
+import { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import { createDispatcher } from "src/engine/commands/dispatcher";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Transform } from "src/engine/components/core/Transform";

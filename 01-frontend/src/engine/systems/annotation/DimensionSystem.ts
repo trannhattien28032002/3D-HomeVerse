@@ -32,12 +32,23 @@ export class DimensionSystem extends System {
     public lastAngleDimensions: AngleDimensionSnapshot[] = [];
     private readonly nodes: NodeRegistry;
 
+    /**
+     * revision-guard: World.revision đã tính lần cuối — bỏ qua frame idle.
+     * System này KHÔNG mutate world (chỉ đọc + ghi public property), nên khi
+     * revision không đổi, lastDimensions/lastAngleDimensions trước đó vẫn hợp lệ.
+     * SnapshotSystem chạy sau với cùng revision-guard nên đọc lại giá trị cũ an toàn.
+     */
+    private _lastRevision = -1;
+
     constructor(nodes: NodeRegistry) {
         super();
         this.nodes = nodes;
     }
 
     update(world: World): void {
+        // Pre-filter idle frame: không có structural change nào kể từ lần chạy trước. (HG-01)
+        if (world.revision === this._lastRevision) return;
+
         const entities = Query.entitiesWith(world, WallTag, WallNodes);
         const dims: DimensionSnapshot[] = [];
         // wallId → hai node đầu/cuối, cần cho phép tính góc bên dưới
@@ -70,6 +81,9 @@ export class DimensionSystem extends System {
 
         this.lastDimensions = dims;
         this.lastAngleDimensions = this.computeAngleDimensions(wallNodeMap);
+
+        // Lưu revision SAU khi tính xong (system không bump revision). (HG-01)
+        this._lastRevision = world.revision;
     }
 
     private computeAngleDimensions(

@@ -1,6 +1,6 @@
 import type { World } from "src/engine/ecs/World";
-import type { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import type { ModelRegistry } from "src/engine/rendering/ModelRegistry";
+import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import type { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { WallTag } from "src/engine/components/wall/WallTag";
 import { Mesh } from "src/engine/components/render/Mesh";

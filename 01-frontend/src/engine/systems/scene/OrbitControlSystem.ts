@@ -18,6 +18,7 @@ import * as THREE from "three";
 import { System } from "src/engine/ecs/System";
 import { World } from "src/engine/ecs/World";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CachedClientRect } from "src/shared/dom/cachedRect";
 import type { CameraPreset } from "src/engine/engineTypes";
 
 // Camera không bao giờ thấp hơn đây — tránh chui qua sàn nhà
@@ -82,11 +83,17 @@ export class OrbitControlSystem extends System {
     private camera: THREE.Camera;
     private scene: THREE.Scene;
     private domElement: HTMLElement;
+    // LW-03: rect canvas được cache, invalidate khi resize/scroll — onMouseMove đọc
+    // mỗi lần di chuột nên gọi getBoundingClientRect() trực tiếp dễ gây forced-reflow.
+    private rectCache: CachedClientRect;
 
     private zoomDelta = 0;
     private raycaster = new THREE.Raycaster();
     private mouse = new THREE.Vector2();
     private groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    // MD-02: điểm world-space mà zoom-to-cursor hướng tới. Tính MỘT LẦN khi lăn chuột
+    // (onWheel) thay vì raycast đệ quy toàn scene mỗi frame trong suốt quán tính zoom.
+    private zoomFocusWorld: THREE.Vector3 | null = null;
 
     private focusPoint: THREE.Vector3 | null = null;
     private _transition: CameraTransition | null = null;
@@ -100,6 +107,7 @@ export class OrbitControlSystem extends System {
         this.camera = camera;
         this.scene = scene;
         this.domElement = renderer.domElement;
+        this.rectCache = new CachedClientRect(this.domElement);
 
         this.controls = new OrbitControls(camera, renderer.domElement);
 
@@ -120,7 +128,7 @@ export class OrbitControlSystem extends System {
     // ── Event handlers ──────────────────────────────────────────────────────
 
     private onMouseMove = (event: MouseEvent) => {
-        const rect = this.domElement.getBoundingClientRect();
+        const rect = this.rectCache.get();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     };
@@ -133,30 +141,32 @@ export class OrbitControlSystem extends System {
         this.zoomDelta -= event.deltaY * 0.001;
         this.zoomDelta = Math.max(-0.5, Math.min(0.5, this.zoomDelta));
         this.focusPoint = null;
+        // MD-02: raycast tại con trỏ chỉ MỘT LẦN cho mỗi event lăn chuột. Các frame
+        // quán tính sau đó tái dùng điểm world này (con trỏ hầu như đứng yên khi zoom
+        // giảm tốc) → không còn intersectObjects(scene, true) đệ quy mỗi frame.
+        this.zoomFocusWorld = this.pickCursorWorldPoint();
     };
 
     private onDoubleClick = () => {
-        this.raycaster.setFromCamera(this.mouse, this.camera);
-        const hits = this.raycaster.intersectObjects(this.scene.children, true);
-
-        let hitPoint: THREE.Vector3 | undefined;
-        for (const hit of hits) {
-            if (hit.object.type === "Mesh" && hit.object.visible) {
-                hitPoint = hit.point;
-                break;
-            }
-        }
-
-        if (!hitPoint) {
-            hitPoint = new THREE.Vector3();
-            this.raycaster.ray.intersectPlane(this.groundPlane, hitPoint);
-        }
-
+        const hitPoint = this.pickCursorWorldPoint();
         if (hitPoint) {
-            this.focusPoint = hitPoint.clone();
+            this.focusPoint = hitPoint;
             this.zoomDelta = 0;
         }
     };
+
+    /**
+     * Raycast từ con trỏ: trả điểm chạm mesh hiển thị gần nhất, hoặc giao điểm với
+     * mặt sàn (y=0). Trả về vector world MỚI (an toàn để giữ lại). null nếu trượt cả hai.
+     */
+    private pickCursorWorldPoint(): THREE.Vector3 | null {
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const hits = this.raycaster.intersectObjects(this.scene.children, true);
+        const meshHit = hits.find(h => h.object.type === "Mesh" && h.object.visible)?.point;
+        if (meshHit) return meshHit.clone();
+        const ground = new THREE.Vector3();
+        return this.raycaster.ray.intersectPlane(this.groundPlane, ground) ? ground : null;
+    }
 
     // ── Public API ──────────────────────────────────────────────────────────
 
@@ -211,6 +221,7 @@ export class OrbitControlSystem extends System {
         this.domElement.removeEventListener("wheel", this.onWheel);
         this.domElement.removeEventListener("mousemove", this.onMouseMove);
         this.domElement.removeEventListener("dblclick", this.onDoubleClick);
+        this.rectCache.dispose();
         this.controls.dispose();
     }
 
@@ -236,15 +247,8 @@ export class OrbitControlSystem extends System {
             if (raw >= 1) this._transition = null;
 
         } else if (Math.abs(this.zoomDelta) > 0.0001) {
-            this.raycaster.setFromCamera(this.mouse, this.camera);
-
-            const hits = this.raycaster.intersectObjects(this.scene.children, true);
-            let hitPoint = hits.find(h => h.object.type === "Mesh" && h.object.visible)?.point;
-
-            if (!hitPoint) {
-                hitPoint = new THREE.Vector3();
-                this.raycaster.ray.intersectPlane(this.groundPlane, hitPoint);
-            }
+            // MD-02: dùng điểm focus đã raycast sẵn ở onWheel — không raycast mỗi frame.
+            const hitPoint = this.zoomFocusWorld;
 
             if (hitPoint) {
                 const targetWorld = hitPoint.clone();

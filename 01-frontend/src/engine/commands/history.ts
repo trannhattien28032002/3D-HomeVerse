@@ -84,15 +84,16 @@ export class UndoHistory {
      * Pop entry undo cuối → trả kết quả để restore.
      * Đẩy entry đảo ngược lên redo stack để redo có thể hoàn tác lại lần undo này.
      *
-     * @param currentSnapshot Trạng thái hiện tại — cần để push lên redo stack
-     *   (chỉ dùng khi entry là snapshot; với inverse entry, redo stack lưu inverse ngược)
+     * @param getCurrentSnapshot Thunk chụp trạng thái hiện tại — chỉ GỌI khi entry là
+     *   snapshot (cần đẩy lên redo stack). MD-05: với inverse entry (move/rotate — hot
+     *   path), thunk không bao giờ chạy nên KHÔNG serialize toàn scene.
      */
-    undo(currentSnapshot: SceneDocument): UndoResult | null {
+    undo(getCurrentSnapshot: () => SceneDocument): UndoResult | null {
         const entry = this.undoStack.pop();
         if (!entry) return null;
 
         if (entry.kind === "snapshot") {
-            this.redoStack.push({ kind: "snapshot", label: entry.label, snapshot: currentSnapshot });
+            this.redoStack.push({ kind: "snapshot", label: entry.label, snapshot: getCurrentSnapshot() });
             return { kind: "snapshot", snapshot: entry.snapshot };
         } else {
             // Inverse: redo = redoCommand; undo đã áp dụng undoCommand.
@@ -104,13 +105,14 @@ export class UndoHistory {
     /**
      * Pop entry redo cuối → trả kết quả để re-apply.
      * Đẩy entry đảo ngược lên undo stack để có thể undo lại redo này.
+     * MD-05: getCurrentSnapshot là thunk lazy — chỉ serialize khi entry là snapshot.
      */
-    redo(currentSnapshot: SceneDocument): UndoResult | null {
+    redo(getCurrentSnapshot: () => SceneDocument): UndoResult | null {
         const entry = this.redoStack.pop();
         if (!entry) return null;
 
         if (entry.kind === "snapshot") {
-            this.undoStack.push({ kind: "snapshot", label: entry.label, snapshot: currentSnapshot });
+            this.undoStack.push({ kind: "snapshot", label: entry.label, snapshot: getCurrentSnapshot() });
             return { kind: "snapshot", snapshot: entry.snapshot };
         } else {
             this.undoStack.push({ kind: "inverse", label: entry.label, undoCommand: entry.undoCommand, redoCommand: entry.redoCommand });

@@ -34,7 +34,12 @@ import type { EngineCommand } from "src/engine/commands/EngineCommands";
 
 
 type Props = {
+    /** Toàn bộ furniture — dùng cho drag hook (collision/snap với mọi object). */
     furniture: Furniture2D[];
+    /** Tập đã viewport-cull — chỉ tập này được render (Phase 2). */
+    renderFurniture: Furniture2D[];
+    /** LOD: vẽ nhãn modelId hay không (ẩn khi zoom xa). */
+    showLabels: boolean;
     isSelectMode: boolean;
     /** Tập object đang chọn (multi-select). Highlight = has(entityId). */
     selectedFurnitureIds: Set<string>;
@@ -62,7 +67,7 @@ type Props = {
  * đọc từ live ColliderAABB ở SnapshotSystem) + nhãn modelId canh giữa. Không dùng
  * ảnh PNG top-down nữa: kích thước hộp luôn khớp collision bên 3D (cửa, kệ tường, …).
  */
-function renderBody(f: Furniture2D, ss: (px: number) => number) {
+function renderBody(f: Furniture2D, ss: (px: number) => number, showLabel: boolean) {
     const fs     = ss(10);
     const labelW = Math.min(f.width * 0.9, ss(80));
     return (
@@ -72,20 +77,22 @@ function renderBody(f: Furniture2D, ss: (px: number) => number) {
                 offsetX={f.width / 2} offsetY={f.depth / 2}
                 fill="rgba(160,133,106,0.30)" stroke="#7c5800" strokeWidth={ss(1)}
             />
-            <Text
-                text={f.modelId} fontSize={fs}
-                fontFamily="'Nunito Sans', sans-serif" fill="#504532"
-                width={labelW} height={f.depth}
-                align="center" verticalAlign="middle"
-                offsetX={labelW / 2} offsetY={f.depth / 2}
-                wrap="none" ellipsis
-            />
+            {showLabel && (
+                <Text
+                    text={f.modelId} fontSize={fs}
+                    fontFamily="'Nunito Sans', sans-serif" fill="#504532"
+                    width={labelW} height={f.depth}
+                    align="center" verticalAlign="middle"
+                    offsetX={labelW / 2} offsetY={f.depth / 2}
+                    wrap="none" ellipsis listening={false}
+                />
+            )}
         </>
     );
 }
 
 function FurnitureLayerInner({
-    furniture, isSelectMode, selectedFurnitureIds, setSelectedFurnitureIds,
+    furniture, renderFurniture, showLabels, isSelectMode, selectedFurnitureIds, setSelectedFurnitureIds,
     dragTransactionOpenRef, recordMoveUndo, recordRotateUndo, recordWallItemMoveUndo,
     dispatch, transform, wallSegments,
     walls, nodeById, furnitureNodeRefs, ss,
@@ -102,7 +109,7 @@ function FurnitureLayerInner({
 
     return (
         <Layer listening={isSelectMode}>
-            {furniture.map(f => {
+            {renderFurniture.map(f => {
                 const isSelected = selectedFurnitureIds.has(f.entityId);
                 return (
                     <Group
@@ -135,7 +142,7 @@ function FurnitureLayerInner({
                         onDragMove={(e: KonvaEventObject<MouseEvent>) => onDragMove(e, f)}
                         onDragEnd={(e: KonvaEventObject<MouseEvent>) => onDragEnd(e, f)}
                     >
-                        {renderBody(f, ss)}
+                        {renderBody(f, ss, showLabels)}
                         {f.isWallItem && f.overlapping && (
                             // Cảnh báo đỏ: wall-item chồng chỗ với item khác sau resize/merge.
                             <Rect

@@ -14,7 +14,7 @@ import { Transform } from "src/engine/components/core/Transform";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { RoomGeometry } from "src/engine/components/room/RoomGeometry";
-import type { MeshRegistry } from "src/engine/rendering/MeshRegistry";
+import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
 import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import { snapAngleRad } from "src/shared/constants/placement";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
@@ -120,12 +120,74 @@ export function resolveHitEntity(
     return { entityId, attachTarget: hitObject };
 }
 
+/** Mảng scratch tái dùng cho 3 nhóm raycast (do GizmoSystem sở hữu). */
+export interface PickScratch {
+    furniture: THREE.Object3D[];
+    wall: THREE.Object3D[];
+    room: THREE.Object3D[];
+}
+
+/**
+ * Kết quả phân giải một click chuột trái trong khung 3D.
+ *  - none: không trúng gì (hoặc trúng object không gắn entity) → bỏ chọn.
+ *  - floor/wall: chỉ để chọn đổi material → KHÔNG attach gizmo.
+ *  - furniture: attach gizmo để di chuyển/xoay.
+ */
+export type PickResult =
+    | { kind: "none" }
+    | { kind: "floor"; roomKey: string | null }
+    | { kind: "wall"; wallId: string | null }
+    | { kind: "furniture"; entityId: string; attachTarget: THREE.Object3D };
+
+/**
+ * Phân giải pick theo thứ tự ưu tiên sàn < tường < furniture (theo khoảng cách).
+ * Gom 3 nhóm target + raycast + so sánh distance về một chỗ; GizmoSystem chỉ việc
+ * phát đúng event / attach theo kết quả.
+ *
+ * Sàn luôn nằm dưới đồ/tường nên khi click trúng đồ/tường, hit của chúng gần camera
+ * hơn → sàn không "cướp" click dù được raycast riêng.
+ */
+export function resolvePick(
+    raycaster: THREE.Raycaster,
+    world: World,
+    meshRegistry: MeshRegistry,
+    scratch: PickScratch,
+): PickResult {
+    // recursive=true để Three.js bắt được cả mesh con bên trong Group GLB.
+    collectPickTargets(world, scratch.furniture);
+    const furnitureHits = raycaster.intersectObjects(scratch.furniture, true);
+
+    // Tường + sàn raycast riêng (collectPickTargets loại trừ tường) — chỉ để đổi material.
+    collectWallPickTargets(world, scratch.wall);
+    const wallHits = raycaster.intersectObjects(scratch.wall, false);
+
+    collectRoomPickTargets(world, meshRegistry, scratch.room);
+    const roomHits = raycaster.intersectObjects(scratch.room, false);
+
+    const furnitureDist = furnitureHits[0]?.distance ?? Infinity;
+    const wallDist = wallHits[0]?.distance ?? Infinity;
+    const roomDist = roomHits[0]?.distance ?? Infinity;
+
+    if (furnitureDist === Infinity && wallDist === Infinity && roomDist === Infinity) {
+        return { kind: "none" };
+    }
+    if (roomDist < furnitureDist && roomDist < wallDist) {
+        return { kind: "floor", roomKey: (roomHits[0].object as RoomPickMesh).__roomKey ?? null };
+    }
+    if (wallDist < furnitureDist) {
+        return { kind: "wall", wallId: (wallHits[0].object as WallPickMesh).__wallId ?? null };
+    }
+    const resolved = resolveHitEntity(furnitureHits[0].object as MeshWithEntity, world);
+    if (!resolved) return { kind: "none" };
+    return { kind: "furniture", entityId: resolved.entityId, attachTarget: resolved.attachTarget };
+}
+
 /**
  * Áp một phép xoay (yaw thô, radian) lên entity: snap 15°, kiểm tra va chạm;
  * nếu đụng thì hoàn lại quaternion cũ. Đánh dấu world dirty khi được chấp nhận.
  *
  * `rawYaw` do GizmoSystem tự tính từ GÓC CON TRỎ quanh tâm vật (xem
- * `_computePointerYaw`), KHÔNG trích từ `object.quaternion`. Lý do: rotate 1 trục
+ * `computePointerYaw`), KHÔNG trích từ `object.quaternion`. Lý do: rotate 1 trục
  * của TransformControls tính góc bằng phép chiếu tuyến tính của độ dịch con trỏ
  * (`_offset.dot(tangent)`), nên kéo gần trọn vòng sẽ co `_offset` về 0 → vật tự
  * xoay ngược lại. Tính yaw từ góc con trỏ (kiểu vô-lăng) thì đơn điệu, không đảo.
