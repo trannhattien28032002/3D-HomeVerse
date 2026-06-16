@@ -1,244 +1,266 @@
-import * as THREE from "three";
+/**
+ * Điểm khởi tạo duy nhất của engine HomeVerse.
+ *
+ * createEngine() lắp ráp toàn bộ subsystem và trả về EngineInstance.
+ *
+ * Thứ tự khởi động:
+ *   1. Three.js scene / camera / renderer  (sceneSetup)
+ *   2. ECS World + NodeRegistry + EventBus
+ *   3. Systems đăng ký vào World          (systemSetup)
+ *   4. Đèn ambient + directional mặc định
+ *   5. Dispatcher + UndoHistory + transaction API (commands/transactionApi)
+ *   6. FurniturePlacementSystem (nhận asyncTransaction + dispatchAsync)
+ *   7. Game loop bắt đầu (requestAnimationFrame)
+ *
+ * Phím tắt toàn cục KHÔNG ở đây — chúng do React (useEditorShortcuts) xử lý.
+ *
+ * Dependency flow:
+ *   Canvas component → createEngine(canvas) → EngineInstance
+ *   EngineInstance được mount vào:
+ *     - window.gameEngine (backward-compat)
+ *     - EngineContext.Provider (React tree)
+ */
+import { World } from "src/engine/ecs/World";
+import { EngineEvents } from "src/engine/events/EngineEvents";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
-import { World } from "./ecs/World";
+import { createScene } from "src/engine/setup/sceneSetup";
+import { createSystems } from "src/engine/setup/systemSetup";
+import { createDispatcher } from "src/engine/commands/dispatcher";
+import { UndoHistory } from "src/engine/commands/history";
+import { createTransactionApi } from "src/engine/commands/transactionApi";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
+import { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
+import { disposeSurfaceMaterials } from "src/engine/rendering/surfaceMaterial";
+import { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
+import { ModelRegistry } from "src/engine/registries/ModelRegistry";
+import { EntityRegistry } from "src/engine/registries/EntityRegistry";
+import { SelectionHighlight } from "src/engine/rendering/SelectionHighlight";
+import { createAmbientLight, createDirectionalLight } from "src/engine/factories/LightFactory";
+import { FurniturePlacementSystem } from "src/engine/systems/placement/FurniturePlacementSystem";
+import { Transform } from "src/engine/components/core/Transform";
+import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
+import { StaticBody } from "src/engine/components/physics/StaticBody";
+import { Model3D } from "src/engine/components/render/Model3D";
+import { SurfaceMaterial } from "src/engine/components/render/SurfaceMaterial";
+import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
+import { WallOpening } from "src/engine/components/wall/WallOpening";
+import { WallMounted } from "src/engine/components/wall/WallMounted";
+import { v4 as uuidv4 } from "uuid";
 
-// Systems
-import { RenderSystem } from "./systems/RenderSystem";
-import { LightSystem } from "./systems/LightSystem";
-import { GizmoSystem } from "./systems/GizmoSystem";
-import { OrbitControlSystem } from "./systems/OrbitControlSystem";
+import type { EngineApi, EngineInstance } from "src/engine/engineTypes";
 
-import { Mesh } from "./components/Mesh";
-import { Transform } from "./components/Transform";
-import { WallSize } from "./components/WallSize";
-import { ColliderAABB } from "./components/ColliderAABB";
+// Re-export type để các import cũ vẫn hoạt động.
+export type { EngineApi, EngineInstance } from "src/engine/engineTypes";
 
-// Game
-import { createWall } from "./game/WallFactory";
-import { createAmbientLight, createDirectionalLight } from "./game/LightFactory";
-import { createGround } from "./game/GroundFactory";
-import { AABBCollisionSystem } from "./systems/AABBCollisionSystem";
-import { PlacementAssistSystem } from "./systems/PlacementAssistSystem";
-import { RapierCollisionSystem } from "./systems/RapierCollisionSystem";
+export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
+    const { scene, camera, renderer } = createScene(canvas);
 
-type EngineWall = {
-    x: number;
-    y: number;
-    z: number;
-    w: number;
-    h: number;
-    d: number;
-    rotY?: number;
-    wallId?: number;
-};
+    const nodeRegistry = new NodeRegistry();
+    const world = new World();
+    const events = new EngineEvents();
 
-type CreateEngineOptions = {
-    walls?: EngineWall[];
-};
+    const meshRegistry = new MeshRegistry(scene);
+    const materialRegistry = new MaterialRegistry();
+    const materialLibrary = new MaterialLibrary(renderer);
+    const gltfLoader = new GLTFModelLoader();
+    const modelRegistry = new ModelRegistry(scene);
+    const entityRegistry = new EntityRegistry(world, meshRegistry, modelRegistry);
 
-export type EngineInstance = {
-    world: World;
-    api: any;
-    wallEntityIds: number[];
-    wallEntityByWallId: Map<number, number>;
-    dispose: () => void;
-};
+    // Material sàn theo roomKey (sorted nodeIds) — shared giữa RoomSystem (re-apply
+    // khi dựng lại floor mesh) và dispatcher (SET_FLOOR_MATERIAL ghi vào).
+    const floorMaterials = new Map<string, string>();
 
-export function createEngine(
-    canvas: HTMLCanvasElement,
-    options: CreateEngineOptions = {}
-) {
+    const { orbit, gizmoSystem, collisionSystem, dragGhostController, composer, outlinePass, renderScheduler } = createSystems(world, scene, camera, renderer, nodeRegistry, events, meshRegistry, materialRegistry, materialLibrary, floorMaterials);
 
-    // =====================
-    // THREE SETUP
-    // =====================
-    const scene = new THREE.Scene();
+    // Collider sàn "headless" — không có Mesh nên GizmoSystem/RenderSystem bỏ qua.
+    // ColliderAABB(50, 0.5, 50) dùng half-extent, đúng quy ước của CannonCollisionSystem.
+    // Tâm Y=-0.52 → MẶT TRÊN ở Y=-0.02 (thấp hơn mặt sàn thế giới Y=0 một khe 2cm).
+    // Lý do: đồ đặt trên sàn có ĐÁY collider ≈ Y=0; nếu mặt sàn trùng khít Y=0 thì box-box
+    // chạm-khít bị tính là va chạm → đồ kê sát sàn (nhất là giường, đáy ~Y=0) luôn bị tô đỏ
+    // khi kéo. Hạ 2cm tạo khe an toàn lớn hơn sai số float, nhưng sàn VẪN là collider thật
+    // chặn vật rơi xuống dưới sàn.
+    const groundEid = world.createEntity();
+    world.addComponent(groundEid, new Transform(0, -0.52, 0));
+    world.addComponent(groundEid, new ColliderAABB(50, 0.5, 50));
+    world.addComponent(groundEid, new StaticBody());
 
-    scene.add(new THREE.AxesHelper(100));
-    scene.add(new THREE.GridHelper(100, 100));
+    // Ambient nâng lên 0.5 để mặt tường quay lưng với mặt trời vẫn đủ sáng để nhìn rõ.
+    createAmbientLight(world, { intensity: 0.5 });
+    createDirectionalLight(world, { x: 10, y: 18, z: 10, intensity: 0.9 });
 
-    const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
+    // wallEntityByWallId: ánh xạ wallId (uuid) → ECS entityId (uuid) — tra entity từ ID logic
+    const wallEntityByWallId = new Map<string, string>();
+
+    // Viền chọn 3D: đồng bộ OutlinePass.selectedObjects theo event chọn (đồ/tường/sàn),
+    // đổi màu viền theo loại để người dùng biết đang chọn gì.
+    const selectionHighlight = new SelectionHighlight(outlinePass, world, wallEntityByWallId, meshRegistry, events, renderScheduler);
+
+    // initDefaultScene(world, scene, nodeRegistry, wallEntityByWallId);
+
+    const { dispatch, dispatchAsync } = createDispatcher({ world, scene, nodeRegistry, wallEntityByWallId, meshRegistry, materialRegistry, materialLibrary, gltfLoader, modelRegistry, collisionSystem, entityRegistry, floorMaterials });
+
+    // ── Undo / redo ────────────────────────────────────────────────────────────
+    // instanceRef: ref vòng — cho phép transaction/undo/redo truy cập engineInstance
+    // trước khi nó được tạo (gán instanceRef.current ở cuối hàm createEngine).
+    const instanceRef: { current: EngineInstance | null } = { current: null };
+    const undoHistory = new UndoHistory();
+    // Toàn bộ slice transaction/undo của EngineApi sống trong transactionApi.ts.
+    const txApi = createTransactionApi({ instanceRef, undoHistory, dispatch });
+
+    const placementSystem = new FurniturePlacementSystem(
+        scene, camera, renderer.domElement,
+        orbit.controls,
+        events,
+        gltfLoader,
+        collisionSystem,
+        world,
+        nodeRegistry,
+        txApi.asyncTransaction,
+        dispatchAsync,
+        renderScheduler,
     );
 
-    camera.position.set(0, 2, 5);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = new THREE.WebGLRenderer({
-        canvas,
-        antialias: true
-    });
-
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x202030, 1);
-
-    renderer.shadowMap.enabled = true;
-
-    scene.fog = new THREE.Fog(0x202030, 10, 35);
-
-
-    // =====================
-    // ECS WORLD
-    // =====================
-    const world = new World();
-    const orbit = new OrbitControlSystem(camera, renderer)
-
-    // ORBITCONTROL
-    world.addSystem(orbit)
-    // GIZMO
-    world.addSystem(new GizmoSystem(camera, scene, renderer, orbit.controls));
-    // COLLISION
-    const rapierSystem = new RapierCollisionSystem();
-    world.addSystem(rapierSystem);
-    // PLACEMENT ASSIST
-    world.addSystem(new PlacementAssistSystem())
-    // LIGHTING
-    world.addSystem(new LightSystem(scene));
-    // RENDER
-    world.addSystem(new RenderSystem(renderer, scene, camera));
-
-
-    // =====================
-    // GAME OBJECTS
-    // =====================
-    createGround(world, scene);
-
-    const sceneWalls = options.walls ?? [
-        { x: 6, y: 0.5, z: 0, w: 1, h: 1, d: 10, rotY: 0 },
-        { x: -6, y: 0.5, z: 0, w: 1, h: 1, d: 10, rotY: 0 },
-        { x: 0, y: 0.5, z: -6, w: 10, h: 1, d: 1, rotY: 0 }
-    ];
-
-    const wallEntityIds: number[] = [];
-    const wallEntityByWallId = new Map<number, number>();
-
-    sceneWalls.forEach((wall, idx) => {
-        const entity = createWall(world, scene, wall);
-        wallEntityIds.push(entity);
-        const wallId = wall.wallId ?? idx + 1;
-        wallEntityByWallId.set(wallId, entity);
-    });
-
-    createAmbientLight(world, { intensity: 0.35 });
-    createDirectionalLight(world, {
-        x: 6,
-        y: 12,
-        z: 6,
-        intensity: 0.9
-    });
-
-
-    // =====================
-    // RESIZE
-    // =====================
     const onResize = () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Composer (+ OutlinePass) phải đồng bộ kích thước, nếu không viền lệch vị trí.
+        composer.setSize(window.innerWidth, window.innerHeight);
+        // Resize đổi aspect/kích thước (không bump revision, không đổi camera pos/quat/fov)
+        // → on-demand render sẽ bỏ qua nếu cảnh đang tĩnh; ép vẽ lại 1 frame.
+        renderScheduler.requestRender();
     };
-
     window.addEventListener("resize", onResize);
 
-
-    // =====================
-    // LOOP
-    // =====================
-    let lastTime = performance.now();
     let running = true;
-
+    let lastTime = performance.now();
     function loop() {
         if (!running) return;
-
         const now = performance.now();
-        const deltaTime = (now - lastTime) / 1000;
+        const dt = (now - lastTime) / 1000;
         lastTime = now;
-
-        world.update(deltaTime);
-
+        world.update(dt);
         requestAnimationFrame(loop);
     }
-
     loop();
 
+    const api: EngineApi = {
+        events,
+        dispatch,
+        dispatchAsync,
+        clampNodeMove: (_nodeId, newX, newZ) => ({ x: newX, z: newZ }),
+        getNextIds: () => ({
+            nodeId: nodeRegistry.newNodeId(),
+            wallId: uuidv4(),
+        }),
+        setView: (preset) => orbit.setView(preset),
+        rotateView: (angleDeg) => orbit.rotateBy(angleDeg),
+        setGizmoMode: (mode) => gizmoSystem.setGizmoMode(mode),
+        clearSelection: () => gizmoSystem.clearSelection(),
 
-    // =====================
-    // API CẦU NỐI 2D-3D
-    // =====================
-    const api = {
-        addWall: (wd: EngineWall) => {
-            const entity = createWall(world, scene, wd);
-            wallEntityIds.push(entity);
-            if (wd.wallId !== undefined) {
-                wallEntityByWallId.set(wd.wallId, entity);
-            }
-            return entity;
+        captureScreenshot: () => {
+            // Bỏ chọn trước → ảnh sạch (không gizmo, không viền chọn).
+            gizmoSystem.clearSelection();
+            // Renderer KHÔNG bật preserveDrawingBuffer nên drawing buffer bị xoá sau khi
+            // trình duyệt composite. Phải render 1 frame rồi đọc canvas NGAY trong cùng
+            // tick đồng bộ, trước khi control trả về trình duyệt — nếu không ảnh sẽ đen.
+            composer.render();
+            return renderer.domElement.toDataURL("image/png");
         },
-        updateWall: (wd: EngineWall) => {
-            if (wd.wallId === undefined) return;
-            const entity = wallEntityByWallId.get(wd.wallId);
-            if (entity != null) {
-                const t = world.getComponent(entity, Transform);
-                const s = world.getComponent(entity, WallSize);
-                const c = world.getComponent(entity, ColliderAABB);
-                const m = world.getComponent(entity, Mesh);
 
-                if (t) {
-                    t.x = wd.x;
-                    t.y = wd.y;
-                    t.z = wd.z;
-                    if (wd.rotY !== undefined) t.rotY = wd.rotY;
-                }
+        ...txApi,
 
-                if (s && c && m) {
-                    if (Math.abs(s.length - wd.w) > 0.001 || Math.abs(s.thickness - wd.d) > 0.001) {
-                        s.length = wd.w;
-                        s.thickness = wd.d;
-                        s.height = wd.h;
+        beginPlacement: (modelId) => placementSystem.begin(modelId),
+        cancelPlacement: () => placementSystem.cancel(),
 
-                        c.width = wd.w / 2;
-                        c.height = wd.h / 2;
-                        c.depth = wd.d / 2;
-
-                        // Rebuild lưới ThreeJS
-                        m.mesh.geometry.dispose();
-                        m.mesh.geometry = new THREE.BoxGeometry(wd.w, wd.h, wd.d);
-                    }
-                }
+        getEntityMaterials(entityId) {
+            const model = world.getComponent(entityId, Model3D);
+            if (!model?.materialOverrides) return {};
+            const out: Record<string, string> = {};
+            for (const [slotId, override] of model.materialOverrides) {
+                if (override.variantId) out[slotId] = override.variantId;
             }
+            return out;
         },
-        clampMovement2D: (wallId: number, targetX: number, targetZ: number) => {
-            const entity = wallEntityByWallId.get(wallId);
-            if (entity != null) {
-                // Ensure Rapier has initialized
-                const result = rapierSystem.clampMovement(entity, targetX, 0.5, targetZ);
-                if (result) {
-                    return { x: result.x, z: result.z };
-                }
-            }
-            return { x: targetX, z: targetZ }; // fallback if physics isn't ready
-        }
+
+        getWallMaterial(wallId, face) {
+            const entityId = wallEntityByWallId.get(wallId);
+            if (!entityId) return null;
+            return world.getComponent(entityId, SurfaceMaterial)?.faces[face] ?? null;
+        },
+
+        getFloorMaterial(roomKey) {
+            return floorMaterials.get(roomKey) ?? null;
+        },
+
+        getFurnitureClipboard(entityId) {
+            // Chỉ copy đồ ĐẶT SÀN: phải có FurnitureTag + Model3D + Transform, và KHÔNG
+            // phải item bám tường (cửa/kệ) — chúng cần hostWallId/t/side để đặt lại nên
+            // không tái tạo được bằng PLACE_FURNITURE.
+            if (!world.hasComponent(entityId, FurnitureTag)) return null;
+            if (world.hasComponent(entityId, WallOpening) || world.hasComponent(entityId, WallMounted)) return null;
+            const t = world.getComponent(entityId, Transform);
+            const model = world.getComponent(entityId, Model3D);
+            if (!t || !model) return null;
+            return {
+                modelId: model.modelId,
+                x: t.x,
+                y: t.y,
+                z: t.z,
+                rotY: t.rotY,
+                materials: api.getEntityMaterials(entityId),
+            };
+        },
     };
 
-    const engineInstance = {
+    // Nối GizmoSystem vào API transaction + delete (tạo sau createSystems).
+    gizmoSystem.setCommandCallbacks(
+        (label) => api.beginTransaction(label),
+        () => api.commitTransaction(),
+        (entityId) => api.transaction("delete furniture 3D", () => {
+            api.dispatch({ type: "DELETE_FURNITURE", entityId });
+        }),
+    );
+
+    const engineInstance: EngineInstance = {
         world,
         api,
-        wallEntityIds,
+        nodes: nodeRegistry,
         wallEntityByWallId,
+        materialLibrary,
+        floorMaterials,
         dispose() {
+            undoHistory.clear();
             running = false;
             window.removeEventListener("resize", onResize);
+            selectionHighlight.dispose();
+            composer.dispose();
+            orbit.controls.dispose();
+            gizmoSystem.dispose();
+            dragGhostController.dispose();
+            collisionSystem.dispose();
+            placementSystem.dispose();
+            gltfLoader.dispose();
+            modelRegistry.disposeAll();
+
+            // Mọi mesh tường, cap, và sàn phòng đều do MeshRegistry quản lý.
+            // Vật liệu dùng chung qua MaterialRegistry — giải phóng sau khi mọi mesh đã biến mất.
+            meshRegistry.disposeAll();
+            materialRegistry.releaseAll();
+            materialLibrary.dispose();
+            disposeSurfaceMaterials();
+
             renderer.dispose();
-            if ((window as any).gameEngine === engineInstance) {
-                delete (window as any).gameEngine;
-            }
-        }
+            if (window.gameEngine === engineInstance) delete window.gameEngine;
+        },
     };
 
-    (window as any).gameEngine = engineInstance;
+    instanceRef.current = engineInstance;
+    // R9 (L1): DEV-only escape hatch. import.meta.env.DEV is statically false in
+    // production builds (Vite replaces it at build time) → dead-code eliminated.
+    // Confirmed: window.gameEngine is NOT reachable in production bundles.
+    if (import.meta.env.DEV) window.gameEngine = engineInstance;
     return engineInstance;
 }

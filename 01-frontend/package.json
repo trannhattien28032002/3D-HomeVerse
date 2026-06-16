@@ -7,12 +7,17 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "convert-materials": "node scripts/convert-etc1s.mjs"
   },
   "dependencies": {
-    "@dimforge/rapier3d-compat": "^0.19.3",
+    "@anthropic-ai/claude-code": "^2.1.146",
     "@tailwindcss/vite": "^4.2.2",
+    "cannon-es": "^0.20.0",
     "konva": "^10.2.5",
+    "ktx2-encoder": "^0.5.3",
     "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -20,6 +25,8 @@
     "react-router-dom": "^7.14.0",
     "tailwindcss": "^4.2.2",
     "three": "^0.183.2",
+    "three-bvh-csg": "^0.0.18",
+    "uuid": "^14.0.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -33,8 +40,10 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "sharp": "^0.34.5",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.0",
-    "vite": "^8.0.4"
+    "vite": "^8.0.4",
+    "vitest": "^4.1.8"
   }
 }
