@@ -13,7 +13,6 @@
     "convert-materials": "node scripts/convert-etc1s.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^2.1.146",
     "@tailwindcss/vite": "^4.2.2",
     "cannon-es": "^0.20.0",
     "konva": "^10.2.5",
