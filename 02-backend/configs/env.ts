@@ -13,6 +13,10 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SUPABASE_JWT_SECRET: z.string().min(1),
   SUPABASE_STORAGE_CDN_URL: z.string().url(),
+  // AI (WP1b) — optional: server vẫn boot khi thiếu; route /ai/chat trả 503 nếu chưa set.
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  // Optional override model (mặc định gemini-2.5-flash; đổi "gemini-2.5-pro" cho task khó).
+  GEMINI_MODEL: z.string().min(1).optional(),
 });
 
 const result = envSchema.safeParse(process.env);

@@ -1,0 +1,298 @@
+/**
+ * WallGeometrySystem — tính toán geometry miter cho tất cả tường.
+ *
+ * Chạy mỗi frame. Chỉ rebuild khi WallPolygon bị xóa (change signal) hoặc
+ * khi node position thay đổi.
+ *
+ * Thuật toán miter:
+ *   1. Với mỗi node, gom tất cả wall đính vào (WallAtNode[])
+ *   2. Sắp xếp radially theo góc
+ *   3. computeMiters(): tính điểm giao (leftPoint, rightPoint) tại mỗi góc tường
+ *      - Nếu góc đủ nhọn và khoảng cách trong giới hạn → miter (điểm nhọn)
+ *      - Ngược lại → bevel (cắt vát)
+ *   4. Cập nhật WallPolygon (4 điểm XZ) cho mỗi wall
+ *   5. Rebuild Three.js ExtrudeGeometry từ polygon + height
+ *   6. Cap mesh tại junction ≥ 3 tường
+ *
+ * Cache: nodeCache lưu miterPoints theo hash (pos + walls) để tránh tính lại.
+ * Output: WallPolygon component + Three.js mesh được cập nhật trong scene.
+ */
+import * as THREE from "three";
+
+import { System } from "src/engine/ecs/System";
+import { World } from "src/engine/ecs/World";
+import { Query } from "src/engine/ecs/Query";
+
+import { WallNodes } from "src/engine/components/wall/WallNodes";
+import { WallSize } from "src/engine/components/wall/WallSize";
+import { WallPolygon, type Point2D } from "src/engine/components/wall/WallPolygon";
+import { Mesh } from "src/engine/components/render/Mesh";
+import { Transform } from "src/engine/components/core/Transform";
+import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
+import { NodeRegistry } from "src/engine/graph/NodeRegistry";
+import { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
+
+import { type WallAtNode, computeMiters } from "src/engine/systems/wall/wallCornerJoiner";
+import { buildExtrudeGeo, rebuildWallMesh } from "src/engine/systems/wall/wallMeshBuilder";
+
+export class WallGeometrySystem extends System {
+    private readonly nodeReg: NodeRegistry;
+    private readonly meshRegistry: MeshRegistry;
+    private readonly materialRegistry: MaterialRegistry;
+    private scene: THREE.Scene;
+
+    /** Metadata phát hiện thay đổi cho cap mesh (mesh thật nằm trong MeshRegistry). */
+    private capMeta = new Map<string, { poly: Point2D[]; height: number }>();
+
+    /**
+     * revision-guard: world.revision của lần update() vừa hoàn tất — pre-filter rẻ để bỏ qua toàn
+     * bộ Query + hashing khi KHÔNG có thay đổi cấu trúc nào (frame idle). Lưu giá trị
+     * SAU các mutation của chính system (addComponent WallPolygon bump revision) nên
+     * frame idle kế tiếp sẽ khớp và skip. Mọi thay đổi topology (node move → markDirty,
+     * add/remove wall) đều bump revision → guard không bao giờ bỏ sót rebuild. (M1)
+     */
+    private _lastRevision = -1;
+
+    private nodeCache = new Map<string, {
+        hash: string;
+        miterPoints: Map<string, { leftPoint: Point2D; rightPoint: Point2D }>;
+        capPolygon: Point2D[];
+    }>();
+
+    constructor(nodes: NodeRegistry, scene: THREE.Scene, meshRegistry: MeshRegistry, materialRegistry: MaterialRegistry) {
+        super();
+        this.nodeReg = nodes;
+        this.scene = scene;
+        this.meshRegistry = meshRegistry;
+        this.materialRegistry = materialRegistry;
+    }
+
+    update(world: World): void {
+        // Pre-filter idle frame: không có structural change nào kể từ lần chạy trước. (M1)
+        if (world.revision === this._lastRevision) return;
+
+        const wallEntities = Query.entitiesWith(world, WallNodes, WallSize);
+        this.nodeReg.nodeCaps.clear();
+
+        if (wallEntities.length === 0) {
+            for (const nodeId of [...this.capMeta.keys()]) {
+                this.meshRegistry.dispose(`cap-${nodeId}`);
+            }
+            this.capMeta.clear();
+            this._lastRevision = world.revision;
+            return;
+        }
+
+        const nodeWalls = new Map<string, WallAtNode[]>();
+
+        for (const e of wallEntities) {
+            const wn = world.getComponent(e, WallNodes)!;
+            const sn = this.nodeReg.get(wn.startNodeId);
+            const en = this.nodeReg.get(wn.endNodeId);
+            if (!sn || !en) continue;
+
+            const dx = en.x - sn.x;
+            const dz = en.z - sn.z;
+            const len = Math.hypot(dx, dz);
+            if (len < 1e-6) continue;
+
+            const ux = dx / len, uz = dz / len;
+
+            if (!nodeWalls.has(wn.startNodeId)) nodeWalls.set(wn.startNodeId, []);
+
+            nodeWalls.get(wn.startNodeId)!.push({
+                entity: e, nx: ux, nz: uz, thickness: wn.thickness,
+                angle: Math.atan2(uz, ux),
+                leftNx: -uz, leftNz: ux,
+                rightNx: uz, rightNz: -ux,
+            });
+
+            if (!nodeWalls.has(wn.endNodeId)) nodeWalls.set(wn.endNodeId, []);
+
+            nodeWalls.get(wn.endNodeId)!.push({
+                entity: e, nx: -ux, nz: -uz, thickness: wn.thickness,
+                angle: Math.atan2(-uz, -ux),
+                leftNx: uz, leftNz: -ux,
+                rightNx: -uz, rightNz: ux,
+            });
+        }
+
+        type MR = { startLeft?: Point2D; startRight?: Point2D; endLeft?: Point2D; endRight?: Point2D };
+        const miterResult = new Map<string, MR>();
+        for (const e of wallEntities) miterResult.set(e, {});
+
+        for (const [nodeId, cwList] of nodeWalls) {
+            const nd = this.nodeReg.get(nodeId);
+            if (!nd) continue;
+
+            let hash = `${nd.x.toFixed(2)},${nd.z.toFixed(2)}`;
+            for (const cw of cwList) {
+                hash += `|${cw.entity},${cw.nx.toFixed(4)},${cw.nz.toFixed(4)},${cw.thickness.toFixed(2)}`;
+            }
+
+            let computed = this.nodeCache.get(nodeId);
+            if (!computed || computed.hash !== hash) {
+                const { miterPoints, capPolygon } = computeMiters({ x: nd.x, z: nd.z }, cwList);
+                computed = { hash, miterPoints, capPolygon };
+                this.nodeCache.set(nodeId, computed);
+            }
+
+            if (computed.capPolygon.length >= 3) {
+                this.nodeReg.nodeCaps.set(nodeId, computed.capPolygon);
+            }
+
+            for (const [eid, m] of computed.miterPoints) {
+                const res = miterResult.get(eid);
+                if (!res) continue;
+                const wn = world.getComponent(eid, WallNodes)!;
+
+                if (nodeId === wn.startNodeId) {
+                    res.startLeft = m.leftPoint;
+                    res.startRight = m.rightPoint;
+                } else {
+                    res.endRight = m.leftPoint;
+                    res.endLeft = m.rightPoint;
+                }
+            }
+
+            let maxHeight = 1;
+            for (const cw of cwList) {
+                const size = world.getComponent(cw.entity, WallSize);
+                if (size && size.height > maxHeight) maxHeight = size.height;
+            }
+            this.updateCapMesh(nodeId, computed.capPolygon, maxHeight);
+        }
+
+        for (const nodeId of this.nodeCache.keys()) {
+            if (!nodeWalls.has(nodeId)) this.nodeCache.delete(nodeId);
+        }
+
+        // Gỡ cap mesh của các node không còn là junction cap
+        for (const nodeId of [...this.capMeta.keys()]) {
+            if (!this.nodeReg.nodeCaps.has(nodeId)) {
+                this.meshRegistry.dispose(`cap-${nodeId}`);
+                this.capMeta.delete(nodeId);
+            }
+        }
+
+        for (const e of wallEntities) {
+            const res = miterResult.get(e)!;
+            if (!res.startLeft || !res.startRight || !res.endLeft || !res.endRight) continue;
+
+            const newPoly: [Point2D, Point2D, Point2D, Point2D] = [
+                res.startLeft,
+                res.endLeft,
+                res.endRight,
+                res.startRight,
+            ];
+
+            const size = world.getComponent(e, WallSize)!;
+            const existing = world.getComponent(e, WallPolygon);
+            const meshComp = world.getComponent(e, Mesh);
+            const transform = world.getComponent(e, Transform);
+            const collider = world.getComponent(e, ColliderAABB);
+            const wn = world.getComponent(e, WallNodes)!;
+
+            const sn = this.nodeReg.get(wn.startNodeId)!;
+            const en2 = this.nodeReg.get(wn.endNodeId)!;
+            const dx = en2.x - sn.x, dz = en2.z - sn.z;
+            const len = Math.hypot(dx, dz);
+            const rotY = -Math.atan2(dz, dx);
+            const cx = (sn.x + en2.x) / 2;
+            const cz = (sn.z + en2.z) / 2;
+            const wallY = size.height / 2;
+
+            if (transform) { transform.x = cx; transform.y = wallY; transform.z = cz; transform.rotY = rotY; }
+            if (size) { size.length = len; }
+            // Đồng bộ ĐỦ 3 nửa-kích-thước AABB theo geometry hiện tại, nếu không box va chạm
+            // sẽ "kẹt" ở giá trị lúc tạo khi user đổi chiều cao (height) hoặc độ dày (thickness):
+            //   width  ↔ length (đổi khi node di chuyển)
+            //   height ↔ size.height   (đổi qua UPDATE_WALL)
+            //   depth  ↔ wn.thickness  (đổi qua UPDATE_WALL — nguồn sự thật là WallNodes)
+            if (collider) {
+                collider.width = len / 2;
+                collider.height = size.height / 2;
+                collider.depth = wn.thickness / 2;
+            }
+
+            const changed = !existing || (() => {
+                for (let i = 0; i < 4; i++) {
+                    if (
+                        Math.abs(existing.points[i].x - newPoly[i].x) > 1e-5 ||
+                        Math.abs(existing.points[i].z - newPoly[i].z) > 1e-5
+                    ) return true;
+                }
+                return false;
+            })();
+
+            if (!changed) continue;
+
+            if (!existing) {
+                world.addComponent(e, new WallPolygon(newPoly, size.height));
+            } else {
+                existing.points = newPoly;
+                existing.height = size.height;
+            }
+
+            if (meshComp) rebuildWallMesh(meshComp.mesh, newPoly, size.height, wallY);
+        }
+
+        // Lưu revision SAU mọi mutation của system (addComponent WallPolygon đã bump). (M1)
+        this._lastRevision = world.revision;
+    }
+
+    private updateCapMesh(nodeId: string, capPolygon: Point2D[], height: number): void {
+        if (capPolygon.length < 3) {
+            if (this.meshRegistry.has(`cap-${nodeId}`)) {
+                this.meshRegistry.dispose(`cap-${nodeId}`);
+                this.capMeta.delete(nodeId);
+            }
+            return;
+        }
+
+        const existingMeta = this.capMeta.get(nodeId);
+        const existingMesh = this.meshRegistry.get(`cap-${nodeId}`);
+
+        const changed = !existingMeta || !existingMesh ||
+            existingMeta.height !== height ||
+            existingMeta.poly.length !== capPolygon.length ||
+            (() => {
+                for (let i = 0; i < capPolygon.length; i++) {
+                    if (
+                        Math.abs(existingMeta.poly[i].x - capPolygon[i].x) > 1e-5 ||
+                        Math.abs(existingMeta.poly[i].z - capPolygon[i].z) > 1e-5
+                    ) return true;
+                }
+                return false;
+            })();
+
+        if (!changed) return;
+
+        const Y = height / 2;
+        const geo = buildExtrudeGeo(capPolygon, height, Y);
+
+        if (existingMesh) {
+            existingMesh.geometry.dispose();
+            existingMesh.geometry = geo;
+            existingMesh.position.set(0, Y, 0);
+        } else {
+            const mat = this.materialRegistry.get({ color: 0xcccccc, metalness: 0, roughness: 0.9 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(0, Y, 0);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+            this.meshRegistry.register(`cap-${nodeId}`, mesh);
+        }
+
+        this.capMeta.set(nodeId, { poly: [...capPolygon], height });
+    }
+
+    dispose(): void {
+        // Cap mesh thuộc quyền meshRegistry — engine.dispose() gọi disposeAll().
+        // Ở đây chỉ xoá metadata cục bộ.
+        this.capMeta.clear();
+        this.nodeCache.clear();
+    }
+}

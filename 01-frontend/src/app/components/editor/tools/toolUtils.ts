@@ -11,12 +11,14 @@
  *   Chỉ kích hoạt khi cursor cách snap angle < ANGLE_SNAP_THRESHOLD_DEG.
  */
 
-import type { Node2D, Wall2D } from "src/app/store/useFloorPlanSnapshot";
+import type { Node2D, Wall2D } from "src/app/plan2d/types";
+import type { Vec2 } from "src/shared/types/primitives";
+import { PX_PER_WORLD } from "src/shared/math/coords";
+
+// Re-export để callers cũ không phải đổi import path.
+export { PX_PER_WORLD };
 
 // ── Shared constants ──────────────────────────────────────────────────────────
-
-/** 1 world unit = 100 px */
-export const PX_PER_WORLD = 100;
 
 /** Grid snap increment in px (100mm) */
 export const SNAP_SIZE = 10;
@@ -41,19 +43,10 @@ export const ANGLE_SNAP_ANGLES = [15, 30, 45, 60, 90, 120, 135, 150, 180] as con
 /** How close (degrees) the cursor must be to a snap angle to trigger */
 export const ANGLE_SNAP_THRESHOLD_DEG = 4;
 
-// ── Coordinate helpers ────────────────────────────────────────────────────────
-
-export function toWorldX(px: number, originX: number): number {
-    return (px - originX) / PX_PER_WORLD;
-}
-
-export function toWorldZ(py: number, originY: number): number {
-    return (py - originY) / PX_PER_WORLD;
-}
-
 // ── Snap helpers ──────────────────────────────────────────────────────────────
 
-export type Px = { x: number; y: number };
+/** Điểm pixel-space canvas. Alias của {@link Vec2} — single source. */
+export type Px = Vec2;
 
 /**
  * Snaps a raw canvas position to the nearest node, wall midpoint, or grid.
@@ -68,10 +61,10 @@ export function snapToNodeOrGrid(
     walls: Wall2D[],
     originX: number,
     originY: number,
-    excludeNodeId?: number,
+    excludeNodeId?: string,
     scale = 1,
-    nodeById?: Map<number, Node2D>,
-): { pos: Px; snappedNodeId: number | null; snappedWallId: number | null } {
+    nodeById?: Map<string, Node2D>,
+): { pos: Px; snappedNodeId: string | null; snappedWallId: string | null } {
     const snapRadius = SNAP_RADIUS / scale;
 
     // ── Node snap ─────────────────────────────────────────────────────────────
@@ -85,7 +78,7 @@ export function snapToNodeOrGrid(
     if (bestNode) return { pos: { x: bestNode.x, y: bestNode.y }, snappedNodeId: bestNode.id, snappedWallId: null };
 
     // ── Wall snap ─────────────────────────────────────────────────────────────
-    let bestWallId: number | null = null;
+    let bestWallId: string | null = null;
     let bestWallPos: Px | null = null;
     let bestWallDist = Infinity;
 
@@ -136,10 +129,10 @@ export function snapToNodeOrGrid(
  */
 export function applyAngleSnap(
     pos: Px,
-    anchorNodeId: number,
+    anchorNodeId: string,
     nodes: Node2D[],
     walls: Wall2D[],
-    nodeById?: Map<number, Node2D>,
+    nodeById?: Map<string, Node2D>,
 ): Px {
     const anchor = nodeById ? nodeById.get(anchorNodeId) : nodes.find(n => n.id === anchorNodeId);
     if (!anchor) return pos;

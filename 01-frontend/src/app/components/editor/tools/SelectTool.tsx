@@ -2,16 +2,16 @@ import React from "react";
 import { Circle, Layer, Line, Text } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-import type { Wall2D } from "src/app/store/useFloorPlanSnapshot";
+import type { Wall2D } from "src/app/plan2d/types";
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
-import { toWorldX, toWorldZ, snapToNodeOrGrid, WALL_THICKNESS, HANDLE_HIDE_BELOW } from "./toolUtils";
+import { snapToNodeOrGrid, WALL_THICKNESS, HANDLE_HIDE_BELOW } from "./toolUtils";
 
 // ── Internal drag state ───────────────────────────────────────────────────────
 
 type WallDragOrigin = {
     startX: number; startY: number;
     endX: number;   endY: number;
-    startNodeId: number; endNodeId: number;
+    startNodeId: string; endNodeId: string;
     pointerStartX: number; pointerStartY: number;
 };
 
@@ -40,7 +40,7 @@ export class SelectTool implements ToolBase {
     /** Lưu trạng thái khi bắt đầu kéo wall body — cần để tính delta di chuyển. */
     private wallDragOrigin: WallDragOrigin | null = null;
     /** Lưu vị trí world ban đầu của node khi kéo endpoint handle. */
-    private nodeDragOrigin = new Map<number, { wx: number; wz: number }>();
+    private nodeDragOrigin = new Map<string, { wx: number; wz: number }>();
 
     update(ctx: ToolContext): void {
         this.ctx = ctx;
@@ -112,17 +112,22 @@ export class SelectTool implements ToolBase {
                 if (!origin || !ptr) return;
                 e.target.x(0); e.target.y(0);
 
-                const { nodes, walls, nodeById, originX, originY, stageScaleRef, dispatch } = this.ctx;
+                const { nodes, walls, nodeById, transform, stageScaleRef, dispatch } = this.ctx;
                 const dx = ptr.x - origin.pointerStartX;
                 const dy = ptr.y - origin.pointerStartY;
                 const { pos: snappedStart } = snapToNodeOrGrid(
                     { x: origin.startX + dx, y: origin.startY + dy },
-                    nodes, walls, originX, originY, origin.startNodeId, stageScaleRef.current, nodeById,
+                    nodes, walls, transform.originX, transform.originY, origin.startNodeId, stageScaleRef.current, nodeById,
                 );
                 const actualDx = snappedStart.x - origin.startX;
                 const actualDy = snappedStart.y - origin.startY;
-                dispatch({ type: "MOVE_NODE", nodeId: origin.startNodeId, x: toWorldX(snappedStart.x, originX), z: toWorldZ(snappedStart.y, originY) });
-                dispatch({ type: "MOVE_NODE", nodeId: origin.endNodeId,   x: toWorldX(origin.endX + actualDx, originX), z: toWorldZ(origin.endY + actualDy, originY) });
+                // Tịnh tiến cứng: dời cả 2 node trong MỘT command atomic. Tường này
+                // rigid (cả 2 node dời) → item bám theo qua `t`; tường hàng xóm (chung
+                // 1 node) được reshape giữ item đứng yên — reconcile 1 lần trong handler.
+                dispatch({ type: "MOVE_NODES", moves: [
+                    { nodeId: origin.startNodeId, x: transform.toWorldX(snappedStart.x),          z: transform.toWorldZ(snappedStart.y) },
+                    { nodeId: origin.endNodeId,   x: transform.toWorldX(origin.endX + actualDx),  z: transform.toWorldZ(origin.endY + actualDy) },
+                ] });
             },
 
             onDragEnd: (e: KonvaEventObject<MouseEvent>) => {
@@ -138,7 +143,7 @@ export class SelectTool implements ToolBase {
         const {
             nodes, walls, selectedWallIds, nodeById,
             stageScale, stageScaleRef, stagePosRef,
-            originX, originY,
+            transform,
             dispatch, setSelectedWallIds, nextWallId,
             commitTransaction, beginTransaction,
             ss, sh,
@@ -183,33 +188,34 @@ export class SelectTool implements ToolBase {
                             const sc = stageScaleRef.current;
                             const sp = stagePosRef.current;
                             const canvas = { x: (absPos.x - sp.x) / sc, y: (absPos.y - sp.y) / sc };
-                            const { pos: snapped } = snapToNodeOrGrid(canvas, nodes, walls, originX, originY, node.id, stageScaleRef.current, nodeById);
+                            const { pos: snapped } = snapToNodeOrGrid(canvas, nodes, walls, transform.originX, transform.originY, node.id, stageScaleRef.current, nodeById);
                             return { x: snapped.x * sc + sp.x, y: snapped.y * sc + sp.y };
                         }}
                         onDragStart={() => {
-                            this.nodeDragOrigin.set(node.id, { wx: toWorldX(node.x, originX), wz: toWorldZ(node.y, originY) });
+                            this.nodeDragOrigin.set(node.id, { wx: transform.toWorldX(node.x), wz: transform.toWorldZ(node.y) });
                             beginTransaction("move node");
                         }}
                         onDragMove={(ev: KonvaEventObject<MouseEvent>) => {
-                            dispatch({ type: "MOVE_NODE", nodeId: node.id, x: toWorldX(ev.target.x(), originX), z: toWorldZ(ev.target.y(), originY) });
+                            // Resize endpoint: dời 1 node — handler tự reconcile giữ cửa/kệ đứng yên.
+                            dispatch({ type: "MOVE_NODE", nodeId: node.id, x: transform.toWorldX(ev.target.x()), z: transform.toWorldZ(ev.target.y()) });
                         }}
                         onDragEnd={(ev: KonvaEventObject<MouseEvent>) => {
                             const raw = { x: ev.target.x(), y: ev.target.y() };
-                            const { pos, snappedNodeId: snapNode, snappedWallId: snapWall } = snapToNodeOrGrid(raw, nodes, walls, originX, originY, node.id, stageScaleRef.current, nodeById);
+                            const { pos, snappedNodeId: snapNode, snappedWallId: snapWall } = snapToNodeOrGrid(raw, nodes, walls, transform.originX, transform.originY, node.id, stageScaleRef.current, nodeById);
                             if (snapNode !== null) {
                                 dispatch({ type: "MERGE_NODE", sourceNodeId: node.id, targetNodeId: snapNode });
                                 setSelectedWallIds(new Set());
                             } else if (snapWall !== null) {
-                                dispatch({ type: "SPLIT_WALL", originalWallId: snapWall, newWallId: nextWallId(), newNodeId: node.id, x: toWorldX(pos.x, originX), z: toWorldZ(pos.y, originY) });
+                                dispatch({ type: "SPLIT_WALL", originalWallId: snapWall, newWallId: nextWallId(), newNodeId: node.id, x: transform.toWorldX(pos.x), z: transform.toWorldZ(pos.y) });
                             } else {
-                                dispatch({ type: "MOVE_NODE", nodeId: node.id, x: toWorldX(pos.x, originX), z: toWorldZ(pos.y, originY) });
+                                dispatch({ type: "MOVE_NODE", nodeId: node.id, x: transform.toWorldX(pos.x), z: transform.toWorldZ(pos.y) });
                             }
                             dispatch({ type: "RESOLVE_INTERSECTIONS", wallId: singleWall.id });
                             this.nodeDragOrigin.delete(node.id);
                             commitTransaction();
                         }}
-                        onMouseEnter={(ev: any) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "crosshair"; }}
-                        onMouseLeave={(ev: any) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "default"; }}
+                        onMouseEnter={(ev: KonvaEventObject<MouseEvent>) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "crosshair"; }}
+                        onMouseLeave={(ev: KonvaEventObject<MouseEvent>) => { const c = ev.target.getStage()?.container(); if (c) c.style.cursor = "default"; }}
                     />
                 ))}
 

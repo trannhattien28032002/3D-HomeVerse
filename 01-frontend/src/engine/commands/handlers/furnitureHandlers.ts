@@ -5,35 +5,109 @@
  * Extracted từ `dispatcher.ts` ở Đợt 3 (REFACTOR-PLAN.md).
  *
  * Note kiến trúc:
- *   - PLACE_FURNITURE async/fire-and-forget — undo ngay sau khi placement
- *     có thể không xoá entity vì snapshot transaction chụp trước khi entity
- *     được tạo. Đã được L2 ghi nhận, deferred fix.
+ *   - PLACE_FURNITURE / PLACE_WALL_ITEM trả về Promise<void>. Caller dùng
+ *     `dispatchAsync` + `asyncTransaction` để snapshot được chụp TRƯỚC và
+ *     đóng SAU khi entity tồn tại — đảm bảo undo xóa được entity. (R1 fix)
  *   - MOVE/ROTATE check collision qua `CannonCollisionSystem.wouldCollideCustom`.
  *     Nếu blocked: không update Transform/Object3D nhưng vẫn markDirty() để
  *     Konva sync lại snapshot (giữ vị trí cũ).
  */
-import { Transform } from "src/engine/components/Transform";
-import { ColliderAABB } from "src/engine/components/ColliderAABB";
-import { FurnitureTag } from "src/engine/components/FurnitureTag";
-import { spawnFurnitureGLB } from "src/engine/game/FurnitureFactory";
+import { Transform } from "src/engine/components/core/Transform";
+import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
+import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
+import { Model3D } from "src/engine/components/render/Model3D";
+import { WallOpening } from "src/engine/components/wall/WallOpening";
+import { WallMounted } from "src/engine/components/wall/WallMounted";
+import { spawnFurnitureGLB, spawnWallItemGLB } from "src/engine/factories/FurnitureFactory";
+import { applyMaterialToSlot, resetSlotToOriginal } from "src/engine/rendering/materialApply";
+import { snapAngleRad } from "src/shared/constants/placement";
+import { resolveAlignment } from "src/shared/geometry/alignment";
+import { collectWallSegments } from "src/engine/adapters/wallSegments";
+import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
+import { findMountWall } from "src/engine/adapters/wallRefs";
+import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
+import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
+import { wallItemOverlaps, occupancyLane } from "src/shared/geometry/wallMount";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
 
 type PlaceFurnitureCmd = Extract<EngineCommand, { type: "PLACE_FURNITURE" }>;
+type PlaceWallItemCmd = Extract<EngineCommand, { type: "PLACE_WALL_ITEM" }>;
+type MoveWallItemCmd = Extract<EngineCommand, { type: "MOVE_WALL_ITEM" }>;
 type DeleteFurnitureCmd = Extract<EngineCommand, { type: "DELETE_FURNITURE" }>;
 type MoveFurnitureCmd = Extract<EngineCommand, { type: "MOVE_FURNITURE" }>;
 type RotateFurnitureCmd = Extract<EngineCommand, { type: "ROTATE_FURNITURE" }>;
+type ApplyMaterialCmd = Extract<EngineCommand, { type: "APPLY_FURNITURE_MATERIAL" }>;
+type ResetMaterialCmd = Extract<EngineCommand, { type: "RESET_FURNITURE_MATERIAL" }>;
 
 // =================================================================
 // PLACE_FURNITURE — Async GLB spawn
 // =================================================================
-// NOTE (L2): fire-and-forget. Entity được tạo SAU khi promise resolve, nên
-// undo ngay sau placement có thể không xoá entity (transaction snapshot
-// được chụp TRƯỚC khi entity tồn tại). Deferred fix.
-export function handlePlaceFurniture(command: PlaceFurnitureCmd, deps: DispatcherDeps): void {
-    const { world, scene, gltfLoader, modelRegistry } = deps;
-    spawnFurnitureGLB(world, scene, command.modelId, command.x, command.z, command.rotY, gltfLoader, modelRegistry)
+// Trả về Promise<void> thay vì void để dispatcher có thể await trước khi
+// đóng transaction. Gọi từ dispatchAsync() → asyncTransaction() đảm bảo
+// undo snapshot được chụp SAU khi entity đã thực sự tồn tại trong World.
+export function handlePlaceFurniture(command: PlaceFurnitureCmd, deps: DispatcherDeps): Promise<void> {
+    const { world, scene, gltfLoader, modelRegistry, materialLibrary } = deps;
+    return spawnFurnitureGLB(world, scene, command.modelId, command.x, command.z, command.rotY, gltfLoader, modelRegistry, command.materials, materialLibrary, command.y)
+        .then(() => undefined)
         .catch(err => console.error("PLACE_FURNITURE failed:", err));
+}
+
+// =================================================================
+// PLACE_WALL_ITEM — Async GLB spawn cho item bám tường (kệ/cửa/cửa sổ)
+// =================================================================
+// Trả về Promise<void> để dispatcher có thể await trước khi đóng transaction.
+// Xem ghi chú PLACE_FURNITURE ở trên.
+export function handlePlaceWallItem(command: PlaceWallItemCmd, deps: DispatcherDeps): Promise<void> {
+    const { world, scene, gltfLoader, modelRegistry, nodeRegistry, materialLibrary } = deps;
+    return spawnWallItemGLB(
+        world, scene, command.modelId,
+        command.hostWallId, command.t, command.side,
+        gltfLoader, modelRegistry, nodeRegistry,
+        command.materials, materialLibrary,
+    ).then(() => undefined).catch(err => console.error("PLACE_WALL_ITEM failed:", err));
+}
+
+// =================================================================
+// MOVE_WALL_ITEM — Di chuyển / lật item bám tường đã đặt (cửa/cửa sổ/kệ)
+// =================================================================
+// Cập nhật tham số topology (hostWallId, t, side) — WallMountSystem suy lại
+// Transform + WallOpeningSystem khoét lại tường ở frame kế. KHÔNG ghi Transform
+// trực tiếp (sẽ bị WallMountSystem override). Từ chối nếu chồng opening khác.
+export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDeps): void {
+    const { world, nodeRegistry } = deps;
+
+    const wo = world.getComponent(command.entityId, WallOpening);
+    const wm = world.getComponent(command.entityId, WallMounted);
+    const model = world.getComponent(command.entityId, Model3D);
+    if ((!wo && !wm) || !model) { world.markDirty(); return; }
+
+    const wall = findMountWall(world, nodeRegistry, command.hostWallId);
+    if (!wall) { world.markDirty(); return; }
+
+    const wallLen = Math.hypot(wall.bx - wall.ax, wall.bz - wall.az) || 1e-6;
+    const halfWidth = getFootprint2D(model.modelId).width / 2;
+    const minT = halfWidth / wallLen;
+    const maxT = 1 - minT;
+    const t = minT < maxT ? Math.max(minT, Math.min(command.t, maxT)) : 0.5;
+    const halfWidthT = halfWidth / wallLen;
+
+    // Chồng opening/kệ khác trên cùng tường → từ chối (giữ nguyên, markDirty để 2D snap lại).
+    // Lane: cửa (opening) chiếm cả hai mặt; kệ chỉ chiếm mặt theo command.side.
+    const lane = occupancyLane(wo ? "opening" : "mount", command.side);
+    const occupied = collectOccupiedRanges(world, command.hostWallId, wallLen, command.entityId);
+    if (wallItemOverlaps(t, halfWidthT, lane, occupied)) { world.markDirty(); return; }
+
+    if (wo) {
+        wo.hostWallId = command.hostWallId;
+        wo.t = t;
+        wo.side = command.side;
+    } else {
+        wm!.hostWallId = command.hostWallId;
+        wm!.t = t;
+        wm!.side = command.side;
+    }
+    world.markDirty();
 }
 
 // =================================================================
@@ -53,11 +127,27 @@ export function handleDeleteFurniture(command: DeleteFurnitureCmd, deps: Dispatc
 // =================================================================
 // Nếu bị chặn: giữ vị trí cũ nhưng vẫn markDirty() để Konva sync lại snapshot.
 export function handleMoveFurniture(command: MoveFurnitureCmd, deps: DispatcherDeps): void {
-    const { world, collisionSystem, modelRegistry } = deps;
+    const { world, collisionSystem, modelRegistry, nodeRegistry } = deps;
 
     const t = world.getComponent(command.entityId, Transform);
     const c = world.getComponent(command.entityId, ColliderAABB);
     if (!t || !c) { world.markDirty(); return; }
+
+    // Nguồn snap CÓ THẨM QUYỀN: edge-snap lưới + wall-snap (OBB-aware). Dùng chung
+    // helper với preview ở 2D/3D nên committed value khớp preview, và wall-snap không
+    // bị hàng-rào grid center-based làm lệch (RC-5 + RC-6). c.width/c.depth = half-extent.
+    const yaw = 2 * Math.atan2(t.qy, t.qw);
+    const aligned = resolveAlignment({
+        cx: command.x,
+        cz: command.z,
+        hw: c.width,
+        hd: c.depth,
+        rotY: yaw,
+        walls: collectWallSegments(world, nodeRegistry),
+        neighbors: collectFurnitureBoxes(world, command.entityId),
+    });
+    const x = aligned.x;
+    const z = aligned.z;
 
     const colW = c.width * 2;
     const colH = c.height * 2;
@@ -67,19 +157,19 @@ export function handleMoveFurniture(command: MoveFurnitureCmd, deps: DispatcherD
     // Truyền (colW, colD, colH) giữ shape probe đúng; nếu (colW, colH, colD)
     // sẽ làm probe cao bằng depth → đâm qua floor collider → luôn "blocked".
     const blocked = collisionSystem.wouldCollideCustom(
-        command.x, t.y, command.z,
+        x, t.y, z,
         colW, colD, colH,
         t.qx, t.qy, t.qz, t.qw,
         command.entityId,
     );
 
     if (!blocked) {
-        t.x = command.x;
-        t.z = command.z;
+        t.x = x;
+        t.z = z;
         const obj = modelRegistry.get(command.entityId);
         if (obj) {
-            obj.position.x = command.x;
-            obj.position.z = command.z;
+            obj.position.x = x;
+            obj.position.z = z;
         }
     }
     world.markDirty();
@@ -95,7 +185,9 @@ export function handleRotateFurniture(command: RotateFurnitureCmd, deps: Dispatc
     const c = world.getComponent(command.entityId, ColliderAABB);
     if (!t || !c) { world.markDirty(); return; }
 
-    const half = command.rotY / 2;
+    // Hàng rào snap cuối — góc về bội số ROT_STEP_DEG (RC-5).
+    const rotY = snapAngleRad(command.rotY);
+    const half = rotY / 2;
     const newQx = 0;
     const newQy = Math.sin(half);
     const newQz = 0;
@@ -105,7 +197,7 @@ export function handleRotateFurniture(command: RotateFurnitureCmd, deps: Dispatc
     const colH = c.height * 2;
     const colD = c.depth * 2;
 
-    // (width, depth, height) — see MOVE_FURNITURE note.
+    // (width, depth, height) — xem ghi chú ở MOVE_FURNITURE.
     const blocked = collisionSystem.wouldCollideCustom(
         t.x, t.y, t.z,
         colW, colD, colH,
@@ -114,8 +206,34 @@ export function handleRotateFurniture(command: RotateFurnitureCmd, deps: Dispatc
     );
 
     if (!blocked) {
-        t.rotY = command.rotY;
+        t.rotY = rotY;
         modelRegistry.get(command.entityId)?.quaternion.set(newQx, newQy, newQz, newQw);
     }
     world.markDirty();
+}
+
+// =================================================================
+// APPLY_FURNITURE_MATERIAL — Đổi material một slot (component) của model
+// =================================================================
+// Async (nạp texture PBR). Gán lại mesh.material trên Model3D.root → đổi tức thì
+// ở khung 3D (RenderSystem vẽ mỗi frame). Ghi materialOverrides để serialize.
+// No-op nếu entity không có Model3D (vd legacy box furniture).
+export function handleApplyFurnitureMaterial(command: ApplyMaterialCmd, deps: DispatcherDeps): void {
+    const { world, materialLibrary } = deps;
+    const model = world.getComponent(command.entityId, Model3D);
+    if (!model) return;
+    applyMaterialToSlot(model, command.slotId, command.materialId, materialLibrary)
+        .catch((err) => console.error("APPLY_FURNITURE_MATERIAL failed:", err));
+}
+
+// =================================================================
+// RESET_FURNITURE_MATERIAL — Khôi phục material gốc (GLB) cho 1 slot
+// =================================================================
+// Đồng bộ (không nạp texture) — gán lại mesh.material từ originalMaterials đã chụp.
+// No-op nếu entity không có Model3D.
+export function handleResetFurnitureMaterial(command: ResetMaterialCmd, deps: DispatcherDeps): void {
+    const { world } = deps;
+    const model = world.getComponent(command.entityId, Model3D);
+    if (!model) return;
+    resetSlotToOriginal(model, command.slotId);
 }

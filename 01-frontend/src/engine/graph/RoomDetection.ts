@@ -20,16 +20,16 @@
  *   3. Safety cap maxIter = halfEdges.size ngăn infinite loop trên graph lỗi
  */
 import { World } from "src/engine/ecs/World";
-import { WallNodes } from "src/engine/components/WallNodes";
-import { WallTag } from "src/engine/components/WallTag";
+import { WallNodes } from "src/engine/components/wall/WallNodes";
+import { WallTag } from "src/engine/components/wall/WallTag";
 import { Query } from "src/engine/ecs/Query";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
 /** Directed edge trong planar graph — mỗi wall sinh ra 2 HalfEdge (twin). */
 export interface HalfEdge {
-    source: number; // Node ID điểm đầu
-    target: number; // Node ID điểm cuối
-    wallId: number;
+    source: string; // Node ID điểm đầu
+    target: string; // Node ID điểm cuối
+    wallId: string;
     angle: number;  // Góc hướng từ source đến target (radians)
     next: HalfEdge | null; // Edge kế tiếp trong face loop (rẽ trái nhất)
     twin: HalfEdge | null; // Edge ngược chiều (cùng wall, hướng ngược)
@@ -37,7 +37,7 @@ export interface HalfEdge {
 }
 
 export interface RoomPolygon {
-    nodes: number[];                     // Node ID theo thứ tự (ordered perimeter)
+    nodes: string[];                     // Node ID theo thứ tự (ordered perimeter)
     points: { x: number; z: number }[]; // Tọa độ world-space
     area: number;                        // Diện tích m² (absolute value)
 }
@@ -50,14 +50,14 @@ export class RoomDetection {
      * @returns Mảng RoomPolygon đã lọc (chỉ interior, diện tích ≥ 0.1 m²)
      */
     static findRooms(world: World, nodeRegistry: NodeRegistry): RoomPolygon[] {
-        const halfEdges    = new Map<string, HalfEdge>();
-        const outgoingEdges = new Map<number, HalfEdge[]>();
+        const halfEdges = new Map<string, HalfEdge>();
+        const outgoingEdges = new Map<string, HalfEdge[]>();
 
         // Pre-map wallId → { start, end } node IDs
-        const wallToNodes = new Map<number, { start: number; end: number }>();
+        const wallToNodes = new Map<string, { start: string; end: string }>();
         for (const e of Query.entitiesWith(world, WallTag, WallNodes)) {
             const tag = world.getComponent(e, WallTag)!;
-            const wn  = world.getComponent(e, WallNodes)!;
+            const wn = world.getComponent(e, WallNodes)!;
             wallToNodes.set(tag.wallId, { start: wn.startNodeId, end: wn.endNodeId });
         }
 
@@ -69,7 +69,7 @@ export class RoomDetection {
                 const wn = wallToNodes.get(wallId);
                 if (!wn) continue;
 
-                const targetId   = wn.start === node.id ? wn.end : wn.start;
+                const targetId = wn.start === node.id ? wn.end : wn.start;
                 const targetNode = nodeRegistry.get(targetId);
                 if (!targetNode) continue;
 
@@ -82,12 +82,12 @@ export class RoomDetection {
                 const dz = targetNode.z - node.z;
 
                 const he: HalfEdge = {
-                    source:  node.id,
-                    target:  targetId,
+                    source: node.id,
+                    target: targetId,
                     wallId,
-                    angle:   Math.atan2(dz, dx),
-                    next:    null,
-                    twin:    null,
+                    angle: Math.atan2(dz, dx),
+                    next: null,
+                    twin: null,
                     visited: false,
                 };
 
@@ -118,18 +118,18 @@ export class RoomDetection {
         //        Per-loop closure detection uses a Set<HalfEdge> so it is independent
         //        of globalVisited and cannot be confused by other faces.
         const globalVisited = new Set<HalfEdge>();
-        const maxIter       = halfEdges.size + 2; // safety cap
+        const maxIter = halfEdges.size + 2; // safety cap
         const faces: RoomPolygon[] = [];
 
         for (const startEdge of halfEdges.values()) {
             if (globalVisited.has(startEdge) || !startEdge.next) continue;
 
-            const loopNodes:  number[]                   = [];
+            const loopNodes: string[] = [];
             const loopPoints: { x: number; z: number }[] = [];
-            const loopSet     = new Set<HalfEdge>();
-            let   current     = startEdge;
-            let   isClosed    = false;
-            let   iter        = 0;
+            const loopSet = new Set<HalfEdge>();
+            let current = startEdge;
+            let isClosed = false;
+            let iter = 0;
 
             while (iter++ < maxIter) {
                 if (loopSet.has(current)) {

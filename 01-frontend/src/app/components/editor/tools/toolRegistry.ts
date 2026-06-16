@@ -19,6 +19,7 @@ import type { ToolBase } from "src/app/components/editor/tools/ToolBase";
 import { SelectTool } from "src/app/components/editor/tools/SelectTool";
 import { DrawWallTool } from "src/app/components/editor/tools/DrawWallTool";
 import { PlaceFurnitureTool } from "src/app/components/editor/tools/PlaceFurnitureTool";
+import { WallPlacementTool } from "src/app/components/editor/tools/WallPlacementTool";
 
 /**
  * Mọi tool id — single source for type và iteration.
@@ -26,14 +27,14 @@ import { PlaceFurnitureTool } from "src/app/components/editor/tools/PlaceFurnitu
  * Convention: thêm tool mới = add entry vào TOOL_REGISTRY bên dưới (TOOL_IDS
  * + ToolId được derive tự động). Đừng tạo string literal `"select"` rời rạc.
  */
-export const TOOL_IDS = ["select", "draw", "placing"] as const;
+export const TOOL_IDS = ["select", "draw", "placing", "placing-wall"] as const;
 export type ToolId = typeof TOOL_IDS[number];
 
 /**
  * Subset của ToolId — tool có thể switch trực tiếp (không cần placementModelId).
  * Dùng cho `setTool2D(mode)` parameter type.
  */
-export type WallToolId = Exclude<ToolId, "placing">;
+export type WallToolId = Exclude<ToolId, "placing" | "placing-wall">;
 
 export type ToolDef = {
     id: ToolId;
@@ -46,9 +47,10 @@ export type ToolDef = {
 };
 
 export const TOOL_REGISTRY: Record<ToolId, ToolDef> = {
-    select:  { id: "select",  label: "Select",          shortcut: "v", create: () => new SelectTool() },
-    draw:    { id: "draw",    label: "Draw Wall",       shortcut: "w", create: () => new DrawWallTool() },
-    placing: { id: "placing", label: "Place Furniture",                create: () => new PlaceFurnitureTool() },
+    select:         { id: "select",         label: "Select",          shortcut: "v", create: () => new SelectTool() },
+    draw:           { id: "draw",           label: "Draw Wall",       shortcut: "w", create: () => new DrawWallTool() },
+    placing:        { id: "placing",        label: "Place Furniture",                create: () => new PlaceFurnitureTool() },
+    "placing-wall": { id: "placing-wall",   label: "Place Wall Item",                create: () => new WallPlacementTool() },
 };
 
 /**

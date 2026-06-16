@@ -18,7 +18,8 @@
 import type React from "react";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-import type { Node2D, Wall2D, Furniture2D } from "src/app/store/useFloorPlanSnapshot";
+import type { Node2D, Wall2D, Furniture2D } from "src/app/plan2d/types";
+import type { PlanTransform } from "src/app/plan2d/PlanTransform";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 
 /** Props mà tool trả về cho mỗi wall Konva shape — spread trực tiếp vào <Line>. */
@@ -28,12 +29,9 @@ export type WallHandlers = {
     draggable: boolean;
     onMouseDown?: (e: KonvaEventObject<MouseEvent>) => void;
     onTap?: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onDragStart?: (e: any) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onDragMove?: (e: any) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onDragEnd?: (e: any) => void;
+    onDragStart?: (e: KonvaEventObject<MouseEvent>) => void;
+    onDragMove?: (e: KonvaEventObject<MouseEvent>) => void;
+    onDragEnd?: (e: KonvaEventObject<MouseEvent>) => void;
 };
 
 /**
@@ -44,25 +42,32 @@ export type ToolContext = {
     nodes: Node2D[];
     walls: Wall2D[];
     furniture: Furniture2D[];                     // nội thất đã đặt (px) — dùng cho 2D collision
-    originX: number;                              // viewport center px
-    originY: number;
+    /** Coordinate transform — single source for world↔canvas conversion (R5). */
+    transform: PlanTransform;
     stageScale: number;                           // current zoom level
     stageScaleRef: { current: number };           // ref để đọc trong event handler (không stale)
     stagePosRef: { current: { x: number; y: number } }; // pan offset ref
-    nodeById: Map<number, Node2D>;                // O(1) lookup node theo ID
+    nodeById: Map<string, Node2D>;                // O(1) lookup node theo ID
 
     // Selection state — owned bởi host (cần cho WallPropertiesPanel và status bar)
-    selectedWallIds: Set<number>;
-    setSelectedWallIds: React.Dispatch<React.SetStateAction<Set<number>>>;
+    selectedWallIds: Set<string>;
+    setSelectedWallIds: React.Dispatch<React.SetStateAction<Set<string>>>;
 
     // Engine commands — tool dispatch để thay đổi ECS
     dispatch: (cmd: EngineCommand) => void;
+    /** Async dispatch cho PLACE_FURNITURE / PLACE_WALL_ITEM (trả về Promise). */
+    dispatchAsync: (cmd: EngineCommand) => Promise<void>;
     withTransaction: (label: string, fn: () => void) => void;
+    /**
+     * Async transaction — snapshot trước → await fn() → push history.
+     * Dùng cho placement để undo xóa được entity đã spawn.
+     */
+    asyncTransaction: (label: string, fn: () => Promise<void>) => Promise<void>;
     beginTransaction: (label: string) => void;
     commitTransaction: () => void;
     cancelTransaction: () => void;
-    nextNodeId: () => number;
-    nextWallId: () => number;
+    nextNodeId: () => string;
+    nextWallId: () => string;
 
     // Scale-compensated helpers — tool không cần biết stageScale trực tiếp
     ss: (px: number) => number; // screen-stable size (text/stroke)

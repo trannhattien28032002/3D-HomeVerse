@@ -9,29 +9,32 @@
 import type * as THREE from "three";
 import type { World } from "src/engine/ecs/World";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
-import type { MeshRegistry } from "src/engine/rendering/MeshRegistry";
-import type { MaterialRegistry } from "src/engine/rendering/MaterialRegistry";
+import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
+import type { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
+import type { MaterialLibrary } from "src/engine/rendering/MaterialLibrary";
 import type { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
-import type { ModelRegistry } from "src/engine/rendering/ModelRegistry";
-import type { CannonCollisionSystem } from "src/engine/systems/CannonCollisionSystem";
+import type { ModelRegistry } from "src/engine/registries/ModelRegistry";
+import type { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import type { EntityRegistry } from "src/engine/registries/EntityRegistry";
 
 export type DispatcherDeps = {
     world: World;
     scene: THREE.Scene;
     nodeRegistry: NodeRegistry;
-    /** Lookup: wallId (logical) → entity (ECS id). wallId may differ from entity. */
-    wallEntityByWallId: Map<number, number>;
-    /** Mutable ref — SPLIT_WALL/ADD_WALL increment, RESOLVE_INTERSECTIONS đọc để lấy ID mới. */
-    maxWallIdRef: { value: number };
+    /** Tra cứu: wallId (uuid logic) → entity (uuid ECS). wallId khác entity id. */
+    wallEntityByWallId: Map<string, string>;
     meshRegistry: MeshRegistry;
     materialRegistry: MaterialRegistry;
-    /** GLB model loader — used by PLACE_FURNITURE to spawn real assets. */
+    /** Catalog material PBR (KTX2/JPG) — APPLY_FURNITURE_MATERIAL dùng để nạp texture. */
+    materialLibrary: MaterialLibrary;
+    /** Bộ nạp model GLB — PLACE_FURNITURE dùng để spawn asset thật. */
     gltfLoader: GLTFModelLoader;
-    /** Tracks GLB root Object3Ds by entity id for disposal. */
+    /** Theo dõi Object3D gốc của GLB theo entity id để dispose. */
     modelRegistry: ModelRegistry;
-    /** Collision system — used by MOVE_FURNITURE and ROTATE_FURNITURE to block overlaps. */
+    /** Hệ va chạm — MOVE_FURNITURE và ROTATE_FURNITURE dùng để chặn chồng lấn. */
     collisionSystem: CannonCollisionSystem;
-    /** Orchestrate dispose Mesh/Model registries + destroyEntity (Đợt 2). */
+    /** Điều phối dispose Mesh/Model registry + destroyEntity (Đợt 2). */
     entityRegistry: EntityRegistry;
+    /** Material sàn theo roomKey (sorted nodeIds) — bền qua rebuild topology. */
+    floorMaterials: Map<string, string>;
 };

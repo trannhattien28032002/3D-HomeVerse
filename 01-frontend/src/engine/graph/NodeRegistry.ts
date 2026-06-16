@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 /**
  * NodeRegistry — topology graph của HomeVerse.
  *
@@ -14,21 +15,20 @@
  *           SnapshotSystem đọc để emit cap polygons cho PlanView2D.
  */
 export type NodeData = {
-    id: number;
+    id: string;
     x: number; // world-space metres
     z: number; // world-space metres
-    connectedWallIds: Set<number>;
+    connectedWallIds: Set<string>;
 };
 
 export class NodeRegistry {
-    private nodes = new Map<number, NodeData>();
-    private nextId = 1;
-    /** Cap polygons tại junction ≥ 3 tường — ghi bởi WallGeometrySystem, đọc bởi SnapshotSystem. */
-    readonly nodeCaps = new Map<number, { x: number; z: number }[]>();
+    private nodes = new Map<string, NodeData>();
+    /** Cap polygons tại junction ≥ 3 tường — ghi bởi WallGeometrySystem, đọc bởi SnapshotSystem. Key = nodeId (uuid). */
+    readonly nodeCaps = new Map<string, { x: number; z: number }[]>();
 
-    /** Tạo node mới với ID tự tăng — dùng khi user click vào vùng trống. */
-    createNode(x: number, z: number): number {
-        const id = this.nextId++;
+    /** Tạo node mới với ID uuid — dùng khi user click vào vùng trống. */
+    createNode(x: number, z: number): string {
+        const id = uuidv4();
         this.nodes.set(id, { id, x, z, connectedWallIds: new Set() });
         return id;
     }
@@ -36,28 +36,27 @@ export class NodeRegistry {
     /**
      * Tạo node với ID cụ thể nếu chưa tồn tại (idempotent).
      * Dùng bởi ENSURE_NODE command và deserializeScene để restore topology.
-     * Cập nhật nextId nếu id lớn hơn current nextId.
+     * ID là uuid bền vững — không cần đồng bộ counter nào.
      */
-    ensureNode(id: number, x: number, z: number): NodeData {
+    ensureNode(id: string, x: number, z: number): NodeData {
         if (!this.nodes.has(id)) {
             this.nodes.set(id, { id, x, z, connectedWallIds: new Set() });
-            if (id >= this.nextId) this.nextId = id + 1;
         }
         return this.nodes.get(id)!;
     }
 
-    get(id: number): NodeData | undefined {
+    get(id: string): NodeData | undefined {
         return this.nodes.get(id);
     }
 
-    getOrThrow(id: number): NodeData {
+    getOrThrow(id: string): NodeData {
         const n = this.nodes.get(id);
         if (!n) throw new Error(`NodeRegistry: node ${id} not found`);
         return n;
     }
 
     /** Cập nhật vị trí node — dispatcher gọi sau MOVE_NODE command. */
-    move(id: number, x: number, z: number): void {
+    move(id: string, x: number, z: number): void {
         const node = this.nodes.get(id);
         if (!node) return;
         node.x = x;
@@ -65,23 +64,23 @@ export class NodeRegistry {
     }
 
     /** Thêm wallId vào connectedWallIds của node — gọi sau ADD_WALL. */
-    connectWall(nodeId: number, wallId: number): void {
+    connectWall(nodeId: string, wallId: string): void {
         this.nodes.get(nodeId)?.connectedWallIds.add(wallId);
     }
 
     /** Gỡ wallId khỏi connectedWallIds — gọi sau REMOVE_WALL hoặc SPLIT_WALL. */
-    disconnectWall(nodeId: number, wallId: number): void {
+    disconnectWall(nodeId: string, wallId: string): void {
         this.nodes.get(nodeId)?.connectedWallIds.delete(wallId);
     }
 
     /** Xóa node — chỉ gọi sau khi node không còn kết nối với wall nào. */
-    deleteNode(id: number): void {
+    deleteNode(id: string): void {
         this.nodes.delete(id);
     }
 
-    /** ID kế tiếp có thể dùng — PlanView2D gọi để biết nodeId trước khi dispatch. */
-    nextAvailableNodeId(): number {
-        return this.nextId;
+    /** Sinh một nodeId uuid mới — UI gọi để có ID trước khi dispatch ENSURE_NODE/SPLIT_WALL. */
+    newNodeId(): string {
+        return uuidv4();
     }
 
     all(): IterableIterator<NodeData> {
@@ -89,7 +88,7 @@ export class NodeRegistry {
     }
 
     /** Serialize tất cả node sang plain object — dùng bởi serializeScene(). */
-    snapshot(): { id: number; x: number; z: number; connectedWallIds: number[] }[] {
+    snapshot(): { id: string; x: number; z: number; connectedWallIds: string[] }[] {
         return Array.from(this.nodes.values()).map(n => ({
             id: n.id,
             x: n.x,

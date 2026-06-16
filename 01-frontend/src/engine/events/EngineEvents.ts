@@ -20,7 +20,7 @@
 
 /** Snapshot của một node trong topology graph */
 export type NodeSnapshot = {
-    id: number;
+    id: string;
     x: number; // world-space
     z: number;
 };
@@ -31,58 +31,60 @@ export type NodeSnapshot = {
  * `startNodeId` / `endNodeId` để biết node nào là endpoint.
  */
 export type WallSnapshot = {
-    wallId: number;
-    startNodeId: number;
-    endNodeId: number;
+    wallId: string;
+    startNodeId: string;
+    endNodeId: string;
     thickness: number;
     height: number;
-    /** Center of AABB bounding box (world-space) — dùng cho label */
+    /** Tâm hộp bao AABB (world-space) — dùng cho label */
     cx: number;
     cz: number;
-    /** 4 miter-cut corners in world-space */
+    /** 4 góc đã cắt miter, theo world-space */
     polygon?: { x: number; z: number }[];
 };
 
-/** Dimension annotation for a single wall segment */
+/** Chú thích kích thước (dimension) cho một đoạn tường */
 export type DimensionSnapshot = {
-    wallId: number;
-    length: number;  // world units (meters)
+    wallId: string;
+    length: number;  // đơn vị thế giới (mét)
     startX: number;
     startZ: number;
     endX: number;
     endZ: number;
-    /** Unit vector perpendicular to wall (left of start→end) */
+    /** Vector đơn vị vuông góc với tường (về bên trái của hướng start→end) */
     perpX: number;
     perpZ: number;
 };
 
-/** Fill polygon for a node junction with 3+ walls */
+/** Đa giác lấp khe tại node giao của 3+ tường */
 export type NodeCapSnapshot = {
-    nodeId: number;
+    nodeId: string;
     polygon: { x: number; z: number }[];
 };
 
-/** Snapshot of a detected room / floor */
+/** Snapshot của một phòng / sàn đã phát hiện */
 export type RoomSnapshot = {
-    id: string; // unique identifier
+    id: string; // định danh duy nhất (room-${entity}) — KHÔNG bền qua rebuild topology
+    /** Khóa phòng bền (sorted nodeIds) — dùng để gắn material sàn. */
+    key: string;
     area: number;
     polygon: { x: number; z: number }[];
 };
 
-/** Angle annotation at a corner node where two walls meet */
+/** Chú thích góc tại node nơi hai tường gặp nhau */
 export type AngleDimensionSnapshot = {
-    nodeId: number;
-    wallId1: number;
-    wallId2: number;
-    /** Interior angle in degrees [5, 175] */
+    nodeId: string;
+    wallId1: string;
+    wallId2: string;
+    /** Góc trong, đơn vị độ [5, 175] */
     angle: number;
-    /** Arc start angle in degrees from +X axis (world space, CW in screen) */
+    /** Góc bắt đầu của cung, độ tính từ trục +X (world space, CW trên màn hình) */
     startAngle: number;
-    /** Arc sweep in degrees (same as angle for 2-wall corners) */
+    /** Độ quét của cung, đơn vị độ (bằng angle với góc 2 tường) */
     sweepAngle: number;
     cornerX: number; // world space
     cornerZ: number;
-    /** Unit bisector vector pointing into the arc (world space) */
+    /** Vector phân giác đơn vị hướng vào trong cung (world space) */
     bisectorX: number;
     bisectorZ: number;
 };
@@ -94,30 +96,46 @@ export type AngleDimensionSnapshot = {
  * topDownUrl: URL ảnh PNG top-down (nếu có trong catalog), dùng để vẽ hình ảnh thực.
  */
 export type FurnitureSnapshot = {
-    entityId: number;
+    entityId: string;
     modelId: string;
-    x: number;  // world-space (metres)
+    x: number;  // world-space (mét)
     z: number;
-    rotY: number; // radians, quay quanh trục Y
-    width: number; // footprint XZ (metres)
+    rotY: number; // radian, quay quanh trục Y
+    width: number; // footprint XZ (mét)
     depth: number;
-    /** Top-down image URL from catalog. Undefined = render gray box fallback. */
+    /** URL ảnh top-down từ catalog. Undefined = vẽ hộp xám fallback. */
     topDownUrl: string | undefined;
+    // Wall-item metadata (undefined cho floor furniture)
+    isWallItem?: boolean;
+    wallBehavior?: "opening" | "mount";
+    hostWallId?: string;
+    /** Vị trí dọc tim tường, 0..1 (0 = node start, 1 = node end). */
+    wallT?: number;
+    /** Mặt tường: +1 = pháp tuyến dương, −1 = pháp tuyến âm. */
+    wallSide?: number;
+    /** Bề rộng lỗ khoét (mét) — chỉ có khi wallBehavior = "opening". */
+    cutWidth?: number;
+    /** Chiều cao lỗ khoét (mét) — chỉ có khi wallBehavior = "opening". */
+    cutHeight?: number;
+    /** Cao độ mép dưới lỗ so với sàn (mét) — 0 = cửa đi, > 0 = cửa sổ. */
+    sill?: number;
+    /** Wall-item chồng chỗ với item khác trên cùng tường (derived) → cảnh báo đỏ ở 2D. */
+    overlapping?: boolean;
 };
 
 /** Toàn bộ trạng thái scene mà ECS emit mỗi khi có thay đổi */
 export type ECSSnapshot = {
     nodes: NodeSnapshot[];
     walls: WallSnapshot[];
-    /** Node cap polygons to fill gaps at multi-wall junctions */
+    /** Đa giác cap lấp khe tại các node giao nhiều tường */
     caps: NodeCapSnapshot[];
-    /** Detected rooms / floors */
+    /** Các phòng / sàn đã phát hiện */
     rooms: RoomSnapshot[];
-    /** Wall dimension annotations */
+    /** Chú thích kích thước tường */
     dimensions: DimensionSnapshot[];
-    /** Angle annotations at wall corners */
+    /** Chú thích góc tại các góc tường */
     angleDimensions: AngleDimensionSnapshot[];
-    /** Placed furniture entities — projected into the 2D plan view */
+    /** Các món nội thất đã đặt — chiếu xuống khung nhìn 2D */
     furniture: FurnitureSnapshot[];
 };
 
@@ -126,22 +144,33 @@ export type ECSSnapshot = {
 // ============================================================
 
 export type EngineEventMap = {
-    entitySelected:  { entityId: number | null };
-    entityAdded:     { entityId: number; type?: string };
-    entityRemoved:   { entityId: number };
-    draggingChanged: { entityId: number | null; dragging: boolean };
+    entitySelected: { entityId: string | null };
+    /**
+     * Chọn một bề mặt tường trong 3D để đổi material (raycast trúng mesh tường).
+     * KHÔNG attach gizmo → tường chỉ chọn được để tô material, không di chuyển/xoay.
+     * wallId = null khi bỏ chọn.
+     */
+    wallSelected: { wallId: string | null };
+    /**
+     * Chọn mặt sàn của một phòng trong 3D để đổi material (raycast trúng room floor mesh).
+     * KHÔNG attach gizmo. roomKey = null khi bỏ chọn.
+     */
+    floorSelected: { roomKey: string | null };
+    entityAdded: { entityId: string; type?: string };
+    entityRemoved: { entityId: string };
+    draggingChanged: { entityId: string | null; dragging: boolean };
     gizmoModeChanged: { mode: "translate" | "rotate" };
     /** Phát ra mỗi frame khi có node/wall nào thay đổi. */
-    snapshot:        ECSSnapshot;
-    placementStarted:   { modelId: string };
+    snapshot: ECSSnapshot;
+    placementStarted: { modelId: string };
     placementConfirmed: { modelId: string; x: number; z: number };
     placementCancelled: Record<never, never>;
-    /** Emitted immediately when begin() is called, before the GLB has loaded. */
-    placementLoading:   { modelId: string };
-    /** Emitted once the ghost GLB is ready and visible on the floor plane. */
-    placementReady:     { modelId: string };
-    /** Emitted if the GLB failed to load during placement. */
-    placementError:     { modelId: string; error: string };
+    /** Phát ngay khi begin() được gọi, trước khi GLB nạp xong. */
+    placementLoading: { modelId: string };
+    /** Phát khi ghost GLB đã sẵn sàng và hiển thị trên mặt sàn. */
+    placementReady: { modelId: string };
+    /** Phát khi GLB nạp lỗi trong lúc đặt đồ. */
+    placementError: { modelId: string; error: string };
 };
 
 type Handler<T> = (payload: T) => void;

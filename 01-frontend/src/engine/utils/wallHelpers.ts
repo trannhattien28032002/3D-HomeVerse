@@ -55,10 +55,10 @@
  */
 import { World } from "src/engine/ecs/World";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
-import { WallNodes } from "src/engine/components/WallNodes";
-import { Transform } from "src/engine/components/Transform";
-import { WallSize } from "src/engine/components/WallSize";
-import { ColliderAABB } from "src/engine/components/ColliderAABB";
+import { WallNodes } from "src/engine/components/wall/WallNodes";
+import { Transform } from "src/engine/components/core/Transform";
+import { WallSize } from "src/engine/components/wall/WallSize";
+import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 
 // =============================================================================
 // recomputeWallAABB — Tính lại Transform, WallSize, ColliderAABB cho một tường
@@ -90,9 +90,9 @@ import { ColliderAABB } from "src/engine/components/ColliderAABB";
 //
 // TODO: Log warning khi case 2 xảy ra (startNode/endNode missing) vì đó là
 //       dấu hiệu topology bị corrupt — hiện tại silent failure rất khó debug.
-export function recomputeWallAABB(world: World, entity: number, nodes: NodeRegistry): void {
+export function recomputeWallAABB(world: World, entity: string, nodes: NodeRegistry): void {
     // ─── Bước 1: Đọc WallNodes để biết hai node đầu/cuối ────────────────────
-    // WallNodes là component lưu startNodeId và endNodeId (integer IDs trong NodeRegistry).
+    // WallNodes là component lưu startNodeId và endNodeId (string IDs trong NodeRegistry).
     // Không lưu tọa độ trực tiếp — tọa độ thực tế lấy từ NodeRegistry ở bước 2.
     const wn = world.getComponent(entity, WallNodes);
     if (!wn) return; // Entity này không phải wall entity — bỏ qua

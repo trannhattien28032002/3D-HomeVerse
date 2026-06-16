@@ -1,3 +1,8 @@
+/**
+ * Design tokens màu sắc cho theme HomeVerse (warm gold palette).
+ * Dùng inline style khi không thể dùng Tailwind class, ví dụ trong react-konva.
+ * Các giá trị phải đồng bộ với tailwind.config.ts.
+ */
 export const T = {
     primary: "#7c5800",
     primaryContainer: "#f8b400",
