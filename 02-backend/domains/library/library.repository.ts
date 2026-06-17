@@ -1,13 +1,11 @@
 import { Pool, PoolClient } from 'pg';
 import { typedQuery } from '../../shared/db/queryHelper';
-import type { Category, LibraryObject } from './library.types';
+import type { LibraryObject } from './library.types';
 
 type Client = Pool | PoolClient;
 
 interface LibraryFilters {
-  categoryId?: string;
-  placement?: string;
-  tags?: string[];
+  category?: string; // category slug
   isPremium?: boolean;
 }
 
@@ -17,20 +15,22 @@ interface LibraryCursor {
 }
 
 const OBJ_COLS = `
-  id, category_id, slug, name, description, model_url, thumbnail_url, lod_urls,
-  placement, bounding_box, tags, metadata, is_premium, is_active, deleted_at,
-  created_at, updated_at
+  id, name, category, model_url, thumbnail_url, topdown_url,
+  bounding_box, collision_box, material_slots, material_bindings,
+  is_premium, is_active, deleted_at, created_at, updated_at
 `;
 
-export async function listCategories(client: Client): Promise<Category[]> {
-  const { rows } = await typedQuery<Category>(
+// Distinct category slugs in use (for filter chips). Decision A — no object_categories table.
+export async function listCategories(client: Client): Promise<string[]> {
+  const { rows } = await typedQuery<{ category: string }>(
     client,
-    `SELECT id, parent_id, slug, name, icon_url, sort_order, created_at
-     FROM public.object_categories
-     ORDER BY sort_order, name`,
+    `SELECT DISTINCT category
+     FROM public.library_objects
+     WHERE is_active = TRUE AND deleted_at IS NULL
+     ORDER BY category`,
     []
   );
-  return rows;
+  return rows.map((r) => r.category);
 }
 
 export async function listObjects(
@@ -42,29 +42,21 @@ export async function listObjects(
   const conditions: string[] = ['lo.is_active = TRUE', 'lo.deleted_at IS NULL'];
   const params: unknown[] = [];
 
-  if (filters.categoryId) {
-    params.push(filters.categoryId);
-    conditions.push(`lo.category_id = $${params.length}`);
-  }
-  if (filters.placement) {
-    params.push(filters.placement);
-    conditions.push(`lo.placement = $${params.length}::placement_surface`);
-  }
-  if (filters.tags && filters.tags.length > 0) {
-    params.push(filters.tags);
-    conditions.push(`lo.tags && $${params.length}::text[]`);
+  if (filters.category) {
+    params.push(filters.category);
+    conditions.push(`lo.category = $${params.length}`);
   }
   if (filters.isPremium !== undefined) {
     params.push(filters.isPremium);
     conditions.push(`lo.is_premium = $${params.length}`);
   }
 
-  // Cursor: (name, id) pair for stable keyset pagination.
+  // Cursor: (name, id) pair for stable keyset pagination. id is a TEXT slug.
   if (cursor) {
     params.push(cursor.name);
     params.push(cursor.id);
     conditions.push(
-      `(lo.name > $${params.length - 1} OR (lo.name = $${params.length - 1} AND lo.id > $${params.length}::uuid))`
+      `(lo.name > $${params.length - 1} OR (lo.name = $${params.length - 1} AND lo.id > $${params.length}))`
     );
   }
 
@@ -96,17 +88,9 @@ export async function searchObjects(
   ];
   const params: unknown[] = [q];
 
-  if (filters.categoryId) {
-    params.push(filters.categoryId);
-    conditions.push(`lo.category_id = $${params.length}`);
-  }
-  if (filters.placement) {
-    params.push(filters.placement);
-    conditions.push(`lo.placement = $${params.length}::placement_surface`);
-  }
-  if (filters.tags && filters.tags.length > 0) {
-    params.push(filters.tags);
-    conditions.push(`lo.tags && $${params.length}::text[]`);
+  if (filters.category) {
+    params.push(filters.category);
+    conditions.push(`lo.category = $${params.length}`);
   }
 
   params.push(limit);
@@ -125,16 +109,16 @@ export async function searchObjects(
   return rows;
 }
 
-export async function getObjectById(
+export async function getObjectBySlug(
   client: Client,
-  id: string
+  slug: string
 ): Promise<LibraryObject | null> {
   const { rows } = await typedQuery<LibraryObject>(
     client,
     `SELECT ${OBJ_COLS}
      FROM public.library_objects
      WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL`,
-    [id]
+    [slug]
   );
   return rows[0] ?? null;
 }

@@ -204,23 +204,23 @@ export async function restore(client: Client, id: string): Promise<ProjectMeta> 
   return rows[0];
 }
 
-// Copies the project row only. project_objects copy is handled by scenes.repository.copyProjectObjects
-// inside the same transaction in projects.service.duplicateProject.
+// Single-row copy of a project, including scene_data (Decision B). There is no
+// project_objects copy leg, so this is a standalone statement (no transaction).
 export async function duplicateProjectRow(
   client: Client,
   sourceId: string,
   newOwnerId: string
-): Promise<string> {
-  const { rows } = await typedQuery<{ id: string }>(
+): Promise<{ id: string; name: string }> {
+  const { rows } = await typedQuery<{ id: string; name: string }>(
     client,
     `INSERT INTO public.projects (owner_id, name, scene_data, floor_count, is_template, is_public)
      SELECT $2, name || ' (Copy)', scene_data, floor_count, is_template, is_public
      FROM public.projects
      WHERE id = $1 AND deleted_at IS NULL
-     RETURNING id`,
+     RETURNING id, name`,
     [sourceId, newOwnerId]
   );
 
   if (!rows[0]) throw new NotFoundError('Source project not found');
-  return rows[0].id;
+  return rows[0];
 }

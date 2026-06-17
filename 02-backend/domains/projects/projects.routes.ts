@@ -99,7 +99,7 @@ projectsRouter.post(
   }
 );
 
-// POST /projects/:id/duplicate — atomic copy of project row + project_objects.
+// POST /projects/:id/duplicate — single-row copy of the project (incl. scene_data).
 projectsRouter.post(
   '/:id/duplicate',
   requireAuth,

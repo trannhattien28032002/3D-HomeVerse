@@ -5,8 +5,76 @@
 
 ---
 
+## 0. Amendments (2026-06-16) — AUTHORITATIVE OVERRIDES
+
+> This plan was originally authored against a `DATABASE_ARCHITECTURE.md` spec whose data model
+> has since diverged from the actual frontend. The three decisions below are **authoritative**.
+> Where any section further down still describes the old model, **this section wins** and that
+> text is to be read as superseded. The cascading edits have been applied inline where practical;
+> the rest is governed by these rules.
+
+### Decision A — Catalog identity is a **slug**, not a UUID
+
+The frontend catalog uses stable string slugs as primary identity:
+`objects.json` → `"bath-01"`, `materials.json` → `"Asphalt031"`. **These slugs are embedded
+directly inside `scene_data`** (`SceneFurnitureRecord.modelId`, `SceneWallItemRecord.modelId`,
+and the per-slot `materials: Record<slotId, materialId>` maps; see
+`01-frontend/src/engine/serialization/SceneDocument.ts`).
+
+Consequences:
+- `library_objects` and `materials` use the catalog **slug as the primary key** (`id TEXT PRIMARY KEY`),
+  or a UUID PK plus a `slug TEXT UNIQUE NOT NULL` that the API always exposes as `id` to the client.
+  Either way, **the value the frontend sends/receives is the slug**.
+- `scene_data` references objects and materials **by slug only**. The API must never rewrite these
+  references to UUIDs. Renaming a catalog slug is a breaking change requiring data migration.
+- Categories (`bathroom`, `ground`, `ceramic`, …) are likewise **string slugs**, not UUID rows.
+
+### Decision B — Scene is a single `scene_data` JSONB blob; **drop `project_objects` and the whole compatibility-table machinery**
+
+The frontend serializes exactly one `SceneDocument` blob (`serializeScene()` →
+`useSceneFileIO.ts`). There is no separate per-object array on the client.
+
+Consequences:
+- **Remove `project_objects`** (table, migration `010_project_objects.sql`, the `objects: ProjectObject[]`
+  leg of the scene save/load contract, the bulk-upsert / delete-removed logic, and the project_objects
+  copy/re-sync legs of duplicate and version-restore). Scene save = write one JSONB column. Duplicate =
+  copy the row (incl. `scene_data`). Version restore = copy `scene_data` back. All become single-row ops;
+  the heavy multi-table transactions for these three operations are no longer required (autosave
+  insert+prune is the only remaining transaction).
+- **Remove the compatibility subsystem**: tables `object_categories`, `category_material_compat`,
+  `object_material_compat_override`; migrations `005` (object_categories) and `009` (compat tables);
+  the `compatible_material_categories()` SQL function; the in-memory compat matrix cache and its
+  `warmupCompatibilityCache()`; and endpoint `GET /materials/compatible/:objectId`.
+  Compatibility already lives **inside each object** as `materialSlots[].allowedCategories` (per-slot,
+  e.g. `body → ["ceramic","stone"]`). The frontend resolves it client-side by filtering materials by
+  category. The backend only needs to return materials grouped/filterable by their `category` slug.
+- `library_objects` rows must additionally store these frontend-essential fields (as JSONB where
+  structured): `materialSlots`, `materialBindings` (meshName/materialName/slotId), `boundingBox`
+  `{width,depth,height}`, `collisionBox` `{width,depth}`, `topDown.imageUrl` (2D plan view),
+  `category` (slug), `modelUrl`, `thumbnailUrl`. Materials store `category` (slug), `icon`, and a
+  `textures` map (`color/normal/roughness/ao`, KTX2 paths).
+- Server-side scene validation stays at **Option A** (RQ-5): verify only that `scene_data` is a JSON
+  object with a numeric `version`. Do not couple the API to the evolving `SceneDocument` shape
+  (`materialFaces`, `floors` keyed by roomKey, furniture `y`, etc. are all free to change client-side).
+
+### Decision C — Add the **AI domain** to the plan; record that the **frontend has no Supabase auth yet**
+
+`02-backend/domains/ai/` is **already implemented** but absent from this plan: `POST /ai/chat`,
+a provider-neutral proxy to Google Gemini (`ai.types.ts`, `ai.routes.ts`, `ai.service.ts`,
+`ai.schema.ts`). It is now a first-class domain — see the new **Phase 11: AI Domain** below and
+its row in the API Surface table.
+
+Critical reality this plan must stop assuming away: **the frontend cannot currently obtain a
+Supabase JWT.** `ai.routes.ts` runs an unauthenticated `devOnly` guard (rejects in production)
+precisely because "FE hiện chưa có cơ chế lấy Supabase token." The entire trust model of this plan
+("Express verifies a JWT on every request") is therefore **blocked on frontend auth wiring that does
+not exist**. This is tracked as **RQ-0** in Open Questions and gates Phase 0/2 acceptance in practice.
+
+---
+
 ## Table of Contents
 
+0. [Amendments (2026-06-16) — Authoritative Overrides](#0-amendments-2026-06-16--authoritative-overrides)
 1. [Executive Summary](#1-executive-summary)
 2. [Current State Audit](#2-current-state-audit)
 3. [Phased Delivery Plan](#3-phased-delivery-plan)
@@ -28,12 +96,14 @@ This plan covers the full implementation of the Express.js REST API that sits be
 Domains in scope:
 
 - Auth (profile sync, self-service profile read/update)
-- Projects (CRUD, soft-delete, cursor-paginated list, atomic duplication)
-- Scenes (full scene load and save with bulk project_objects upsert)
+- Projects (CRUD, soft-delete, cursor-paginated list, atomic duplication — single-row copy of `scene_data`)
+- Scenes (load and save of a single `scene_data` JSONB blob — see Decision B; no `project_objects`)
 - Autosave (insert + prune-keep-last-5)
-- Versions (immutable snapshot create, list, restore)
-- Library (object catalog search, filter, cursor pagination)
-- Materials (catalog search, material picker for a given object)
+- Versions (immutable `scene_data` snapshot create, list, restore)
+- Library (object catalog search, filter, cursor pagination; slug-keyed — see Decision A)
+- Materials (catalog search + filter by category slug; compatibility comes from each object's
+  `materialSlots[].allowedCategories`, resolved client-side — no compat tables, see Decision B)
+- AI (provider-neutral chat proxy to Gemini — already implemented, see Phase 11 and Decision C)
 - Sharing (named-user shares, link shares with token, expiry, revocation)
 - Hardening (RLS enforcement, rate limiting, OpenAPI documentation, integration tests)
 
@@ -69,7 +139,41 @@ The `service_role` Supabase key is held only by the Express process, never expos
 
 ## 2. Current State Audit
 
+> **UPDATED 2026-06-16 — this section is now current; the original file-by-file
+> inventory below it is HISTORICAL and was already stale when written.**
+>
+> **Reality:** the backend is **fully implemented across all 11 phases** and has been
+> **reconciled to the authoritative Amendments (Section 0, Decisions A/B/C).** `npx tsc --noEmit`
+> reports 0 errors; `npx vitest run` passes (16 tests, 2 files). All deps are installed
+> (`zod`, `@supabase/supabase-js`, `pino-http`, `vitest`, …).
+>
+> **What the 2026-06-16 reconciliation changed** (code now matches Section 0, not the old model):
+> - **Decision B — `project_objects` removed.** A scene is the single `projects.scene_data` JSONB
+>   blob. `scenes.*` save/load are single-row UPDATE/SELECT (no objects array, no transaction);
+>   `projects.duplicate` and `versions.restore` are single-row copies. Migration `010` deleted; its
+>   indexes/RLS stripped from `013`/`014`.
+> - **Decision B — compatibility subsystem removed.** No `object_categories` / `category_material_compat`
+>   / `object_material_compat_override` tables, no `compatible_material_categories()` function, no
+>   in-memory compat cache / `warmupCompatibilityCache()`, no `GET /materials/compatible/:objectId`.
+>   Migrations `005` and `009` deleted; compat indexes/RLS stripped. Per-slot compatibility lives in
+>   `library_objects.material_slots[].allowedCategories` and is resolved client-side.
+> - **Decision A — catalog is slug-keyed.** `library_objects` and `materials` use `id TEXT PRIMARY KEY`
+>   (the catalog slug) with a plain `category TEXT` slug. `library_objects` carries `topdown_url`,
+>   `bounding_box`, `collision_box`, `material_slots`, `material_bindings`; `materials` carries
+>   `icon_url` and a `textures` JSONB map (`color/normal/roughness/ao` KTX2 paths). Migrations `006`/`008`
+>   rewritten; the UUID `material_categories` table (`007`) dropped — categories come from
+>   `SELECT DISTINCT category`. Slug references inside `scene_data` are stored/returned verbatim.
+>
+> **Current migration set:** `001, 002, 003, 004, 006, 008, 011, 012, 013, 014` (`005, 007, 009, 010`
+> intentionally deleted; the runner is forward-only and tolerates the numbering gaps). Migrations have
+> not been applied to a live DB (the configured Supabase project is unreachable — see RQ-0/RQ-1).
+>
+> ---
+
 ### File Inventory
+
+> ⚠️ **HISTORICAL — superseded by the status box above.** The states below (Empty/Stub/Scaffolded)
+> describe a pre-implementation snapshot and no longer reflect the code. Kept for provenance only.
 
 The following table describes every non-`node_modules` file found under `02-backend/` at the time of this audit.
 
@@ -158,7 +262,7 @@ Note: `app.ts` references a `middleware/CorsMiddleware` that does not exist as a
 | `domains/scenes/scenes.routes.ts` | Empty | Needs full implementation. |
 | `domains/scenes/scenes.service.ts` | Empty | Needs full implementation. |
 | `domains/scenes/scenes.repository.ts` | Empty | Needs bulk upsert implementation. |
-| `domains/scenes/scenes.schema.ts` | Empty | Needs SceneData and ProjectObject Zod schemas. |
+| `domains/scenes/scenes.schema.ts` | Empty | Needs `SaveSceneBodySchema` (validates only numeric `version`, passthrough otherwise — Decision B). No `ProjectObject` schema. |
 | `domains/scenes/scenes.types.ts` | Empty | Needs TypeScript types. |
 
 #### `domains/autosave/`
@@ -194,8 +298,8 @@ Note: `app.ts` references a `middleware/CorsMiddleware` that does not exist as a
 | File | State | Notes |
 |---|---|---|
 | `domains/materials/materials.routes.ts` | Empty | Needs full implementation. |
-| `domains/materials/materials.service.ts` | Empty | Needs full implementation including compat cache lookup. |
-| `domains/materials/materials.repository.ts` | Empty | Needs compat query and cursor pagination. |
+| `domains/materials/materials.service.ts` | Empty | Needs catalog list/search + texture URL resolution. No compat cache (Decision B). |
+| `domains/materials/materials.repository.ts` | Empty | Needs category-filter + cursor pagination + FTS/trgm search. No compat query (Decision B). |
 | `domains/materials/materials.schema.ts` | Empty | Needs Zod schemas. |
 | `domains/materials/materials.types.ts` | Empty | Needs TypeScript types. |
 
@@ -211,15 +315,29 @@ Note: `app.ts` references a `middleware/CorsMiddleware` that does not exist as a
 
 #### `migrations/`
 
-The `migrations/` directory does not exist yet. All 14 SQL migration files and the runner script must be created.
+_(Historical note: at the time of the original audit the `migrations/` directory did not exist. It
+now exists with the runner `run.ts` and the migration set listed in the status box above.)_
 
 ### Summary of State
+
+> ⚠️ **HISTORICAL — see the status box at the top of Section 2 for the current state.**
 
 - **Fully implemented**: `tsconfig.json`, `package.json` (partially — missing deps)
 - **Scaffolded (needs rewrite)**: `app.ts`, `properties.dev.env`
 - **Stub (comment only — needs implementation)**: `configs/env.ts`, `configs/database.ts`, `configs/storage.ts`, all four middleware files, `domains/auth/*.ts`
 - **Empty (0 content — needs full implementation)**: all remaining domain files, all `shared/` files
 - **Missing entirely**: `migrations/` directory and all SQL files, `migrations/runner.ts`, `versions.schema.ts`, test files
+
+### Summary of State (current — 2026-06-16)
+
+- **Implemented + reconciled to Decisions A/B/C**: every domain (`auth, projects, scenes, autosave,
+  versions, library, materials, sharing, ai`), all middleware, all `shared/` libs, the OpenAPI doc,
+  and migrations `001–004, 006, 008, 011–014` with runner `run.ts`.
+- **Verification**: `npx tsc --noEmit` → 0 errors; `npx vitest run` → 16 passed.
+- **Deleted in reconciliation**: migrations `005, 007, 009, 010`; the `project_objects` scene leg; the
+  whole compatibility subsystem; UUID catalog identity (now slug-keyed).
+- **Not yet runnable end-to-end**: blocked on RQ-0 (frontend has no Supabase auth) and a reachable
+  Supabase DB (configured project is unreachable). Migrations are unapplied.
 
 ---
 
@@ -364,11 +482,13 @@ Phases build strictly on each other. Do not start a phase until all its dependen
 | PATCH | /projects/:id | Update project metadata (name, thumbnail_url, isTemplate, isPublic). Owner only. |
 | DELETE | /projects/:id | Soft-delete (sets `deleted_at`). Owner only. Response 204. |
 | POST | /projects/:id/restore | Un-delete a soft-deleted project. Owner only. Response 200. |
-| POST | /projects/:id/duplicate | Atomic copy of project row + all project_objects rows. New project name = original + " (Copy)". Response 201: new project id and name. |
+| POST | /projects/:id/duplicate | Single-row copy of the project row, including `scene_data`. New project name = original + " (Copy)". Response 201: new project id and name. |
 
-**DB tables / migrations touched**: `projects`, `project_objects` (duplicate transaction reads from it; Phase 4 creates it).
+**DB tables / migrations touched**: `projects` only.
 
-Note: Phase 3 can implement everything except the project_objects copy leg of `duplicate`. That leg is completed in Phase 4. The duplicate endpoint should be flagged as incomplete until Phase 4 is done, but the route and service skeleton should exist in Phase 3.
+Note (revised per Decision B): duplicate is a single `INSERT ... SELECT` that copies the row (incl.
+`scene_data`). There is no `project_objects` copy leg, so the endpoint is fully implementable in
+Phase 3 and no longer depends on Phase 4. A transaction is optional (single statement).
 
 **Acceptance criteria**:
 - `POST /projects` creates a row and returns 201.
@@ -384,39 +504,39 @@ Note: Phase 3 can implement everything except the project_objects copy leg of `d
 
 ### Phase 4: Scenes Domain
 
-**Goal**: Implement the authoritative scene save/load cycle. A single PUT atomically writes `projects.scene_data` and bulk-upserts the `project_objects` registry. GET loads both in one round-trip.
+> **Revised per Decision B.** There is no `project_objects` table and no `objects[]` in the contract.
+> A scene is one `scene_data` JSONB blob. Save is a single-row UPDATE; load is a single-row SELECT.
+
+**Goal**: Implement the authoritative scene save/load cycle. PUT writes `projects.scene_data` (one column); GET returns it.
 
 **Files to implement**:
 
 | Action | Path |
 |---|---|
-| Run migration | `migrations/003_projects.sql` through `migrations/010_project_objects.sql` (see Phase 5 migration list — scenes requires project_objects table) |
+| Run migration | `migrations/003_projects.sql` (the `projects` table, which already carries `scene_data JSONB`) |
 | Implement | `domains/scenes/scenes.types.ts` |
-| Implement | `domains/scenes/scenes.schema.ts` — `SceneDataSchema` (JSONB passthrough with version field required), `ProjectObjectSchema`, `SaveSceneBodySchema` (sceneData + objects array) |
-| Implement | `domains/scenes/scenes.repository.ts` — `loadScene(client, projectId)`, `saveSceneData(client, projectId, sceneData)`, `bulkUpsertObjects(client, projectId, objects)`, `deleteRemovedObjects(client, projectId, incomingIds)` |
-| Implement | `domains/scenes/scenes.service.ts` — `loadScene` (joins project + objects, resolves storage URLs), `saveScene` (ownership check, then `withTransaction` wrapping saveSceneData + bulkUpsertObjects + deleteRemovedObjects) |
+| Implement | `domains/scenes/scenes.schema.ts` — `SaveSceneBodySchema = { sceneData }` where `sceneData` is a JSON object whose only validated field is a numeric `version` (RQ-5 Option A — passthrough otherwise) |
+| Implement | `domains/scenes/scenes.repository.ts` — `loadScene(client, projectId)`, `saveSceneData(client, projectId, sceneData)` |
+| Implement | `domains/scenes/scenes.service.ts` — `loadScene` (ownership/share check, return scene_data), `saveScene` (ownership/editor-share check, UPDATE scene_data + touch updated_at) |
 | Implement | `domains/scenes/scenes.routes.ts` |
-| Modify | `domains/projects/projects.service.ts` — complete the `duplicate` transaction leg that copies project_objects |
+| Modify | `domains/projects/projects.service.ts` — `duplicate` is a single-row copy (the new row's `scene_data` = source `scene_data`); no project_objects leg |
 | Modify | `app.ts` — mount scenes router under `/projects/:id/scene` or nest inside projects router |
 
 **Endpoints delivered**:
 
 | Method | Path | Contract |
 |---|---|---|
-| GET | /projects/:id/scene | Load full scene: returns `{ sceneData: {...}, objects: ProjectObject[] }`. Objects include resolved `modelUrl` (CDN URL, not storage path). |
-| PUT | /projects/:id/scene | Save full scene. Body: `{ sceneData: {...}, objects: ProjectObject[] }`. Atomically writes `projects.scene_data` and bulk-upserts / deletes `project_objects`. Response 200: `{ savedAt: ISO timestamp }`. |
+| GET | /projects/:id/scene | Load scene: returns `{ sceneData: {...} }`. `sceneData` references catalog objects/materials by **slug** (Decision A); the frontend resolves slugs against the catalog. The backend does not rewrite or resolve URLs inside `scene_data`. |
+| PUT | /projects/:id/scene | Save scene. Body: `{ sceneData: {...} }`. UPDATEs `projects.scene_data` and `updated_at`. Response 200: `{ savedAt: ISO timestamp }`. |
 
-**DB tables / migrations touched**: `projects` (scene_data), `project_objects`.
-
-**Bulk upsert strategy**: Use PostgreSQL `INSERT ... ON CONFLICT (id) DO UPDATE` for the `project_objects` batch. Objects present in DB but absent from the incoming array are deleted (full-replace semantics per save).
+**DB tables / migrations touched**: `projects` (`scene_data`, `updated_at`) only.
 
 **Acceptance criteria**:
-- `PUT /projects/:id/scene` then `GET /projects/:id/scene` round-trips the full scene without data loss.
-- Saving with 0 objects deletes all existing project_objects rows for that project.
-- Saving with 50 objects in a single request completes in under 500ms against a local Supabase instance.
-- Concurrent save requests for the same project do not produce duplicate project_objects rows (transaction serialization).
+- `PUT /projects/:id/scene` then `GET /projects/:id/scene` round-trips the blob byte-for-byte (deep-equal).
+- A `sceneData` missing a numeric `version` is rejected 422; any other shape is accepted as-is (passthrough).
+- Save of a realistic scene (e.g. 50 furniture + wallItems entries inside the blob) completes under 200ms locally.
 - 403 returned if caller does not own the project (sharing editor write comes in Phase 9).
-- `modelUrl` in the GET response is a fully qualified CDN URL, not a raw storage path.
+- Slugs inside `scene_data` are returned unchanged (the API must not mutate object/material references).
 
 **Dependencies**: Phase 0, Phase 2, Phase 3.
 
@@ -468,7 +588,7 @@ Note: Phase 3 can implement everything except the project_objects copy leg of `d
 | Create | `domains/versions/versions.schema.ts` — `CreateVersionSchema` (label field) |
 | Implement | `domains/versions/version.types.ts` |
 | Implement | `domains/versions/versions.repository.ts` — `createVersion(client, projectId, label, userId)` using `next_project_version()` function, `listVersions(client, projectId)`, `getVersion(client, versionId)`, `restoreVersion(client, projectId, versionId)` |
-| Implement | `domains/versions/versions.service.ts` — ownership checks; create (snapshot from `projects.scene_data`); restore (`withTransaction`: copy version scene_data to project, re-sync project_objects from service layer) |
+| Implement | `domains/versions/versions.service.ts` — ownership checks; create (snapshot `projects.scene_data` into a `project_versions` row); restore (single UPDATE copying `project_versions.scene_data` back into `projects.scene_data` — no project_objects re-sync per Decision B) |
 | Implement | `domains/versions/version.routes.ts` |
 | Modify | `app.ts` — mount versions routes |
 
@@ -479,35 +599,38 @@ Note: Phase 3 can implement everything except the project_objects copy leg of `d
 | GET | /projects/:id/versions | List versions for a project, ordered by version_num DESC. Response: `{ data: Version[] }` (no scene data in list). |
 | POST | /projects/:id/versions | Create a named snapshot of the current `projects.scene_data`. Body: `{ label?: string }`. Response 201: `{ id, versionNum, label, createdAt }`. |
 | GET | /projects/:id/versions/:vid | Get a single version including full scene_data. |
-| POST | /projects/:id/versions/:vid/restore | Restore project to this version. Copies `project_versions.scene_data` to `projects.scene_data` and re-syncs `project_objects`. Response 200: `{ restoredAt }`. |
+| POST | /projects/:id/versions/:vid/restore | Restore project to this version. Single UPDATE copying `project_versions.scene_data` into `projects.scene_data`. Response 200: `{ restoredAt }`. |
 
-**DB tables / migrations touched**: `project_versions`, `projects` (restore updates scene_data), `project_objects` (restore re-syncs via scene service).
+**DB tables / migrations touched**: `project_versions`, `projects` (restore updates `scene_data`).
 
 **Acceptance criteria**:
 - POST /versions creates a row with auto-incremented `version_num` starting at 1.
 - A second POST /versions produces version_num = 2.
 - GET /versions lists newest first.
 - POST /versions/:vid/restore followed by GET /projects/:id/scene returns the scene from that version.
-- Restore is atomic (transaction): if project_objects sync fails, `projects.scene_data` is not updated.
+- Restore is a single-row UPDATE; no multi-table re-sync exists to fail (Decision B).
 
-**Dependencies**: Phase 0, Phase 2, Phase 3, Phase 4 (scenes service reused for restore re-sync), Phase 5 (shares migration 004).
+**Dependencies**: Phase 0, Phase 2, Phase 3, Phase 5 (shares migration 004 creating `project_versions`).
 
 ---
 
-### Phase 7: Library and Categories Domain
+### Phase 7: Library Domain
 
-**Goal**: Implement the object library catalog: category tree, object browse (cursor-paginated, filtered), full-text + trigram search, and single-object detail with resolved CDN URLs.
+> **Revised per Decisions A + B.** Objects are **slug-keyed**. Categories are plain string slugs on
+> the object (`category: "bathroom"`), not a separate UUID tree table — `migration 005_object_categories`
+> is **removed**. Each object stores the frontend-essential fields listed in Decision B.
+
+**Goal**: Implement the object library catalog: object browse (cursor-paginated, filtered), full-text + trigram search, distinct-category list for filter UI, and single-object detail.
 
 **Files to implement / create**:
 
 | Action | Path |
 |---|---|
-| Create | `migrations/005_object_categories.sql` |
-| Create | `migrations/006_library_objects.sql` — includes `placement_surface` enum, table, FTS trigger, tsvector update function |
-| Implement | `domains/library/library.types.ts` |
-| Implement | `domains/library/library.schema.ts` — `LibrarySearchQuerySchema` (q, categoryId, placement, tags, isPremium, cursor, limit) |
-| Implement | `domains/library/library.repository.ts` — `listObjects` (cursor pagination, all filter combinations), `searchObjects` (FTS + trgm), `getObjectById`, `listCategories` (full tree) |
-| Implement | `domains/library/library.service.ts` — resolves CDN URLs on all returned objects; routes to search vs. browse based on presence of `q` param; premium gating check against `req.user.plan` |
+| Create | `migrations/006_library_objects.sql` — `library_objects` table keyed by `id TEXT PRIMARY KEY` (the catalog slug). Columns: `name`, `category TEXT` (slug), `model_url`, `thumbnail_url`, `topdown_url`, `bounding_box JSONB`, `collision_box JSONB`, `material_slots JSONB`, `material_bindings JSONB`, `is_premium`, `is_active`, `search_vector TSVECTOR`; FTS trigger + tsvector update function; `placement_surface` enum kept only if a `placement` field is added to the catalog (verify — `objects.json` entries seen so far have none) |
+| Implement | `domains/library/library.types.ts` — `LibraryObject` mirrors the catalog entry shape (slug id, materialSlots, materialBindings, boundingBox, collisionBox, topDown) |
+| Implement | `domains/library/library.schema.ts` — `LibrarySearchQuerySchema` (q, category, isPremium, cursor, limit) |
+| Implement | `domains/library/library.repository.ts` — `listObjects` (cursor pagination, filter by category slug), `searchObjects` (FTS + trgm), `getObjectBySlug`, `listCategories` (`SELECT DISTINCT category`) |
+| Implement | `domains/library/library.service.ts` — resolves CDN URLs for `modelUrl`/`thumbnailUrl`/`topDown` and texture-less object fields; routes to search vs. browse on presence of `q`; premium gating against `req.user.plan` |
 | Implement | `domains/library/library.routes.ts` |
 | Modify | `app.ts` — mount library router at `/library` |
 
@@ -515,66 +638,72 @@ Note: Phase 3 can implement everything except the project_objects copy leg of `d
 
 | Method | Path | Contract |
 |---|---|---|
-| GET | /library/categories | Full category tree (id, parentId, slug, name, iconUrl, sortOrder). Cached in-memory (TTL 5 min). |
-| GET | /library/objects | Paginated object list. Query params: `categoryId`, `placement`, `tags` (comma-separated), `isPremium`, `cursor`, `limit` (default 50, max 100). Response: `{ data: LibraryObject[], nextCursor }`. |
-| GET | /library/objects/search | FTS + trigram search. Query params: `q` (required), `categoryId`, `placement`, `limit`. Response: `{ data: LibraryObject[] }` (no cursor; search results capped at 20). |
-| GET | /library/objects/:id | Single object detail with all fields + resolved modelUrl and lodUrls. |
+| GET | /library/categories | Distinct category slugs in use (for filter chips). Response: `{ data: string[] }`. Cached in-memory (TTL 5 min). |
+| GET | /library/objects | Paginated object list. Query params: `category` (slug), `isPremium`, `cursor`, `limit` (default 50, max 100). Response: `{ data: LibraryObject[], nextCursor }`. |
+| GET | /library/objects/search | FTS + trigram search. Query params: `q` (required), `category`, `limit`. Response: `{ data: LibraryObject[] }` (no cursor; capped at 20). |
+| GET | /library/objects/:slug | Single object detail with all fields (materialSlots, materialBindings, boundingBox, collisionBox, topDown) + resolved `modelUrl`/`thumbnailUrl`. |
 
-**DB tables / migrations touched**: `object_categories`, `library_objects`.
+**DB tables / migrations touched**: `library_objects` (no `object_categories`).
 
-**Caching**: Category tree and the compatibility matrix are loaded into an in-memory Map on startup (see Section 4 — Caching).
+**Caching**: Distinct-category list loaded into an in-memory Map on startup (see Section 4 — Caching). No compatibility matrix exists (Decision B).
 
 **Acceptance criteria**:
-- `GET /library/objects?categoryId=<uuid>` returns only objects in that category.
+- `GET /library/objects?category=bathroom` returns only objects whose `category` slug is `bathroom`.
 - `GET /library/objects/search?q=armchair` returns relevant results (verified against seeded data).
-- Trigram search: `GET /library/objects/search?q=armchiar` (typo) still returns "armchair".
-- Cursor pagination: requesting page 2 with `?cursor=<value>` does not repeat page 1 results.
+- Trigram search: `?q=armchiar` (typo) still returns "armchair".
+- Cursor pagination: page 2 with `?cursor=<value>` does not repeat page 1.
+- `GET /library/objects/:slug` returns `materialSlots[].allowedCategories` so the frontend can filter materials per slot.
 - `is_premium = true` objects are hidden when `req.user.plan === 'free'` (if premium gating is enabled — see Open Questions).
-- CDN base URL is prepended to `modelUrl` in the response.
-- Category tree endpoint responds in under 10ms on second call (served from in-memory cache).
+- CDN base URL is prepended to `modelUrl` in the response; slug `id` is returned unchanged.
 
 **Dependencies**: Phase 0, Phase 1 (extensions for trgm/citext).
 
 ---
 
-### Phase 8: Materials and Compatibility Domain
+### Phase 8: Materials Domain
 
-**Goal**: Implement the material catalog and the compatibility query so the UI material picker only shows materials valid for a selected object. Load the full compatibility matrix into memory at startup for sub-millisecond lookups.
+> **Revised per Decisions A + B.** No compatibility tables, no `compatible_material_categories()`
+> function, no compat matrix cache, no `/materials/compatible/:objectId` endpoint. Compatibility is
+> already expressed per-slot inside each library object (`materialSlots[].allowedCategories`) and is
+> resolved client-side. The backend only serves a slug-keyed material catalog filterable by category.
+
+**Goal**: Implement the slug-keyed material catalog: list/filter by category, FTS + trigram search, single-material detail with resolved KTX2 texture URLs.
 
 **Files to implement / create**:
 
 | Action | Path |
 |---|---|
-| Create | `migrations/007_material_categories.sql` |
-| Create | `migrations/008_materials.sql` — includes `GENERATED ALWAYS AS` tsvector column, FTS index, trgm index |
-| Create | `migrations/009_compat_tables.sql` — `category_material_compat`, `object_material_compat_override`; also includes `compatible_material_categories($1)` SQL function |
-| Implement | `domains/materials/materials.types.ts` |
-| Implement | `domains/materials/materials.schema.ts` — `MaterialSearchQuerySchema`, `CompatibleMaterialsQuerySchema` |
-| Implement | `domains/materials/materials.repository.ts` — `listMaterials` (cursor pagination, category filter), `getMaterialById`, `getCompatibleMaterialCategories` (SQL function call), `loadCompatibilityMatrix` (full load for in-memory cache) |
-| Implement | `domains/materials/materials.service.ts` — compat cache lookup (populated at startup, refreshed on TTL or explicit invalidation), resolves CDN URLs |
+| Create | `migrations/007_material_categories.sql` — optional: a small lookup of distinct material category slugs (`ground`, `ceramic`, `metal`, `stone`, …) for filter UI; may be replaced by `SELECT DISTINCT category` if a table is overkill |
+| Create | `migrations/008_materials.sql` — `materials` table keyed by `id TEXT PRIMARY KEY` (the catalog slug). Columns: `name`, `category TEXT` (slug), `icon_url`, `textures JSONB` (`{ color, normal, roughness, ao }` KTX2 paths), `is_premium`, `is_active`, `search_vector TSVECTOR GENERATED ALWAYS AS (...) STORED`; FTS index; trgm index |
+| ~~Removed~~ | ~~`migrations/009_compat_tables.sql`~~ — deleted per Decision B |
+| Implement | `domains/materials/materials.types.ts` — `Material` mirrors catalog entry (slug id, category slug, icon, textures map) |
+| Implement | `domains/materials/materials.schema.ts` — `MaterialSearchQuerySchema` (q, category, cursor, limit) |
+| Implement | `domains/materials/materials.repository.ts` — `listMaterials` (cursor pagination, filter by category slug), `getMaterialBySlug`, `searchMaterials` (FTS + trgm) |
+| Implement | `domains/materials/materials.service.ts` — resolves CDN URLs for `icon` and each texture path |
 | Implement | `domains/materials/materials.routes.ts` |
-| Modify | `app.ts` — mount materials router at `/materials`; call cache warm-up on startup |
-| Modify | `configs/database.ts` — export a `warmupCompatibilityCache()` function called from `server.ts` after pool is ready |
+| Modify | `app.ts` — mount materials router at `/materials` (no compat cache warm-up) |
 
 **Endpoints delivered**:
 
 | Method | Path | Contract |
 |---|---|---|
-| GET | /materials | List materials. Query: `categoryId`, `cursor`, `limit`. Response: `{ data: Material[], nextCursor }`. |
-| GET | /materials/search | FTS + trgm search. Query: `q`, `categoryId`, `limit`. Response: `{ data: Material[] }`. |
-| GET | /materials/:id | Single material detail with resolved texture URLs. |
-| GET | /materials/compatible/:objectId | Returns all materials valid for a given library object, ordered by category. Uses in-memory compatibility matrix with DB fallback. Response: `{ data: Material[], categories: MaterialCategory[] }`. |
+| GET | /materials | List materials. Query: `category` (slug), `cursor`, `limit`. Response: `{ data: Material[], nextCursor }`. |
+| GET | /materials/search | FTS + trgm search. Query: `q`, `category`, `limit`. Response: `{ data: Material[] }`. |
+| GET | /materials/:slug | Single material detail with resolved texture URLs (color/normal/roughness/ao). |
 
-**DB tables / migrations touched**: `material_categories`, `materials`, `category_material_compat`, `object_material_compat_override`.
+> The frontend material picker for a given object slot calls `GET /materials?category=<allowed>` for
+> each category in that slot's `allowedCategories`, or fetches the catalog once and filters in memory.
+> No server-side "compatible materials for object" endpoint is needed.
+
+**DB tables / migrations touched**: `materials` (and optionally `material_categories`).
 
 **Acceptance criteria**:
-- `GET /materials/compatible/:objectId` returns only materials whose category is in the compatibility matrix for the object's category, with per-object overrides applied correctly.
-- An override with `allow = false` removes a material category that the category-level matrix would otherwise include.
-- An override with `allow = true` adds a material category not in the category matrix.
-- Response time for `/compatible/:objectId` is under 5ms (served from in-memory cache).
-- Cache is reloaded when `/materials/compatible/:objectId` is called and the cache is stale (TTL-based or on-demand).
+- `GET /materials?category=metal` returns only materials whose `category` slug is `metal`.
+- `GET /materials/search?q=asphalt` returns "Asphalt 031" (verified against seeded data).
+- `GET /materials/:slug` returns resolved CDN URLs for all four texture maps; slug `id` returned unchanged.
+- Trigram search tolerates a one-character typo in the query.
 
-**Dependencies**: Phase 0, Phase 1, Phase 7 (object_categories and library_objects tables required for compat FK).
+**Dependencies**: Phase 0, Phase 1.
 
 ---
 
@@ -630,10 +759,9 @@ Note: Phase 3 can implement everything except the project_objects copy leg of `d
 
 | Action | Path |
 |---|---|
-| Create | `migrations/010_project_objects.sql` — if not already applied in Phase 4 |
-| Create | `migrations/012_operations_log.sql` — `project_operations` table + initial partition |
-| Create | `migrations/013_indexes.sql` — all indexes from spec Section 5 |
-| Create | `migrations/014_rls_policies.sql` — all RLS ENABLE + policy statements from spec Section 10 |
+| Create | `migrations/012_operations_log.sql` — `project_operations` table + initial partition. **Optional for v1** (future CRDT scaffold; no frontend consumer yet — consider deferring) |
+| Create | `migrations/013_indexes.sql` — all indexes from spec Section 5, **minus any `project_objects` / compat-table indexes** (those tables no longer exist — Decision B) |
+| Create | `migrations/014_rls_policies.sql` — all RLS ENABLE + policy statements, **minus `project_objects` / `object_categories` / compat tables** (Decision B) |
 | Modify | `middleware/auth.ts` — add per-route rate limit contexts |
 | Create | `middleware/rateLimiter.ts` — configure `express-rate-limit` instances: `standardLimiter` (100 req/min), `autosaveLimiter` (120 req/min for POST /autosave), `searchLimiter` (30 req/min for search endpoints) |
 | Create | `shared/openapi/openapi.ts` — hand-authored or auto-generated OpenAPI 3.1 spec; served at `GET /docs/openapi.json` |
@@ -657,6 +785,49 @@ Note: Phase 3 can implement everything except the project_objects copy leg of `d
 - `GET /docs/openapi.json` returns a valid OpenAPI 3.1 document.
 
 **Dependencies**: All prior phases.
+
+---
+
+### Phase 11: AI Domain (already implemented — needs auth retrofit)
+
+> **Added per Decision C.** This domain already exists in `02-backend/domains/ai/` and was built
+> outside the original plan. This phase documents it and tracks the work to make it production-ready.
+
+**Goal**: Provider-neutral chat proxy that lets the frontend AI agent drive the scene. The frontend
+sends a neutral wire format (`turns` of user/assistant/tool + tool schemas); the backend translates
+to the Google Gemini API, calls it, and normalizes the result to `{ text, toolCalls, finishReason }`.
+The provider key (`GEMINI_API_KEY`) lives only on the server; swapping providers touches only
+`ai.service.ts`, never the frontend.
+
+**Current state** (as of this amendment):
+
+| File | State |
+|---|---|
+| `domains/ai/ai.routes.ts` | Implemented — `POST /ai/chat`, guarded by a temporary `devOnly` gate (rejects with 503 `AI_DISABLED_IN_PROD` when `NODE_ENV === 'production'`) because the frontend cannot yet obtain a Supabase JWT |
+| `domains/ai/ai.types.ts` | Implemented — neutral wire types (`NeutralTurn`, `ToolSchema`, `AgentToolCall`, `ChatRequest`, `ChatResponse`) |
+| `domains/ai/ai.service.ts` | Implemented — Gemini translation + call |
+| `domains/ai/ai.schema.ts` | Implemented — `ChatBodySchema` |
+
+**Endpoints delivered**:
+
+| Method | Path | Auth | Contract |
+|---|---|---|---|
+| POST | /ai/chat | **Currently none** (`devOnly`); target: JWT | Body: `{ system?, tools?, turns, maxTokens? }`. Response: `{ text, toolCalls, finishReason }`. One Gemini turn. |
+
+**Work remaining to be production-grade**:
+- Replace the `devOnly` guard with `requireAuth` once the frontend wires Supabase auth (see RQ-0).
+- Apply a dedicated rate limiter (AI calls are expensive — protect the Gemini quota).
+- Optionally attribute usage to `req.user.id` for per-user quota / cost accounting.
+
+**DB tables / migrations touched**: None today. If usage accounting is added, a future
+`ai_usage` table can record per-user token counts.
+
+**Acceptance criteria**:
+- With auth wired, `POST /ai/chat` without a valid JWT returns 401 (not the current dev passthrough).
+- The endpoint is rate-limited; a burst beyond the AI limiter threshold returns 429.
+- `GEMINI_API_KEY` is never exposed in any response or log.
+
+**Dependencies**: Phase 0 (auth middleware, error handling). **Blocked by RQ-0** (frontend Supabase auth) for the production guard removal.
 
 ---
 
@@ -723,14 +894,14 @@ All repositories use `typedQuery`. No raw `client.query` calls outside of reposi
 
 ### Transaction Usage
 
-`withTransaction` from `shared/db/transaction.ts` is used for all multi-table atomic operations:
+`withTransaction` from `shared/db/transaction.ts` is used for atomic operations. **Per Decision B**,
+scene save, project duplication, and version restore are now single-row statements and no longer
+require a transaction. The only remaining multi-statement transaction is:
 
-- Scene save (projects.scene_data + project_objects bulk upsert + delete removed)
-- Project duplication (project row copy + project_objects copy)
-- Version restore (projects.scene_data update + project_objects re-sync)
-- Autosave insert + prune
+- Autosave insert + prune-keep-last-5
 
-Single-table reads and single-row mutations do not require transactions; they use the pool directly.
+Single-table reads and single-row mutations (scene save/load, duplicate, version create/restore)
+do not require transactions; they use the pool directly.
 
 ### Storage URL Resolution
 
@@ -745,9 +916,9 @@ The CDN base URL and the signed URL function are the only two URL forms used in 
 
 | Data | Strategy | Invalidation |
 |---|---|---|
-| Object category tree | In-process `Map<string, CategoryTree>` loaded at startup; TTL 5 minutes (check TTL on each request, reload async if stale) | On TTL expiry. No event-driven invalidation in v1. |
-| Material category list | Same in-process map | Same |
-| Compatibility matrix (`object_category_id → Set<material_category_id>` and per-object overrides) | In-process `Map` loaded at startup via `warmupCompatibilityCache()` in `server.ts`; TTL 5 minutes | On TTL expiry. Provide an admin-only `POST /admin/cache/invalidate` endpoint in Phase 10 if catalog updates are frequent. |
+| Distinct object category slugs | In-process `string[]` loaded at startup; TTL 5 minutes (check TTL on each request, reload async if stale) | On TTL expiry. No event-driven invalidation in v1. |
+| Distinct material category slugs | Same in-process cache | Same |
+| ~~Compatibility matrix~~ | **Removed per Decision B** — compatibility is per-slot inside each object (`materialSlots[].allowedCategories`), resolved client-side. No matrix, no `warmupCompatibilityCache()`. | — |
 | Library object pages | No server-side cache in v1; client-side pagination state handles this | — |
 | Project data | No server-side cache; data is personalized and changes frequently | — |
 
@@ -767,15 +938,15 @@ Never modify an already-applied migration file. Corrections go in a new numbered
 | `002_profiles.sql` | User profile extension table | `CREATE TABLE public.profiles`, FK to `auth.users`, `trg_profiles_updated_at` trigger |
 | `003_projects.sql` | Project table | `CREATE TABLE public.projects` with `scene_data JSONB`, `deleted_at`, `is_template`, `is_public`; `trg_projects_updated_at` trigger |
 | `004_autosaves_versions.sql` | Autosave buffer and version history | `CREATE TABLE public.project_autosaves`, `CREATE TABLE public.project_versions`, `CREATE OR REPLACE FUNCTION next_project_version()` |
-| `005_object_categories.sql` | Object category tree | `CREATE TABLE public.object_categories` (self-referencing `parent_id`) |
-| `006_library_objects.sql` | Object library catalog | `CREATE TYPE placement_surface AS ENUM`, `CREATE TABLE public.library_objects` with `search_vector TSVECTOR`, `update_library_objects_search_vector()` FTS trigger function and trigger, `trg_library_objects_updated_at` trigger |
-| `007_material_categories.sql` | Material category list | `CREATE TABLE public.material_categories` |
-| `008_materials.sql` | Material catalog | `CREATE TABLE public.materials` with `search_vector TSVECTOR GENERATED ALWAYS AS (...) STORED`, `trg_materials_updated_at` trigger |
-| `009_compat_tables.sql` | Compatibility rules and SQL function | `CREATE TABLE public.category_material_compat`, `CREATE TABLE public.object_material_compat_override`, `CREATE OR REPLACE FUNCTION compatible_material_categories(p_object_id UUID)` (the CTE query from spec Section 6 wrapped in a SQL function) |
-| `010_project_objects.sql` | Placed object instances | `CREATE TABLE public.project_objects` with JSONB columns for transform, material_slots, instance_props; `trg_project_objects_updated_at` trigger |
+| ~~`005_object_categories.sql`~~ | **Removed (Decision B)** — categories are string slugs on the object, not a tree table | — |
+| `006_library_objects.sql` | Object library catalog (slug-keyed) | `CREATE TABLE public.library_objects` with `id TEXT PRIMARY KEY` (slug), `category TEXT`, `model_url`, `thumbnail_url`, `topdown_url`, `bounding_box JSONB`, `collision_box JSONB`, `material_slots JSONB`, `material_bindings JSONB`, `is_premium`, `is_active`, `search_vector TSVECTOR`, FTS trigger function + trigger. (`placement_surface` enum only if a `placement` field is added to the catalog — verify.) |
+| `007_material_categories.sql` | Material category list (optional) | `CREATE TABLE public.material_categories` (slug list) — or skip in favor of `SELECT DISTINCT category` |
+| `008_materials.sql` | Material catalog (slug-keyed) | `CREATE TABLE public.materials` with `id TEXT PRIMARY KEY` (slug), `category TEXT`, `icon_url`, `textures JSONB` (KTX2 paths), `is_premium`, `is_active`, `search_vector TSVECTOR GENERATED ALWAYS AS (...) STORED` |
+| ~~`009_compat_tables.sql`~~ | **Removed (Decision B)** — no compatibility tables or function; compatibility lives in `library_objects.material_slots[].allowedCategories` | — |
+| ~~`010_project_objects.sql`~~ | **Removed (Decision B)** — scene is one `scene_data` JSONB blob; no placed-object registry | — |
 | `011_sharing.sql` | Project sharing | `CREATE TYPE share_permission AS ENUM ('viewer','commenter','editor')`, `CREATE TABLE public.project_shares` |
 | `012_operations_log.sql` | Operation log (future CRDT scaffold) | `CREATE TABLE public.project_operations PARTITION BY RANGE (applied_at)`, initial partition `project_operations_2025_2026` for values `('2025-01-01')` to `('2027-01-01')` |
-| `013_indexes.sql` | All performance indexes | All `CREATE INDEX` statements from spec Section 5 — covering projects, library_objects, materials, project_objects, project_versions, project_autosaves, project_shares, project_operations, category_material_compat, object_categories |
+| `013_indexes.sql` | All performance indexes | `CREATE INDEX` statements covering projects (`owner_id, updated_at DESC WHERE deleted_at IS NULL`), library_objects (category, FTS, trgm), materials (category, FTS, trgm), project_versions (`project_id, version_num DESC`), project_autosaves (`project_id, saved_at DESC`), project_shares. **No** project_objects / category_material_compat / object_categories indexes (Decision B). |
 | `014_rls_policies.sql` | RLS enable + policies | All `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` and `CREATE POLICY` statements from spec Section 10 |
 
 ### Runner Approach
@@ -809,28 +980,29 @@ All endpoints require `Authorization: Bearer <supabase_jwt>` unless noted. "Owne
 | 8 | PATCH | /projects/:id | JWT (owner) | `{ name?, thumbnailUrl?, isTemplate?, isPublic? }` | `ProjectMeta` | projects: UPDATE (owner) |
 | 9 | DELETE | /projects/:id | JWT (owner) | — | 204 | projects: UPDATE deleted_at (owner) |
 | 10 | POST | /projects/:id/restore | JWT (owner) | — | `ProjectMeta` | projects: UPDATE deleted_at (owner) |
-| 11 | POST | /projects/:id/duplicate | JWT (owner) | — | `{ id, name }` (201) | projects + project_objects: INSERT |
-| 12 | GET | /projects/:id/scene | JWT or ShareToken | — | `{ sceneData, objects: ProjectObject[] }` | project_objects: SELECT via project |
-| 13 | PUT | /projects/:id/scene | JWT (owner or editor share) | `{ sceneData, objects: ProjectObject[] }` | `{ savedAt }` | projects + project_objects: UPDATE/INSERT |
+| 11 | POST | /projects/:id/duplicate | JWT (owner) | — | `{ id, name }` (201) | projects: INSERT (single-row copy incl. scene_data) |
+| 12 | GET | /projects/:id/scene | JWT or ShareToken | — | `{ sceneData }` (slug refs preserved) | projects: SELECT scene_data |
+| 13 | PUT | /projects/:id/scene | JWT (owner or editor share) | `{ sceneData }` | `{ savedAt }` | projects: UPDATE scene_data |
 | 14 | POST | /projects/:id/autosave | JWT (owner or editor share) | `{ sceneData, clientId? }` | `{ id, savedAt }` (201) | project_autosaves: INSERT |
 | 15 | GET | /projects/:id/autosave/latest | JWT (owner or editor share) | — | `{ id, sceneData, savedAt, clientId }` | project_autosaves: SELECT |
 | 16 | GET | /projects/:id/versions | JWT (owner or share) | — | `{ data: VersionSummary[] }` | project_versions: SELECT |
 | 17 | POST | /projects/:id/versions | JWT (owner) | `{ label? }` | `VersionSummary` (201) | project_versions: INSERT |
 | 18 | GET | /projects/:id/versions/:vid | JWT (owner or share) | — | `VersionDetail` (with sceneData) | project_versions: SELECT |
-| 19 | POST | /projects/:id/versions/:vid/restore | JWT (owner) | — | `{ restoredAt }` | projects + project_objects: UPDATE |
-| 20 | GET | /library/categories | JWT | — | `{ data: CategoryTree[] }` | object_categories: SELECT (all authenticated) |
-| 21 | GET | /library/objects | JWT | `?categoryId&placement&tags&isPremium&cursor&limit` | `{ data: LibraryObject[], nextCursor }` | library_objects: SELECT active only |
-| 22 | GET | /library/objects/search | JWT | `?q&categoryId&placement&limit` | `{ data: LibraryObject[] }` | library_objects: SELECT active only |
-| 23 | GET | /library/objects/:id | JWT | — | `LibraryObjectDetail` | library_objects: SELECT active only |
-| 24 | GET | /materials | JWT | `?categoryId&cursor&limit` | `{ data: Material[], nextCursor }` | materials: SELECT active only |
-| 25 | GET | /materials/search | JWT | `?q&categoryId&limit` | `{ data: Material[] }` | materials: SELECT active only |
-| 26 | GET | /materials/:id | JWT | — | `MaterialDetail` | materials: SELECT active only |
-| 27 | GET | /materials/compatible/:objectId | JWT | — | `{ data: Material[], categories: MaterialCategory[] }` | materials + compat tables: SELECT |
+| 19 | POST | /projects/:id/versions/:vid/restore | JWT (owner) | — | `{ restoredAt }` | projects: UPDATE scene_data |
+| 20 | GET | /library/categories | JWT | — | `{ data: string[] }` (distinct category slugs) | library_objects: SELECT DISTINCT category |
+| 21 | GET | /library/objects | JWT | `?category&isPremium&cursor&limit` | `{ data: LibraryObject[], nextCursor }` | library_objects: SELECT active only |
+| 22 | GET | /library/objects/search | JWT | `?q&category&limit` | `{ data: LibraryObject[] }` | library_objects: SELECT active only |
+| 23 | GET | /library/objects/:slug | JWT | — | `LibraryObjectDetail` (incl. materialSlots/bindings/boundingBox) | library_objects: SELECT active only |
+| 24 | GET | /materials | JWT | `?category&cursor&limit` | `{ data: Material[], nextCursor }` | materials: SELECT active only |
+| 25 | GET | /materials/search | JWT | `?q&category&limit` | `{ data: Material[] }` | materials: SELECT active only |
+| 26 | GET | /materials/:slug | JWT | — | `MaterialDetail` (resolved KTX2 texture URLs) | materials: SELECT active only |
+| ~~27~~ | ~~GET~~ | ~~/materials/compatible/:objectId~~ | — | — | **Removed (Decision B)** — compatibility resolved client-side from `materialSlots[].allowedCategories` | — |
 | 28 | GET | /projects/:id/share | JWT (owner) | — | `{ data: Share[] }` | project_shares: SELECT |
 | 29 | POST | /projects/:id/share | JWT (owner) | `{ sharedWith?, permission, expiresAt? }` | `Share` (201) | project_shares: INSERT |
 | 30 | PATCH | /projects/:id/share/:shareId | JWT (owner) | `{ permission?, expiresAt? }` | `Share` | project_shares: UPDATE |
 | 31 | DELETE | /projects/:id/share/:shareId | JWT (owner) | — | 204 | project_shares: DELETE |
 | 32 | GET | /share/:token | None or JWT | — | `{ projectMeta, permission }` | project_shares: SELECT by token |
+| 33 | POST | /ai/chat | **devOnly today → JWT (RQ-0)** | `{ system?, tools?, turns, maxTokens? }` | `{ text, toolCalls, finishReason }` | No DB (Gemini proxy). Rate-limited. |
 
 ---
 
@@ -844,11 +1016,11 @@ All endpoints require `Authorization: Bearer <supabase_jwt>` unless noted. "Owne
 | 1 | Migration runner file-sort logic | Run migrations against a test DB | Use a dedicated test DB (e.g., Supabase local dev via `supabase start`) |
 | 2 | auth.service (upsert/sync logic) | GET /auth/me end-to-end | Test with a real JWT from Supabase test project |
 | 3 | projects.service ownership logic, cursor construction | All projects CRUD endpoints | Include duplicate transaction test |
-| 4 | scenes.service bulk upsert logic | Scene save/load round-trip (most critical test) | Verify no data loss across full scene cycle |
+| 4 | scenes.service `version` validation + passthrough | Scene save/load round-trip (most critical test) | Verify blob deep-equals across full cycle; slugs unmutated |
 | 5 | autosave.service prune-keep-5 | POST /autosave × 6 → assert 5 rows remain | Transaction atomicity test |
-| 6 | versions.service version_num increment | Version create + restore cycle | Restore atomicity test |
-| 7 | library.service premium gating, URL resolution | Library browse, FTS search, trigram search | Requires seeded catalog data |
-| 8 | materials.service compat override logic | Compatible materials for an object with override | Cache warm-up + cache stale-reload test |
+| 6 | versions.service version_num increment | Version create + restore cycle | Single-row restore; assert scene_data equals snapshot |
+| 7 | library.service premium gating, URL resolution, slug pass-through | Library browse by category slug, FTS search, trigram search | Requires seeded catalog data |
+| 8 | materials.service URL resolution (icon + KTX2 textures) | Material list/filter by category slug, FTS + trgm search | Seeded materials; no compat tests (Decision B) |
 | 9 | sharing.service token generation, expiry check | Share create + access via token | Expired token → 403 test |
 | 10 | — | Full integration test suite + rate limiter test | Coverage report target: 80%+ |
 
@@ -856,16 +1028,16 @@ All endpoints require `Authorization: Bearer <supabase_jwt>` unless noted. "Owne
 
 - **Test runner**: Vitest (fast, native TypeScript support, compatible with CommonJS via `tsx` transform).
 - **Test database**: Supabase local development instance (`supabase start`). Each test suite runs migrations to a clean schema at the start of the test run. Do not use the production or staging database for tests.
-- **Fixtures**: A `tests/fixtures/` directory contains seed SQL scripts for: one test user profile, three projects, a small catalog of 10 library objects across two categories, 5 materials, and a compatible category matrix.
+- **Fixtures**: A `tests/fixtures/` directory contains seed SQL scripts for: one test user profile, three projects, a small slug-keyed catalog of 10 library objects across two categories (each with `materialSlots`), and 5 materials across the relevant category slugs. No compat-matrix fixture (Decision B).
 - **HTTP testing**: Use `supertest` against the Express app instance (no live server port needed). Import `createApp()` from `app.ts` and pass it to `supertest(app)`.
 - **JWT mocking**: In tests, generate a valid test JWT signed with the same `SUPABASE_JWT_SECRET` from the test environment. Do not use real user credentials in CI.
 
 ### Critical Test Cases (must not be skipped)
 
-1. **Scene save/load round-trip**: PUT /projects/:id/scene with 25 objects, then GET /projects/:id/scene — assert all 25 objects are returned with identical transforms and material_slots.
-2. **Duplication transaction**: POST /projects/:id/duplicate — assert new project has all same project_objects; assert original project is unchanged; assert failure mid-transaction leaves no orphan rows.
+1. **Scene save/load round-trip**: PUT /projects/:id/scene with a realistic `scene_data` blob (incl. furniture, wallItems, floors, materialFaces), then GET /projects/:id/scene — assert the returned blob deep-equals the sent blob, and that all object/material slug references are byte-identical (unmutated).
+2. **Duplication copy**: POST /projects/:id/duplicate — assert the new project's `scene_data` deep-equals the original's; assert the original project is unchanged. (Single-row copy — no transaction/orphan concern per Decision B.)
 3. **Autosave prune**: 6 consecutive POST /autosave calls — assert exactly 5 rows in project_autosaves for that project.
-4. **Version restore atomicity**: POST /versions/:vid/restore — kill the process mid-transaction (simulate with a deliberate error) — assert project.scene_data and project_objects are unchanged.
+4. **Version restore**: POST /versions/:vid/restore then GET /projects/:id/scene — assert `scene_data` equals the snapshot. (Single-row UPDATE — no multi-table atomicity to test per Decision B.)
 5. **Share token expiry**: Create a share with `expiresAt = now - 1 minute` — assert GET /projects/:id/scene with that token returns 403.
 
 ---
@@ -873,6 +1045,29 @@ All endpoints require `Authorization: Bearer <supabase_jwt>` unless noted. "Owne
 ## 8. Risks and Open Questions
 
 The following items are ambiguous in the current spec and must be decided before or during implementation. They are listed in recommended resolution order.
+
+> **Superseded by the Amendments (Section 0):** RQ-5 is now fixed at Option A (scene is opaque JSONB).
+> Any open question that referenced `project_objects`, the compatibility tables, or UUID catalog
+> identity is moot — see Decisions A and B.
+
+### RQ-0: Frontend Supabase Auth Does Not Exist Yet (BLOCKER — RESOLVE BEFORE PHASE 2 / PHASE 11 PROD)
+
+**Question**: This entire plan assumes every request carries a Supabase JWT that Express verifies.
+But the frontend currently has **no mechanism to obtain a Supabase token** — confirmed by
+`domains/ai/ai.routes.ts`, which ships an unauthenticated `devOnly` guard for exactly this reason
+("FE hiện chưa có cơ chế lấy Supabase token"). Until the frontend wires Supabase Auth (login →
+access token → `Authorization: Bearer` on every request), **no authenticated endpoint can be
+exercised end-to-end**, and `POST /ai/chat` must stay dev-only / production-disabled.
+
+**Impact**: Phase 2 (auth) acceptance criteria ("valid Supabase JWT returns 200") cannot be met from
+the real client; they can only be tested with a hand-signed test JWT. The AI domain cannot be enabled
+in production. Projects/scenes/versions are unusable from the actual app until this is done.
+
+**Recommendation**: Treat frontend Supabase Auth wiring as a **prerequisite track running in parallel
+with Phase 0–2**. Concretely on the frontend: add a Supabase client, a login flow, store the session,
+and inject `Authorization: Bearer <token>` in the (currently empty) `01-frontend/src/app/services/`
+API layer. Until then, gate all authenticated routes behind the same dev-only posture the AI route
+already uses, and rely on hand-signed test JWTs for backend integration tests.
 
 ### RQ-1: JWT Verification Approach (RESOLVE BEFORE PHASE 0)
 
@@ -896,7 +1091,7 @@ The following items are ambiguous in the current spec and must be decided before
 
 ### RQ-3: Premium Gating Behavior (RESOLVE BEFORE PHASE 7)
 
-**Question**: When a user on the `free` plan requests `GET /library/objects` or `GET /materials/compatible/:objectId`, should premium items be:
+**Question**: When a user on the `free` plan requests `GET /library/objects` or `GET /materials`, should premium items be:
 - (A) Excluded entirely from results, or
 - (B) Included but flagged with `isPremium: true` so the UI can show a "lock" icon?
 
@@ -912,7 +1107,7 @@ The following items are ambiguous in the current spec and must be decided before
 
 **Recommendation**: Implement keep-last-5 pruning (per spec). Apply the standard `autosaveLimiter` rate limiter (e.g., 120 req/hour = 2/min) to the endpoint as an abuse prevention measure separate from the prune logic.
 
-### RQ-5: Scene Data Server-Side Validation (RESOLVE BEFORE PHASE 4)
+### RQ-5: Scene Data Server-Side Validation (RESOLVED → Option A, per Decision B)
 
 **Question**: Should the API validate the shape of `scene_data` JSONB before writing it?
 
@@ -966,7 +1161,8 @@ Sizing: S = half day or less; M = 1–2 days; L = 3–4 days.
 | 5 | Autosave domain (insert + prune) | S |
 | 6 | Versions domain (snapshot, list, restore) | M |
 | 7 | Library domain (FTS, trgm, cursor pagination) | L |
-| 8 | Materials domain (catalog, compat cache, picker) | M |
+| 8 | Materials domain (slug-keyed catalog, category filter, FTS — no compat) | S |
+| 11 | AI domain (already implemented; auth retrofit + rate limit) | S |
 | 9 | Sharing domain (named + link, token, expiry) | M |
 | 10 | Hardening (RLS, rate limits, OpenAPI, tests) | L |
 
@@ -976,4 +1172,4 @@ The critical path is: Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4. E
 
 ---
 
-*Plan authored against `DATABASE_ARCHITECTURE.md` spec as of 2026-05-20. Resolve all open questions marked "RESOLVE BEFORE PHASE N" before starting that phase.*
+*Plan authored against `DATABASE_ARCHITECTURE.md` spec as of 2026-05-20. Amended 2026-06-16 (Section 0) to realign with the actual frontend data model: slug-keyed catalog (Decision A), single `scene_data` JSONB blob with no `project_objects` and no compatibility tables (Decision B), and the already-implemented AI domain plus the frontend-auth blocker (Decision C). Where body text conflicts with Section 0, Section 0 wins. Resolve all open questions marked "RESOLVE BEFORE PHASE N" — especially RQ-0 — before starting that phase.*

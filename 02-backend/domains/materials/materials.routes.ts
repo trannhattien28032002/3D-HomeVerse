@@ -8,7 +8,7 @@ import * as service from './materials.service';
 
 export const materialsRouter = Router();
 
-// GET /materials/search — FTS + trgm search (before /:id to avoid route collision).
+// GET /materials/search — FTS + trgm search (before /:slug to avoid route collision).
 materialsRouter.get(
   '/search',
   searchLimiter,
@@ -17,20 +17,6 @@ materialsRouter.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await service.searchMaterials(req.query as unknown as MaterialSearchQuery);
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// GET /materials/compatible/:objectId — compatible materials for a library object.
-materialsRouter.get(
-  '/compatible/:objectId',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const result = await service.getCompatibleMaterials(String(req.params.objectId));
       res.json(result);
     } catch (err) {
       next(err);
@@ -53,13 +39,13 @@ materialsRouter.get(
   }
 );
 
-// GET /materials/:id — single material detail.
+// GET /materials/:slug — single material detail with resolved texture URLs.
 materialsRouter.get(
-  '/:id',
+  '/:slug',
   requireAuth,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const mat = await service.getMaterialById(String(req.params.id));
+      const mat = await service.getMaterialBySlug(String(req.params.slug));
       res.json(mat);
     } catch (err) {
       next(err);

@@ -1,21 +1,15 @@
 import { pool } from '../../shared/db/client';
-import { withTransaction } from '../../shared/db/transaction';
 import { ForbiddenError } from '../../shared/errors/ForbiddenError';
 import { NotFoundError } from '../../shared/errors/NotFoundError';
-import { resolvePublicUrl } from '../../shared/storage/storageClient';
 import * as projectsRepo from '../projects/projects.repository';
 import * as scenesRepo from './scenes.repository';
-import type { LoadSceneResponse, ProjectObject } from './scenes.types';
+import type { LoadSceneResponse } from './scenes.types';
 import type { SaveSceneBodyInput } from './scenes.schema';
 import type { ShareContext } from '../../shared/types/shareContext';
 
-function resolveObjectUrls(obj: ProjectObject): ProjectObject {
-  // library_objects.model_url is a storage-relative path; resolve to CDN URL.
-  // modelUrl is not stored in project_objects — caller will need to join with library_objects.
-  // For now, modelUrl is populated by the library service on join. Here we return obj as-is.
-  // TODO: join with library_objects to attach modelUrl when loading scene.
-  return obj;
-}
+// Per Decision B, the scene is a single `scene_data` JSONB blob. Slugs inside it
+// (Decision A) are stored and returned verbatim — the API never rewrites object/
+// material references or resolves URLs inside the blob.
 
 export async function loadScene(
   userId: string,
@@ -32,14 +26,7 @@ export async function loadScene(
     }
   }
 
-  const { sceneData, objects } = await scenesRepo.loadScene(pool, projectId);
-
-  // Resolve model URLs for each object.
-  // NOTE: a full join with library_objects to get model_url would be ideal;
-  // for v1, modelUrl is omitted here and resolved at the client/library layer.
-  const resolvedObjects = objects.map(resolveObjectUrls);
-
-  return { sceneData, objects: resolvedObjects };
+  return scenesRepo.loadScene(pool, projectId);
 }
 
 export async function saveScene(
@@ -58,15 +45,8 @@ export async function saveScene(
     }
   }
 
-  const incomingIds = body.objects
-    .filter((o) => !!o.id)
-    .map((o) => o.id as string);
-
-  await withTransaction(pool, async (client) => {
-    await scenesRepo.saveSceneData(client, projectId, body.sceneData);
-    await scenesRepo.bulkUpsertObjects(client, projectId, body.objects);
-    await scenesRepo.deleteRemovedObjects(client, projectId, incomingIds);
-  });
+  // Single-row UPDATE — no transaction required (Decision B).
+  await scenesRepo.saveSceneData(pool, projectId, body.sceneData);
 
   return { savedAt: new Date().toISOString() };
 }
