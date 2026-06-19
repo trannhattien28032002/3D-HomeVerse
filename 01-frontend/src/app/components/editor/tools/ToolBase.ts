@@ -18,8 +18,8 @@
 import type React from "react";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-import type { Node2D, Wall2D, Furniture2D } from "src/app/plan2d/types";
-import type { PlanTransform } from "src/app/plan2d/PlanTransform";
+import type { Node2D, Wall2D, Furniture2D } from "src/app/features/plan2d/types";
+import type { PlanTransform } from "src/app/features/plan2d/PlanTransform";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 
 /** Props mà tool trả về cho mỗi wall Konva shape — spread trực tiếp vào <Line>. */

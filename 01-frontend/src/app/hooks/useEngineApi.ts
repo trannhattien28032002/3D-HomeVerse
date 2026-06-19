@@ -18,28 +18,18 @@
  */
 import { useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { useEngineOrNull } from "src/app/engine/EngineContext";
+import { useEngineOrNull } from "src/app/engineBinding/EngineContext";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 
-export type EngineApi = {
-    dispatch: (cmd: EngineCommand) => void;
-    dispatchAsync: (cmd: EngineCommand) => Promise<void>;
-    withTransaction: (label: string, fn: () => void) => void;
-    asyncTransaction: (label: string, fn: () => Promise<void>) => Promise<void>;
-    beginTransaction: (label: string) => void;
-    commitTransaction: () => void;
-    cancelTransaction: () => void;
-    /** Ghi command-inverse cho MOVE_FURNITURE (rẻ hơn snapshot toàn scene, R3). */
-    recordMoveUndo: (entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) => void;
-    /** Ghi command-inverse cho ROTATE_FURNITURE (R3). */
-    recordRotateUndo: (entityId: string, fromRotY: number, toRotY: number) => void;
-    /** Ghi command-inverse cho MOVE_WALL_ITEM (R3). */
-    recordWallItemMoveUndo: (entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) => void;
-    nextNodeId: () => string;
-    nextWallId: () => string;
-};
+/**
+ * Shape của facade sống ở `engine/engineTypes.ts` (`EngineApiFacade`) — định nghĩa
+ * một nguồn duy nhất, đặt ở engine layer để AI tools import được mà không tạo vòng
+ * `ai → app`. Re-export tại đây cho call-site app cũ tiện dùng.
+ */
+export type { EngineApiFacade } from "src/engine/engineTypes";
 
-export function useEngineApi(): EngineApi {
+export function useEngineApi(): EngineApiFacade {
     const engine = useEngineOrNull();
 
     // PERF: memoize the facade so its methods keep stable identity across renders.
@@ -47,7 +37,7 @@ export function useEngineApi(): EngineApi {
     // produced fresh function identities, busting React.memo on layers that receive
     // dispatch/record*Undo as props (e.g. FurnitureLayer) — re-rendering all objects
     // on every pan/zoom frame regardless of other memoization.
-    return useMemo<EngineApi>(() => ({
+    return useMemo<EngineApiFacade>(() => ({
         dispatch(cmd: EngineCommand) {
             if (!engine) {
                 console.warn("[useEngineApi] dispatch called before engine init:", cmd.type);
@@ -104,6 +94,11 @@ export function useEngineApi(): EngineApi {
 
         nextWallId() {
             return engine?.api.getNextIds()?.wallId ?? uuidv4();
+        },
+
+        wouldFurnitureCollide(entityId: string, worldX: number, worldZ: number): boolean {
+            // Engine chưa init → coi như không va chạm (fail-open: cho kéo, commit sẽ chốt lại).
+            return engine?.api.wouldFurnitureCollide(entityId, worldX, worldZ) ?? false;
         },
     }), [engine]);
 }

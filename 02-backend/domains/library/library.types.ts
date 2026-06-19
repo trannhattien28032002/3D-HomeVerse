@@ -1,30 +1,30 @@
-export interface Category {
+// Per-slot material compatibility, stored inside the object and resolved client-side
+// (Decision B). e.g. { id: 'body', label: 'Bathtub Body', allowedCategories: ['ceramic','stone'] }.
+export interface MaterialSlot {
   id: string;
-  parentId: string | null;
-  slug: string;
-  name: string;
-  iconUrl: string | null;
-  sortOrder: number;
-  createdAt: Date;
+  label: string;
+  allowedCategories: string[];
 }
 
-export interface CategoryTree extends Category {
-  children: CategoryTree[];
+// Binding of a GLB mesh/material to a material slot.
+export interface MaterialBinding {
+  meshName: string;
+  materialName: string;
+  slotId: string;
 }
 
+// A library catalog object. Identity is the catalog slug (Decision A).
 export interface LibraryObject {
-  id: string;
-  categoryId: string;
-  slug: string;
+  id: string; // catalog slug, e.g. 'bath-01'
   name: string;
-  description: string | null;
+  category: string; // category slug, e.g. 'bathroom'
   modelUrl: string;
-  thumbnailUrl: string;
-  lodUrls: Record<string, string> | null;
-  placement: 'floor' | 'wall' | 'ceiling' | 'wall_floor' | 'any';
-  boundingBox: Record<string, unknown> | null;
-  tags: string[];
-  metadata: Record<string, unknown>;
+  thumbnailUrl: string | null;
+  topdownUrl: string | null;
+  boundingBox: Record<string, unknown>; // { width, depth, height }
+  collisionBox: Record<string, unknown>; // { width, depth }
+  materialSlots: MaterialSlot[];
+  materialBindings: MaterialBinding[];
   isPremium: boolean;
   isActive: boolean;
   deletedAt: Date | null;

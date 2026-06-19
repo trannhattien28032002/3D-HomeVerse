@@ -61,59 +61,62 @@ const spec = {
           updatedAt: { type: 'string', format: 'date-time' },
         },
       },
-      ProjectObject: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          projectId: { type: 'string', format: 'uuid' },
-          libraryObjectId: { type: 'string', format: 'uuid' },
-          transform: { type: 'object' },
-          floorIndex: { type: 'integer' },
-          materialSlots: { type: 'object' },
-          instanceProps: { type: 'object' },
-          modelUrl: { type: 'string', nullable: true },
-          createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' },
-        },
-      },
       LibraryObject: {
         type: 'object',
+        description: 'Slug-keyed catalog object (Decision A). `id` is the catalog slug.',
         properties: {
-          id: { type: 'string', format: 'uuid' },
-          categoryId: { type: 'string', format: 'uuid' },
-          slug: { type: 'string' },
+          id: { type: 'string', description: 'catalog slug, e.g. bath-01' },
           name: { type: 'string' },
-          description: { type: 'string', nullable: true },
+          category: { type: 'string', description: 'category slug, e.g. bathroom' },
           modelUrl: { type: 'string' },
-          thumbnailUrl: { type: 'string' },
-          lodUrls: { type: 'object', nullable: true },
-          placement: { type: 'string', enum: ['floor', 'wall', 'ceiling', 'wall_floor', 'any'] },
-          tags: { type: 'array', items: { type: 'string' } },
+          thumbnailUrl: { type: 'string', nullable: true },
+          topdownUrl: { type: 'string', nullable: true },
+          boundingBox: { type: 'object', description: '{ width, depth, height }' },
+          collisionBox: { type: 'object', description: '{ width, depth }' },
+          materialSlots: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                label: { type: 'string' },
+                allowedCategories: { type: 'array', items: { type: 'string' } },
+              },
+            },
+          },
+          materialBindings: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                meshName: { type: 'string' },
+                materialName: { type: 'string' },
+                slotId: { type: 'string' },
+              },
+            },
+          },
           isPremium: { type: 'boolean' },
           isActive: { type: 'boolean' },
         },
       },
-      Category: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          parentId: { type: 'string', format: 'uuid', nullable: true },
-          slug: { type: 'string' },
-          name: { type: 'string' },
-          iconUrl: { type: 'string', nullable: true },
-          sortOrder: { type: 'integer' },
-          children: { type: 'array', items: { '$ref': '#/components/schemas/Category' } },
-        },
-      },
       Material: {
         type: 'object',
+        description: 'Slug-keyed material (Decision A). `id` is the catalog slug.',
         properties: {
-          id: { type: 'string', format: 'uuid' },
-          categoryId: { type: 'string', format: 'uuid' },
-          slug: { type: 'string' },
+          id: { type: 'string', description: 'catalog slug, e.g. Asphalt031' },
           name: { type: 'string' },
-          thumbnailUrl: { type: 'string' },
-          pbrDefaults: { type: 'object' },
+          category: { type: 'string', description: 'category slug, e.g. ground' },
+          iconUrl: { type: 'string', nullable: true },
+          textures: {
+            type: 'object',
+            description: 'resolved KTX2 texture URLs',
+            properties: {
+              color: { type: 'string' },
+              normal: { type: 'string' },
+              roughness: { type: 'string' },
+              ao: { type: 'string' },
+            },
+          },
           isPremium: { type: 'boolean' },
           isActive: { type: 'boolean' },
         },
@@ -283,12 +286,12 @@ const spec = {
       get: {
         summary: 'Load full scene (owner or share)',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }, { name: 'shareToken', in: 'query', schema: { type: 'string' } }],
-        responses: { '200': { description: 'Scene data and objects', content: { 'application/json': { schema: { type: 'object', properties: { sceneData: { type: 'object' }, objects: { type: 'array', items: { '$ref': '#/components/schemas/ProjectObject' } } } } } } } },
+        responses: { '200': { description: 'Scene data blob (slug refs preserved)', content: { 'application/json': { schema: { type: 'object', properties: { sceneData: { type: 'object' } } } } } } },
       },
       put: {
         summary: 'Save full scene (owner or editor share)',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { sceneData: { type: 'object', required: ['version'], properties: { version: { type: 'number' } } }, objects: { type: 'array', items: { type: 'object' } } }, required: ['sceneData', 'objects'] } } } },
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { sceneData: { type: 'object', required: ['version'], properties: { version: { type: 'number' } } } }, required: ['sceneData'] } } } },
         responses: { '200': { description: 'Saved timestamp', content: { 'application/json': { schema: { type: 'object', properties: { savedAt: { type: 'string', format: 'date-time' } } } } } } },
       },
     },
@@ -342,17 +345,15 @@ const spec = {
     },
     '/library/categories': {
       get: {
-        summary: 'Get full category tree (cached 5min)',
-        responses: { '200': { description: 'Category tree', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { '$ref': '#/components/schemas/Category' } } } } } } } },
+        summary: 'Distinct category slugs in use (cached 5min)',
+        responses: { '200': { description: 'Category slug list', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { type: 'string' } } } } } } } },
       },
     },
     '/library/objects': {
       get: {
         summary: 'List library objects (cursor-paginated)',
         parameters: [
-          { name: 'categoryId', in: 'query', schema: { type: 'string', format: 'uuid' } },
-          { name: 'placement', in: 'query', schema: { type: 'string', enum: ['floor', 'wall', 'ceiling', 'wall_floor', 'any'] } },
-          { name: 'tags', in: 'query', schema: { type: 'string', description: 'Comma-separated' } },
+          { name: 'category', in: 'query', schema: { type: 'string', description: 'category slug' } },
           { name: 'isPremium', in: 'query', schema: { type: 'boolean' } },
           { name: 'cursor', in: 'query', schema: { type: 'string' } },
           { name: 'limit', in: 'query', schema: { type: 'integer', default: 50, maximum: 100 } },
@@ -365,17 +366,16 @@ const spec = {
         summary: 'Full-text + trigram search (max 20 results)',
         parameters: [
           { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 2 } },
-          { name: 'categoryId', in: 'query', schema: { type: 'string', format: 'uuid' } },
-          { name: 'placement', in: 'query', schema: { type: 'string' } },
+          { name: 'category', in: 'query', schema: { type: 'string', description: 'category slug' } },
           { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
         ],
         responses: { '200': { description: 'Search results', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { '$ref': '#/components/schemas/LibraryObject' } } } } } } } },
       },
     },
-    '/library/objects/{id}': {
+    '/library/objects/{slug}': {
       get: {
-        summary: 'Get library object detail',
-        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        summary: 'Get library object detail by slug',
+        parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
         responses: { '200': { description: 'Library object detail', content: { 'application/json': { schema: { '$ref': '#/components/schemas/LibraryObject' } } } }, '404': { description: 'Not found' } },
       },
     },
@@ -383,7 +383,7 @@ const spec = {
       get: {
         summary: 'List materials (cursor-paginated)',
         parameters: [
-          { name: 'categoryId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+          { name: 'category', in: 'query', schema: { type: 'string', description: 'category slug' } },
           { name: 'cursor', in: 'query', schema: { type: 'string' } },
           { name: 'limit', in: 'query', schema: { type: 'integer', default: 50 } },
         ],
@@ -395,24 +395,17 @@ const spec = {
         summary: 'Full-text + trigram material search',
         parameters: [
           { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 2 } },
-          { name: 'categoryId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+          { name: 'category', in: 'query', schema: { type: 'string', description: 'category slug' } },
           { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
         ],
         responses: { '200': { description: 'Search results', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { '$ref': '#/components/schemas/Material' } } } } } } } },
       },
     },
-    '/materials/{id}': {
+    '/materials/{slug}': {
       get: {
         summary: 'Get material detail with resolved texture URLs',
-        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
         responses: { '200': { description: 'Material detail', content: { 'application/json': { schema: { '$ref': '#/components/schemas/Material' } } } }, '404': { description: 'Not found' } },
-      },
-    },
-    '/materials/compatible/{objectId}': {
-      get: {
-        summary: 'Get compatible materials for a library object',
-        parameters: [{ name: 'objectId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
-        responses: { '200': { description: 'Compatible materials and their categories', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { '$ref': '#/components/schemas/Material' } }, categories: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, slug: { type: 'string' }, name: { type: 'string' } } } } } } } } } },
       },
     },
     '/projects/{id}/share': {

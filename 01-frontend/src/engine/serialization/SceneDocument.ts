@@ -79,7 +79,7 @@ export type SceneWallItemRecord = {
     hostWallId: string;
     /** Vị trí dọc tim tường (0..1). */
     t: number;
-    /** Mặt tường (+1/−1). Item kiểu "opening" luôn dùng +1. */
+    /** Mặt tường (+1/−1) — lật model 180°. Áp cho cả kệ (mount) lẫn cửa/cửa sổ (opening). */
     side: number;
     /** Material đã chọn cho từng slot: slotId → materialId (materials.json). Optional. */
     materials?: Record<string, string>;

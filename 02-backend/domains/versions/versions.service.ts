@@ -1,5 +1,4 @@
 import { pool } from '../../shared/db/client';
-import { withTransaction } from '../../shared/db/transaction';
 import { ForbiddenError } from '../../shared/errors/ForbiddenError';
 import { NotFoundError } from '../../shared/errors/NotFoundError';
 import * as projectsRepo from '../projects/projects.repository';
@@ -65,13 +64,12 @@ export async function restoreVersion(
   if (!project) throw new NotFoundError('Project not found');
   if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can restore versions');
 
-  // Verify the version belongs to this project before starting transaction.
+  // Verify the version belongs to this project.
   const version = await repo.getVersion(pool, versionId);
   if (!version || version.projectId !== projectId) throw new NotFoundError('Version not found');
 
-  await withTransaction(pool, async (client) => {
-    await repo.restoreVersion(client, projectId, versionId);
-  });
+  // Single-row UPDATE copying scene_data back (Decision B) — no transaction needed.
+  await repo.restoreVersion(pool, projectId, versionId);
 
   return { restoredAt: new Date().toISOString() };
 }

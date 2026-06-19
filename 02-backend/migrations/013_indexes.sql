@@ -32,23 +32,14 @@ CREATE INDEX idx_library_objects_search
 CREATE INDEX idx_library_objects_name_trgm
   ON public.library_objects USING GIN (name gin_trgm_ops);
 
--- Category + active filter (library browse by category)
+-- Category slug + active filter (library browse by category)
 CREATE INDEX idx_library_objects_category_active
-  ON public.library_objects (category_id, name)
+  ON public.library_objects (category, name)
   WHERE is_active = TRUE AND deleted_at IS NULL;
-
--- Placement surface filter (e.g. show only wall-attached objects)
-CREATE INDEX idx_library_objects_placement
-  ON public.library_objects (placement)
-  WHERE is_active = TRUE AND deleted_at IS NULL;
-
--- Tag array search
-CREATE INDEX idx_library_objects_tags
-  ON public.library_objects USING GIN (tags);
 
 -- Premium filter
 CREATE INDEX idx_library_objects_premium
-  ON public.library_objects (is_premium, category_id)
+  ON public.library_objects (is_premium, category)
   WHERE is_active = TRUE AND deleted_at IS NULL;
 
 
@@ -60,26 +51,8 @@ CREATE INDEX idx_materials_name_trgm
   ON public.materials USING GIN (name gin_trgm_ops);
 
 CREATE INDEX idx_materials_category_active
-  ON public.materials (category_id, name)
+  ON public.materials (category, name)
   WHERE is_active = TRUE AND deleted_at IS NULL;
-
-CREATE INDEX idx_materials_tags
-  ON public.materials USING GIN (tags);
-
-
--- ─── project_objects ────────────────────────────────────────
--- Load all objects for a project (most frequent read)
-CREATE INDEX idx_project_objects_project
-  ON public.project_objects (project_id, floor_index);
-
--- Find all placements of a specific library object (analytics / delete cascade check)
-CREATE INDEX idx_project_objects_library
-  ON public.project_objects (library_object_id);
-
--- GIN on material_slots for future queries like
--- "find all project objects using material X"
-CREATE INDEX idx_project_objects_material_slots_gin
-  ON public.project_objects USING GIN (material_slots jsonb_path_ops);
 
 
 -- ─── project_versions ───────────────────────────────────────
@@ -114,18 +87,4 @@ CREATE INDEX idx_project_operations_project_time
 CREATE INDEX idx_project_operations_session
   ON public.project_operations (session_id, applied_at);
 
-
--- ─── category_material_compat ───────────────────────────────
--- "Given object_category_id, what material categories are allowed?"
--- Covered by PRIMARY KEY (object_category_id, material_category_id) — no extra index needed.
--- Reverse: given material_category_id, what object categories allow it?
-CREATE INDEX idx_cat_mat_compat_reverse
-  ON public.category_material_compat (material_category_id);
-
-
--- ─── object_categories ──────────────────────────────────────
-CREATE INDEX idx_object_categories_parent
-  ON public.object_categories (parent_id);
-
-CREATE INDEX idx_object_categories_slug
-  ON public.object_categories (slug);
+-- No compatibility or object_categories indexes — those tables were removed (Decision B).

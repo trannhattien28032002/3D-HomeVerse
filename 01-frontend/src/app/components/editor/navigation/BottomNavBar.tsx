@@ -6,7 +6,7 @@
  * hoặc mở catalog đồ trang trí. Logic hành vi nằm trong cấu hình BOTTOM_NAV; component
  * này chỉ render và định tuyến sự kiện click. "divider" là vạch ngăn, không phải nút.
  */
-import { T } from "src/app/constants/designTokens";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 import { BOTTOM_NAV } from "src/app/constants/navigation";
 import type { Mode } from "src/app/constants/navigation";
 import type { EngineApi } from "src/engine/engineTypes";
@@ -35,9 +35,9 @@ export default function BottomNavBar({ mode, activeNav, setMode, setToolMode2D, 
             background: T.surface,
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
-            border: `1px solid rgba(248,180,0,0.25)`,
+            border: `1px solid ${alpha(RGB.primaryContainer, 0.25)}`,
             borderRadius: 9999,
-            boxShadow: "0 8px 32px rgba(124,88,0,0.18)",
+            boxShadow: `0 8px 32px ${alpha(RGB.primary, 0.18)}`,
             maxWidth: "95vw", overflowX: "auto",
         }}>
             {visibleItems.map((item) => {
@@ -87,14 +87,14 @@ export default function BottomNavBar({ mode, activeNav, setMode, setToolMode2D, 
                             color: isActive ? T.primary : T.onSurfaceVariant,
                             border: "none", borderRadius: isActive ? 9999 : 12,
                             cursor: "pointer",
-                            boxShadow: isActive ? `0 0 12px rgba(248,180,0,0.35)` : "none",
+                            boxShadow: isActive ? `0 0 12px ${alpha(RGB.primaryContainer, 0.35)}` : "none",
                             transition: "all 0.2s",
                             transform: isActive ? "scale(0.92)" : "scale(1)",
                             flexShrink: 0,
                         }}
                         onMouseEnter={e => {
                             if (!isActive) {
-                                (e.currentTarget as HTMLButtonElement).style.background = "rgba(248,180,0,0.15)";
+                                (e.currentTarget as HTMLButtonElement).style.background = alpha(RGB.primaryContainer, 0.15);
                                 (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.08)";
                             }
                         }}

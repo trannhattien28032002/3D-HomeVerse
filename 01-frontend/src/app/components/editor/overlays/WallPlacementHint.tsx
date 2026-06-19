@@ -1,3 +1,5 @@
+import { T, RGB, alpha } from "src/app/constants/designTokens";
+
 /** Gợi ý nổi khi đang đặt vật phụ thuộc tường — click vào tường để đặt. */
 export default function WallPlacementHint() {
     return (
@@ -16,8 +18,8 @@ export default function WallPlacementHint() {
                 background: "rgba(241,238,229,0.92)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(248,180,0,0.40)",
-                boxShadow: "0 4px 20px rgba(124,88,0,0.18)",
+                border: `1px solid ${alpha(RGB.primaryContainer, 0.40)}`,
+                boxShadow: `0 4px 20px ${alpha(RGB.primary, 0.18)}`,
                 fontFamily: "'Nunito Sans', sans-serif",
                 fontSize: 13,
                 fontWeight: 600,
@@ -29,7 +31,7 @@ export default function WallPlacementHint() {
         >
             <span
                 className="material-symbols-outlined"
-                style={{ fontSize: 18, color: "#f8b400", lineHeight: 1 }}
+                style={{ fontSize: 18, color: T.primaryContainer, lineHeight: 1 }}
             >
                 push_pin
             </span>

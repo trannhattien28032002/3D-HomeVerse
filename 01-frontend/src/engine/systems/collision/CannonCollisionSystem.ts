@@ -32,6 +32,7 @@ import { ColliderAABB } from 'src/engine/components/physics/ColliderAABB';
 import { StaticBody } from 'src/engine/components/physics/StaticBody';
 import { DynamicBody } from 'src/engine/components/physics/DynamicBody';
 import { Grounded } from 'src/engine/components/physics/Grounded';
+import { FurnitureTag } from 'src/engine/components/furniture/FurnitureTag';
 
 import {
     type StaticEntry,
@@ -66,6 +67,9 @@ export class CannonCollisionSystem extends System {
     /** Cache danh sách entity ID tĩnh/động — rebuild chỉ khi revision đổi. */
     private _staticEids: string[] = [];
     private _dynamicEids: string[] = [];
+    /** Tập con của _staticEids chỉ gồm đồ nội thất (có FurnitureTag) — KHÔNG gồm tường.
+     *  Dùng cho wouldCollideFurniture (preview kéo 2D, loại tường ra — xem A1). */
+    private _furnitureEids: string[] = [];
 
     constructor() {
         super();
@@ -87,6 +91,7 @@ export class CannonCollisionSystem extends System {
             this._staticEids = Query.entitiesWith(world, Transform, ColliderAABB, StaticBody)
                 .filter(id => !world.hasComponent(id, Grounded));
             this._dynamicEids = Query.entitiesWith(world, Transform, ColliderAABB, DynamicBody);
+            this._furnitureEids = this._staticEids.filter(id => world.hasComponent(id, FurnitureTag));
 
             gcStaticBodies(this.staticEntries, this._staticEids, this.physicsWorld);
             gcDynamicEntries(this.dynamicEntries, this._dynamicEids);
@@ -206,6 +211,48 @@ export class CannonCollisionSystem extends System {
         const hd = Math.max(0.01, depth / 2 - PROBE_SHRINK);
         updateProbeShape(this.probeBody, hw, hh, hd);
         return this.testOverlap(targetX, targetY, targetZ, qx, qy, qz, qw, ignoreEntityId);
+    }
+
+    /**
+     * A1: kiểm va chạm CHỈ với đồ nội thất khác, ở Y THẬT của entity — KHÔNG tính
+     * tường/sàn. Dùng cho preview kéo trong 2D Plan View.
+     *
+     * Vì sao chỉ furniture: 2D Plan View chiếu top-down, mất trục Y → vật xếp chồng
+     * (bàn phím trên bàn) bị SAT-2D tính là chồng lấn dù khác cao độ. Phép kiểm này
+     * dùng đúng ColliderAABB + Y hiện tại của entity (chỉ đổi X/Z khi kéo) nên cao độ
+     * khác nhau ⇒ không va chạm. Tường full-height nên Y vô nghĩa với tường → vẫn để
+     * collision2D (miter-poly) lo (A1: không đụng hành vi va-chạm-tường).
+     *
+     * Cùng nguồn Cannon + cùng cỡ probe với lúc commit (handleMoveFurniture) → preview
+     * và kết quả thả khớp nhau.
+     */
+    public wouldCollideFurniture(
+        world: World,
+        entityId: string,
+        targetX: number,
+        targetZ: number,
+    ): boolean {
+        const t = world.getComponent(entityId, Transform);
+        const c = world.getComponent(entityId, ColliderAABB);
+        if (!t || !c) return false;
+
+        this.prepareProbe(c);
+
+        _cannonPos.set(targetX, t.y, targetZ);
+        _cannonQuat.set(t.qx, t.qy, t.qz, t.qw);
+        this.probeBody.position.copy(_cannonPos);
+        this.probeBody.quaternion.copy(_cannonQuat);
+        this.probeBody.updateBoundingRadius();
+        this.probeBody.updateAABB();
+
+        // Chỉ duyệt body furniture (đã loại tường/sàn) và bỏ qua chính nó.
+        for (const id of this._furnitureEids) {
+            if (id === entityId) continue;
+            const entry = this.staticEntries.get(id);
+            if (!entry) continue;
+            if (this.narrowTest(this.probeBody, entry.body)) return true;
+        }
+        return false;
     }
 
     public setSafePos(entityId: string, x: number, y: number, z: number): void {

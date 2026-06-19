@@ -5,6 +5,8 @@
  * entry chunk. Chỉ là nền + spinner trùng tông màu giấy của app, tránh nháy trắng
  * trong lúc EditorPage/ProjectsPage chunk đang được fetch.
  */
+import { T } from "src/app/constants/designTokens";
+
 export default function RouteFallback() {
     return (
         <div
@@ -19,7 +21,7 @@ export default function RouteFallback() {
                     width: 48, height: 48,
                     borderRadius: "50%",
                     border: "4px solid #e6e2d9",
-                    borderTopColor: "#f8b400",
+                    borderTopColor: T.primaryContainer,
                     animation: "route-fallback-spin 0.8s linear infinite",
                 }}
             />

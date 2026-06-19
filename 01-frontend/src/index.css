@@ -93,6 +93,17 @@
   --radius-xl: 0.75rem;
 }
 
+/*
+ * Brand RGB channels — compose rgba(...) với alpha tuỳ ý qua var(), dùng được cả
+ * trong CSS thường lẫn Tailwind arbitrary value `shadow-[...rgba(var(--rgb-...),A)]`.
+ * Đặt ở :root (không trong @theme) để Tailwind không tree-shake khi chỉ tham chiếu
+ * bên trong chuỗi arbitrary value. Đồng bộ với RGB trong designTokens.ts.
+ */
+:root {
+  --rgb-primary: 124, 88, 0;            /* #7c5800 */
+  --rgb-primary-container: 248, 180, 0; /* #f8b400 */
+}
+
 html,
 body {
   overflow: hidden;
@@ -115,7 +126,18 @@ body {
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 .glow-hover:hover {
-  box-shadow: 0 0 15px rgba(248, 180, 0, 0.4);
+  box-shadow: 0 0 15px rgba(var(--rgb-primary-container), 0.4);
+}
+
+/* Nút "Mặc định" (MaterialSidebar ResetButton) — hover đổi viền + nền sang tông brand. */
+.material-reset-btn {
+  border: 1px solid rgba(213, 196, 172, 0.6);
+  background: transparent;
+  transition: background 0.18s, border-color 0.18s;
+}
+.material-reset-btn:hover {
+  border-color: var(--color-primary-container);
+  background: rgba(var(--rgb-primary-container), 0.12);
 }
 
 /* === Decor Catalog open/close animation === */
@@ -183,5 +205,22 @@ body {
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

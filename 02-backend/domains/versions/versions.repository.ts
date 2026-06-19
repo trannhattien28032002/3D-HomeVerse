@@ -84,14 +84,6 @@ export async function restoreVersion(
     [versionId, projectId]
   );
   if (rowCount === 0) throw new NotFoundError('Version not found');
-
-  // Clear all project_objects for this project.
-  // Rationale: At restore time we cannot reconstruct the exact object instances
-  // that existed at snapshot time from scene_data alone. We clear the registry
-  // so the client can re-derive objects on the next explicit save.
-  // The scene_data itself contains the full editor state needed to reconstruct the view.
-  await client.query(
-    'DELETE FROM public.project_objects WHERE project_id = $1',
-    [projectId]
-  );
+  // Per Decision B, restore is a single-row UPDATE copying scene_data back.
+  // There is no project_objects registry to re-sync.
 }

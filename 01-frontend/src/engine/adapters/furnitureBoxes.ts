@@ -8,6 +8,7 @@ import { Transform } from "src/engine/components/core/Transform";
 import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import type { FurnitureBox } from "src/shared/geometry/alignment";
+import { quatToYaw } from "src/shared/math/yaw";
 
 export function collectFurnitureBoxes(world: World, exclude?: string): FurnitureBox[] {
     const out: FurnitureBox[] = [];
@@ -15,7 +16,7 @@ export function collectFurnitureBoxes(world: World, exclude?: string): Furniture
         if (e === exclude) continue;
         const t = world.getComponent(e, Transform)!;
         const c = world.getComponent(e, ColliderAABB)!;
-        out.push({ cx: t.x, cz: t.z, hw: c.width, hd: c.depth, rotY: 2 * Math.atan2(t.qy, t.qw) });
+        out.push({ cx: t.x, cz: t.z, hw: c.width, hd: c.depth, rotY: quatToYaw(t.qx, t.qy, t.qz, t.qw) });
     }
     return out;
 }

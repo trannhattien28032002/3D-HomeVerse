@@ -16,6 +16,7 @@ import {
     WallOpeningPreviewController,
     collectExistingOpenings,
 } from "src/engine/systems/wall/WallOpeningPreviewController";
+import { setYawQuaternion } from "src/shared/math/yaw";
 import type { World } from "src/engine/ecs/World";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
@@ -128,8 +129,7 @@ export class WallItemGhost {
         const pose = wallItemPose(wall, t, side, dims);
 
         ghost.position.set(pose.x, ghostBaseOffsetY + pose.baseY, pose.z);
-        const half = pose.rotY / 2;
-        ghost.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
+        setYawQuaternion(ghost, pose.rotY);
         ghost.visible = true;
         this.deps.hideGuide();
 

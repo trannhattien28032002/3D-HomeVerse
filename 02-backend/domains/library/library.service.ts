@@ -3,64 +3,42 @@ import { resolvePublicUrl } from '../../shared/storage/storageClient';
 import { AppError } from '../../shared/errors/AppError';
 import { NotFoundError } from '../../shared/errors/NotFoundError';
 import * as repo from './library.repository';
-import type { Category, CategoryTree, LibraryObject, LibraryObjectDetail } from './library.types';
+import type { LibraryObject, LibraryObjectDetail } from './library.types';
 import type { LibrarySearchQuery } from './library.schema';
 
-// In-memory category tree cache with TTL.
+// In-memory distinct-category cache with TTL (Decision B caching plan).
 interface CategoryCache {
-  tree: CategoryTree[];
+  categories: string[];
   loadedAt: number;
 }
 
 let categoryCache: CategoryCache | null = null;
 const CATEGORY_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-function buildTree(flat: Category[]): CategoryTree[] {
-  const map = new Map<string, CategoryTree>();
-  for (const cat of flat) {
-    map.set(cat.id, { ...cat, children: [] });
-  }
-  const roots: CategoryTree[] = [];
-  for (const node of map.values()) {
-    if (node.parentId === null) {
-      roots.push(node);
-    } else {
-      const parent = map.get(node.parentId);
-      if (parent) {
-        parent.children.push(node);
-      }
-    }
-  }
-  return roots.sort((a, b) => a.sortOrder - b.sortOrder);
-}
-
-async function loadCategories(): Promise<CategoryTree[]> {
+async function loadCategories(): Promise<string[]> {
   const now = Date.now();
   if (categoryCache && now - categoryCache.loadedAt < CATEGORY_TTL_MS) {
-    return categoryCache.tree;
+    return categoryCache.categories;
   }
-  const flat = await repo.listCategories(pool);
-  const tree = buildTree(flat);
-  categoryCache = { tree, loadedAt: now };
-  return tree;
+  const categories = await repo.listCategories(pool);
+  categoryCache = { categories, loadedAt: now };
+  return categories;
 }
 
 function resolveObjectUrls(obj: LibraryObject): LibraryObjectDetail {
-  const resolved: LibraryObjectDetail = {
+  // Storage paths are resolved to CDN URLs. Slug `id` and the inner material
+  // slot/binding shapes are returned unchanged (Decision A).
+  // TODO (RQ-6): for premium objects, generate signed URLs instead of public CDN URLs.
+  return {
     ...obj,
     modelUrl: resolvePublicUrl(obj.modelUrl),
-    thumbnailUrl: resolvePublicUrl(obj.thumbnailUrl),
-    lodUrls: obj.lodUrls
-      ? Object.fromEntries(
-          Object.entries(obj.lodUrls).map(([k, v]) => [k, resolvePublicUrl(v as string)])
-        )
-      : null,
+    thumbnailUrl: obj.thumbnailUrl ? resolvePublicUrl(obj.thumbnailUrl) : null,
+    topdownUrl: obj.topdownUrl ? resolvePublicUrl(obj.topdownUrl) : null,
   };
-  // TODO (RQ-6): For premium objects, generate signed URLs instead of public CDN URLs.
-  return resolved;
 }
 
-export async function getCategoryTree(): Promise<CategoryTree[]> {
+// Distinct category slugs (for filter chips).
+export async function getCategories(): Promise<string[]> {
   return loadCategories();
 }
 
@@ -73,12 +51,7 @@ export async function listObjects(
     if (!cursor) throw new AppError('Invalid cursor', 400, 'BAD_REQUEST');
   }
 
-  const filters = {
-    categoryId: query.categoryId,
-    placement: query.placement,
-    tags: query.tags ? query.tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
-    isPremium: query.isPremium,
-  };
+  const filters = { category: query.category, isPremium: query.isPremium };
 
   const rows = await repo.listObjects(pool, filters, cursor, query.limit);
   const hasMore = rows.length > query.limit;
@@ -93,22 +66,20 @@ export async function listObjects(
   return { data, nextCursor };
 }
 
-export async function searchObjects(query: LibrarySearchQuery): Promise<{ data: LibraryObjectDetail[] }> {
+export async function searchObjects(
+  query: LibrarySearchQuery
+): Promise<{ data: LibraryObjectDetail[] }> {
   if (!query.q) throw new AppError('Search query (q) is required', 400, 'BAD_REQUEST');
 
-  const filters = {
-    categoryId: query.categoryId,
-    placement: query.placement,
-    tags: query.tags ? query.tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
-  };
+  const filters = { category: query.category };
 
   // Search results are capped at 20 per spec.
   const rows = await repo.searchObjects(pool, query.q, filters, Math.min(query.limit, 20));
   return { data: rows.map(resolveObjectUrls) };
 }
 
-export async function getObjectById(id: string): Promise<LibraryObjectDetail> {
-  const obj = await repo.getObjectById(pool, id);
+export async function getObjectBySlug(slug: string): Promise<LibraryObjectDetail> {
+  const obj = await repo.getObjectBySlug(pool, slug);
   if (!obj) throw new NotFoundError('Library object not found');
   return resolveObjectUrls(obj);
 }

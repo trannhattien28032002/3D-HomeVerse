@@ -1,4 +1,5 @@
 import { Component } from "src/engine/ecs/Component";
+import { quatToYaw, yawToQuat } from "src/shared/math/yaw";
 
 /**
  * Transform — vị trí + hướng xoay của một entity trong không gian 3D.
@@ -28,19 +29,16 @@ export class Transform extends Component {
 
     /** Trích góc yaw quanh trục Y từ quaternion (cùng công thức GizmoSystem từng dùng). */
     get rotY(): number {
-        return Math.atan2(
-            2 * (this.qw * this.qy + this.qx * this.qz),
-            1 - 2 * (this.qy * this.qy + this.qx * this.qx),
-        );
+        return quatToYaw(this.qx, this.qy, this.qz, this.qw);
     }
 
     /** Đặt quaternion chỉ-yaw, xoá mọi pitch/roll. Dùng cho tường và đặt đồ 2D. */
     set rotY(rad: number) {
-        const half = rad / 2;
-        this.qx = 0;
-        this.qy = Math.sin(half);
-        this.qz = 0;
-        this.qw = Math.cos(half);
+        const q = yawToQuat(rad);
+        this.qx = q.x;
+        this.qy = q.y;
+        this.qz = q.z;
+        this.qw = q.w;
     }
 
     /** Đặt xoay đầy đủ 3 trục. Gizmo dùng để hỗ trợ pitch/roll. */

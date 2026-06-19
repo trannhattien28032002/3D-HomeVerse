@@ -1,0 +1,3130 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "b5003243-c1d4-42f2-8f41-c01144b050ce",
+      "x": -5,
+      "z": 8.7
+    },
+    {
+      "id": "3123d3f4-1d20-48fe-bffe-d6fbae57b3a4",
+      "x": 1.6,
+      "z": 8.7
+    },
+    {
+      "id": "49affa5a-23ec-43ce-90f0-8c2959bdbbc0",
+      "x": 1.5999999999999988,
+      "z": 5
+    },
+    {
+      "id": "62593eea-4099-4534-8ca7-e1b8d3e7e59f",
+      "x": 0,
+      "z": 5
+    },
+    {
+      "id": "ed27df85-2999-480d-82bd-bf2b110f218a",
+      "x": 9,
+      "z": 5
+    },
+    {
+      "id": "846ddb82-9e49-433a-a832-3e45dbecf353",
+      "x": 9,
+      "z": -15.7
+    },
+    {
+      "id": "e694be6e-58fe-4476-ad0a-62d9ac54d0cf",
+      "x": -5.018441740794866,
+      "z": 4.795372066310039
+    },
+    {
+      "id": "d9c47793-75d1-40e9-83b9-1bca61c15c4e",
+      "x": -4.599980924471523,
+      "z": 4.7930368122172045
+    },
+    {
+      "id": "04a9e999-2bab-4ece-9352-f9fe477292d9",
+      "x": -4.6,
+      "z": 5.2
+    },
+    {
+      "id": "6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34",
+      "x": -5,
+      "z": 5.2
+    },
+    {
+      "id": "56bc883c-8bfe-4581-9635-9d149656e33a",
+      "x": -5.045136768019616,
+      "z": 0.011814286228669743
+    },
+    {
+      "id": "b0d1647f-372c-44d0-99f8-08a048397ed3",
+      "x": -4.699803230628825,
+      "z": 0.009887124771427124
+    },
+    {
+      "id": "367215d8-2a7a-46ec-99ba-8f6589a094b2",
+      "x": -4.697626208113342,
+      "z": 0.3999939751473937
+    },
+    {
+      "id": "c9f7bcfd-5cfa-4f42-9344-9a535299f040",
+      "x": -5,
+      "z": 0.4
+    },
+    {
+      "id": "f674aca6-582e-4c06-84b4-eff44311431a",
+      "x": -5.1,
+      "z": -8.8
+    },
+    {
+      "id": "8a8258c4-365b-4055-b287-8bc69bd1aca0",
+      "x": -4.7,
+      "z": -8.8
+    },
+    {
+      "id": "6c92e8ff-357f-4c64-88b6-1855ac690c42",
+      "x": -4.7,
+      "z": -8.3
+    },
+    {
+      "id": "5c6220ff-fe2e-46d7-b276-72b622b02498",
+      "x": -5.1,
+      "z": -8.3
+    },
+    {
+      "id": "f2b9348a-37e8-45b4-bb42-70fd8bb2cf40",
+      "x": -5.1,
+      "z": -15.3
+    },
+    {
+      "id": "92e155ac-1300-4fc3-9819-f44a1e2f5a8c",
+      "x": -4.7,
+      "z": -15.3
+    },
+    {
+      "id": "fd4fa7b1-0390-4ca2-a71d-96a7b20142d2",
+      "x": -4.7,
+      "z": -15.7
+    },
+    {
+      "id": "32a83e7e-6f3c-4a10-94b9-5e681a9e54f6",
+      "x": 3.6,
+      "z": -2.7
+    },
+    {
+      "id": "634684f2-7af1-4184-9564-27f2e8c00098",
+      "x": 6.9,
+      "z": -2.7
+    },
+    {
+      "id": "c209a15d-570b-4146-b195-9eeb000197da",
+      "x": 9,
+      "z": -3
+    },
+    {
+      "id": "4b2f93c4-a142-4ceb-9803-2ab0e8047420",
+      "x": 9,
+      "z": 1
+    },
+    {
+      "id": "6cf6e7d9-93a9-4df7-9e5d-3fac85b056e6",
+      "x": 9,
+      "z": -6.3
+    },
+    {
+      "id": "b9272d00-9a8a-4b29-9f77-ad3291dc0c37",
+      "x": 13,
+      "z": 1
+    },
+    {
+      "id": "1b4f8bf0-0599-43fb-8d38-320bbd4bde85",
+      "x": 13,
+      "z": 5.001249804748512
+    },
+    {
+      "id": "c9d196f9-a224-40a0-a01a-eab64dfd2e55",
+      "x": 13.001249804748513,
+      "z": -3
+    },
+    {
+      "id": "fc59d620-49a6-449a-a1ac-4513fd9cac42",
+      "x": 13,
+      "z": -6.329986833278071
+    },
+    {
+      "id": "de5f169f-8235-4808-b240-58941f460c86",
+      "x": 9,
+      "z": -0.1
+    },
+    {
+      "id": "53e155f6-93bb-4d72-90b5-16b446a4c6ee",
+      "x": 9.2,
+      "z": -0.1
+    },
+    {
+      "id": "825d03a3-2216-4b4c-901e-3e2b3cbb0dca",
+      "x": 9.2,
+      "z": -2.2
+    },
+    {
+      "id": "b49a65ec-b529-472e-85d2-6df0b533c06e",
+      "x": 9,
+      "z": -2.2
+    },
+    {
+      "id": "b6529a8d-4b32-4c11-888a-8293ffebd774",
+      "x": 9,
+      "z": 6.9
+    },
+    {
+      "id": "b5a55a0f-52fb-44b2-b645-d5ab0ad3afc5",
+      "x": 13,
+      "z": 6.9
+    },
+    {
+      "id": "fc821712-5a2d-4dda-ad6e-fd2e59027c69",
+      "x": 11.8,
+      "z": 5
+    },
+    {
+      "id": "3d56567f-8833-416b-9e7b-53a281ee1795",
+      "x": 11.8,
+      "z": 6.9
+    }
+  ],
+  "walls": [
+    {
+      "wallId": "c1931a03-323f-4532-88cd-db9f8a2e2571",
+      "startNodeId": "b5003243-c1d4-42f2-8f41-c01144b050ce",
+      "endNodeId": "3123d3f4-1d20-48fe-bffe-d6fbae57b3a4",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "00aaec5d-206c-4dbe-a3b7-a51a567c7bb8",
+      "startNodeId": "3123d3f4-1d20-48fe-bffe-d6fbae57b3a4",
+      "endNodeId": "49affa5a-23ec-43ce-90f0-8c2959bdbbc0",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "d774e8e9-d16b-440d-89f4-01d164d46dc8",
+      "startNodeId": "49affa5a-23ec-43ce-90f0-8c2959bdbbc0",
+      "endNodeId": "62593eea-4099-4534-8ca7-e1b8d3e7e59f",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "cca8eb09-f634-41a1-90fb-2b994226c276",
+      "startNodeId": "49affa5a-23ec-43ce-90f0-8c2959bdbbc0",
+      "endNodeId": "ed27df85-2999-480d-82bd-bf2b110f218a",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "startNodeId": "846ddb82-9e49-433a-a832-3e45dbecf353",
+      "endNodeId": "fd4fa7b1-0390-4ca2-a71d-96a7b20142d2",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic012A"
+      }
+    },
+    {
+      "wallId": "fcfd5c91-4cc8-4d4b-bf48-45d6555dfee8",
+      "startNodeId": "e694be6e-58fe-4476-ad0a-62d9ac54d0cf",
+      "endNodeId": "d9c47793-75d1-40e9-83b9-1bca61c15c4e",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "72ea6fba-930e-4b69-94e6-66904891bde2",
+      "startNodeId": "d9c47793-75d1-40e9-83b9-1bca61c15c4e",
+      "endNodeId": "04a9e999-2bab-4ece-9352-f9fe477292d9",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "86bc44e5-a87c-4b6c-8fe6-31f89fe6d8f7",
+      "startNodeId": "6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34",
+      "endNodeId": "b5003243-c1d4-42f2-8f41-c01144b050ce",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "ebcc74bf-fe9d-4d6e-973b-bae9f26cf129",
+      "startNodeId": "04a9e999-2bab-4ece-9352-f9fe477292d9",
+      "endNodeId": "6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "0fab93e9-454a-489e-af93-11c7dc1f7cb7",
+      "startNodeId": "56bc883c-8bfe-4581-9635-9d149656e33a",
+      "endNodeId": "b0d1647f-372c-44d0-99f8-08a048397ed3",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "c3f4d3a6-2610-49aa-8e1b-bf5b253d06ee",
+      "startNodeId": "b0d1647f-372c-44d0-99f8-08a048397ed3",
+      "endNodeId": "367215d8-2a7a-46ec-99ba-8f6589a094b2",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "2031b4af-69dc-43d6-8142-15960769f218",
+      "startNodeId": "c9f7bcfd-5cfa-4f42-9344-9a535299f040",
+      "endNodeId": "e694be6e-58fe-4476-ad0a-62d9ac54d0cf",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "90fd1c4b-f19e-41c9-ab7c-77fd9881572e",
+      "startNodeId": "367215d8-2a7a-46ec-99ba-8f6589a094b2",
+      "endNodeId": "c9f7bcfd-5cfa-4f42-9344-9a535299f040",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "68e103fe-da36-4605-b0e4-06199123f6df",
+      "startNodeId": "f674aca6-582e-4c06-84b4-eff44311431a",
+      "endNodeId": "8a8258c4-365b-4055-b287-8bc69bd1aca0",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "50a49750-8b08-4d26-9250-36a05b4f3fca",
+      "startNodeId": "8a8258c4-365b-4055-b287-8bc69bd1aca0",
+      "endNodeId": "6c92e8ff-357f-4c64-88b6-1855ac690c42",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "36a1192f-1bf4-4bc7-9d2f-86810277b145",
+      "startNodeId": "5c6220ff-fe2e-46d7-b276-72b622b02498",
+      "endNodeId": "56bc883c-8bfe-4581-9635-9d149656e33a",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "d7b86551-3afa-4094-af85-094f8cb5cfd2",
+      "startNodeId": "6c92e8ff-357f-4c64-88b6-1855ac690c42",
+      "endNodeId": "5c6220ff-fe2e-46d7-b276-72b622b02498",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "15a2b66b-35b9-42ec-a4b1-f0f7bbcca663",
+      "startNodeId": "f2b9348a-37e8-45b4-bb42-70fd8bb2cf40",
+      "endNodeId": "f674aca6-582e-4c06-84b4-eff44311431a",
+      "thickness": 0.15,
+      "height": 3.2
+    },
+    {
+      "wallId": "4af7d951-d4d8-4ac4-8013-5b4e52d69117",
+      "startNodeId": "f2b9348a-37e8-45b4-bb42-70fd8bb2cf40",
+      "endNodeId": "92e155ac-1300-4fc3-9819-f44a1e2f5a8c",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "7b078454-03dd-4b40-ac84-5ffc84f86e36",
+      "startNodeId": "92e155ac-1300-4fc3-9819-f44a1e2f5a8c",
+      "endNodeId": "fd4fa7b1-0390-4ca2-a71d-96a7b20142d2",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "b5dde821-6bbd-4dd1-a2f4-ac76e878240b",
+      "startNodeId": "32a83e7e-6f3c-4a10-94b9-5e681a9e54f6",
+      "endNodeId": "634684f2-7af1-4184-9564-27f2e8c00098",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Plastic014A",
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "4ac012fa-77ba-4211-a6a5-d5aa66ba03b7",
+      "startNodeId": "c209a15d-570b-4146-b195-9eeb000197da",
+      "endNodeId": "6cf6e7d9-93a9-4df7-9e5d-3fac85b056e6",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Plastic016A"
+      }
+    },
+    {
+      "wallId": "12bbab24-00c6-48aa-8f3b-40f5bc820246",
+      "startNodeId": "6cf6e7d9-93a9-4df7-9e5d-3fac85b056e6",
+      "endNodeId": "846ddb82-9e49-433a-a832-3e45dbecf353",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Plastic012A"
+      }
+    },
+    {
+      "wallId": "1ad95a70-d7f0-4b69-833b-fc753b6341a9",
+      "startNodeId": "b9272d00-9a8a-4b29-9f77-ad3291dc0c37",
+      "endNodeId": "1b4f8bf0-0599-43fb-8d38-320bbd4bde85",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009"
+      }
+    },
+    {
+      "wallId": "2b34c494-bec1-462a-b250-ea7fd3f1d100",
+      "startNodeId": "ed27df85-2999-480d-82bd-bf2b110f218a",
+      "endNodeId": "fc821712-5a2d-4dda-ad6e-fd2e59027c69",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Tiles133A",
+        "right": "Travertine009"
+      }
+    },
+    {
+      "wallId": "c181c43a-4c5c-4c9b-aec1-c9ded9cd4c05",
+      "startNodeId": "c209a15d-570b-4146-b195-9eeb000197da",
+      "endNodeId": "c9d196f9-a224-40a0-a01a-eab64dfd2e55",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Travertine009"
+      }
+    },
+    {
+      "wallId": "9f3e7386-c61e-4edb-8b6f-94c290ad2d00",
+      "startNodeId": "c9d196f9-a224-40a0-a01a-eab64dfd2e55",
+      "endNodeId": "b9272d00-9a8a-4b29-9f77-ad3291dc0c37",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009"
+      }
+    },
+    {
+      "wallId": "afaf5cba-b11e-4275-87f0-1d6da7bfd69c",
+      "startNodeId": "6cf6e7d9-93a9-4df7-9e5d-3fac85b056e6",
+      "endNodeId": "fc59d620-49a6-449a-a1ac-4513fd9cac42",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009"
+      }
+    },
+    {
+      "wallId": "1991343b-4e80-451e-a489-875981a73f8e",
+      "startNodeId": "fc59d620-49a6-449a-a1ac-4513fd9cac42",
+      "endNodeId": "c9d196f9-a224-40a0-a01a-eab64dfd2e55",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009"
+      }
+    },
+    {
+      "wallId": "4cf0a87d-94ee-435f-9403-550037271b74",
+      "startNodeId": "4b2f93c4-a142-4ceb-9803-2ab0e8047420",
+      "endNodeId": "de5f169f-8235-4808-b240-58941f460c86",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "72ee33be-d0a0-4b8e-8d5d-2dddbe5b4c02",
+      "startNodeId": "de5f169f-8235-4808-b240-58941f460c86",
+      "endNodeId": "53e155f6-93bb-4d72-90b5-16b446a4c6ee",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "604c64c2-463a-4e09-ad9e-4a8bd5a13cde",
+      "startNodeId": "53e155f6-93bb-4d72-90b5-16b446a4c6ee",
+      "endNodeId": "825d03a3-2216-4b4c-901e-3e2b3cbb0dca",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "8299c597-675a-42ef-bd5e-e65adba8d2bb",
+      "startNodeId": "825d03a3-2216-4b4c-901e-3e2b3cbb0dca",
+      "endNodeId": "b49a65ec-b529-472e-85d2-6df0b533c06e",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "c64cc57e-80b3-4cfe-8976-8db94580d214",
+      "startNodeId": "b49a65ec-b529-472e-85d2-6df0b533c06e",
+      "endNodeId": "c209a15d-570b-4146-b195-9eeb000197da",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Plastic014A"
+      }
+    },
+    {
+      "wallId": "7996429e-bfb6-40c2-9df5-9fbc935e2edd",
+      "startNodeId": "ed27df85-2999-480d-82bd-bf2b110f218a",
+      "endNodeId": "b6529a8d-4b32-4c11-888a-8293ffebd774",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Tiles133A"
+      }
+    },
+    {
+      "wallId": "6f813bb5-dfbc-4133-b553-e05ea86ba9a4",
+      "startNodeId": "b6529a8d-4b32-4c11-888a-8293ffebd774",
+      "endNodeId": "3d56567f-8833-416b-9e7b-53a281ee1795",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Tiles133A"
+      }
+    },
+    {
+      "wallId": "2ee7782d-7ffc-416f-bcf7-96305711d009",
+      "startNodeId": "b5a55a0f-52fb-44b2-b645-d5ab0ad3afc5",
+      "endNodeId": "1b4f8bf0-0599-43fb-8d38-320bbd4bde85",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Tiles133A"
+      }
+    },
+    {
+      "wallId": "bedcd11a-9424-4e24-9ffa-6742910370bf",
+      "startNodeId": "fc821712-5a2d-4dda-ad6e-fd2e59027c69",
+      "endNodeId": "1b4f8bf0-0599-43fb-8d38-320bbd4bde85",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Tiles133A",
+        "right": "Travertine009"
+      }
+    },
+    {
+      "wallId": "3bd87657-5be3-41b1-b157-f8afc72ac06d",
+      "startNodeId": "3d56567f-8833-416b-9e7b-53a281ee1795",
+      "endNodeId": "b5a55a0f-52fb-44b2-b645-d5ab0ad3afc5",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "right": "Tiles133A"
+      }
+    },
+    {
+      "wallId": "7bb22b59-2781-497f-8c91-46090b3cebc7",
+      "startNodeId": "fc821712-5a2d-4dda-ad6e-fd2e59027c69",
+      "endNodeId": "3d56567f-8833-416b-9e7b-53a281ee1795",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Travertine009",
+        "right": "Travertine009"
+      }
+    },
+    {
+      "wallId": "a6e178b1-a21a-40fa-97c2-b20ecb740717",
+      "startNodeId": "4b2f93c4-a142-4ceb-9803-2ab0e8047420",
+      "endNodeId": "ed27df85-2999-480d-82bd-bf2b110f218a",
+      "thickness": 0.15,
+      "height": 3.2,
+      "materialFaces": {
+        "left": "Plastic018A",
+        "right": "Travertine009"
+      }
+    }
+  ],
+  "furniture": [
+    {
+      "modelId": "drawer-a",
+      "x": -3.724976885091198,
+      "y": 0.38875265917958324,
+      "z": 5.016507221627766,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood092"
+      }
+    },
+    {
+      "modelId": "drawer-a",
+      "x": -2.13497659085194,
+      "y": 0.3887528308191504,
+      "z": 5.016507220551199,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood092"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -1.4399999999999997,
+      "y": 0.40792951030843366,
+      "z": 6.744688340773915,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-a",
+      "x": -3.1399999999999997,
+      "y": 0.40792951030843366,
+      "z": 6.744688340773915,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -1.668272884265478,
+      "y": 0.5000003674402655,
+      "z": 6.120146685093551,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -1.0148186527964338,
+      "y": 0.5000003674402655,
+      "z": 6.120146685093551,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -2.778272884265478,
+      "y": 0.5000007348805311,
+      "z": 6.120146685093551,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -3.548272884265478,
+      "y": 0.5000011023207966,
+      "z": 6.120146685093551,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -3.578272884265478,
+      "y": 0.5000014697610622,
+      "z": 7.369229996454279,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -2.768272884265478,
+      "y": 0.5000018372013277,
+      "z": 7.369229996454279,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -1.648272884265478,
+      "y": 0.5000022046415933,
+      "z": 7.369229996454279,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": -1.0082728842654778,
+      "y": 0.5000025720818588,
+      "z": 7.369229996454279,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "cupboard-c",
+      "x": -3.545000243803765,
+      "y": 0.4399033904120714,
+      "z": 8.28685851434129,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "fridge-a",
+      "x": -4.477400298561728,
+      "y": 0.97,
+      "z": 8.310739162628522,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "cupboard-c",
+      "x": -2.5720070949790004,
+      "y": 0.43990319536905936,
+      "z": 8.292367357194959,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "cupboard-sink",
+      "x": -1.6017912381592374,
+      "y": 0.5199995838594913,
+      "z": 8.285512892941497,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "cupboard-c",
+      "x": -0.6312502438037652,
+      "y": 0.43990300032604734,
+      "z": 8.28685851434129,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "bin",
+      "x": 0.9132531431101228,
+      "y": 0.29500012274523246,
+      "z": 8.416746856889876,
+      "rotY": 0
+    },
+    {
+      "modelId": "bin",
+      "x": 0.5082531431101228,
+      "y": 0.29500012274523246,
+      "z": 8.416746856889876,
+      "rotY": 0
+    },
+    {
+      "modelId": "toaster",
+      "x": -3.5700001472444582,
+      "y": 1.0737877907567124,
+      "z": 8.304310176585984,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-a",
+      "x": -4.093607974118659,
+      "y": 0.40792951030843366,
+      "z": 3.5047084753623845,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.393607974118659,
+      "y": 0.4079296002725587,
+      "z": 3.5047084753623845,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.6799999999999999,
+      "y": 0.40792963248782893,
+      "z": 3.5046883407739147,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -4.0976819821242465,
+      "y": 0.4079295713981313,
+      "z": 2.774675404889549,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.3976819821242463,
+      "y": 0.40792963248782893,
+      "z": 2.775331793814555,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.6976819821242464,
+      "y": 0.40792969357752656,
+      "z": 2.775311659226085,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -4.109941955245409,
+      "y": 0.475,
+      "z": 4.147854675545175,
+      "rotY": 3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.399941955245409,
+      "y": 0.475,
+      "z": 4.147854675545175,
+      "rotY": 3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.6799419552454091,
+      "y": 0.475,
+      "z": 4.147834540956706,
+      "rotY": 3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "drawer-b",
+      "x": -1.0799764437323107,
+      "y": 0.365,
+      "z": 5.01,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood092"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.6699419552454091,
+      "y": 0.475,
+      "z": 2.1321654590432946,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.3799419552454095,
+      "y": 0.475,
+      "z": 2.132185593631764,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -4.099941955245409,
+      "y": 0.475,
+      "z": 2.1315292047067578,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -3.7668472242407454,
+      "y": 0.4079295713981313,
+      "z": 0.1746707464563385,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.066847224240745,
+      "y": 0.4079295713981313,
+      "z": 0.1646883407739147,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.36684722424074523,
+      "y": 0.4079295713981313,
+      "z": 0.1646883407739147,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 1.3331527757592547,
+      "y": 0.4079295713981313,
+      "z": 0.1646883407739147,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -3.8399419552454095,
+      "y": 0.475,
+      "z": -1.2081462001827907,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 1.3200580447545909,
+      "y": 0.475,
+      "z": -1.2078345409567055,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.06,
+      "y": 0.4079295713981313,
+      "z": -0.5646883407739147,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.3600000000000001,
+      "y": 0.4079295713981313,
+      "z": -0.5646883407739147,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 1.3399999999999999,
+      "y": 0.4079295713981313,
+      "z": -0.5646883407739147,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.4199419552454091,
+      "y": 0.475,
+      "z": -1.2078345409567055,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -3.76,
+      "y": 0.40792944921873603,
+      "z": -0.565,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.029941955245409,
+      "y": 0.475,
+      "z": -1.2078345409567055,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.069941955245409,
+      "y": 0.4750003996877218,
+      "z": 0.8078345409567056,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -3.839941955245409,
+      "y": 0.4750003996877218,
+      "z": 0.8184578594088762,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.42994195524540907,
+      "y": 0.4750003996877218,
+      "z": 0.8078345409567056,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 1.360058044754591,
+      "y": 0.4750003996877218,
+      "z": 0.8122078594088762,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.4050000000000002,
+      "y": 1.2229840832809717,
+      "z": 3.2450201345884695,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.7249999999999999,
+      "y": 1.2229840832809717,
+      "z": 3.2449999999999997,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -4.095000000000001,
+      "y": 1.2229840832809717,
+      "z": 3.2443637456634633,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -4.034999780925927,
+      "y": 0.8485303680049048,
+      "z": 3.708354795415077,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.354999780925927,
+      "y": 0.848530389303773,
+      "z": 3.708354795415077,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.6149997809259267,
+      "y": 0.8485304319015095,
+      "z": 3.7083346608266075,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.7149999999999999,
+      "y": 1.2216998636812983,
+      "z": 3.035,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.7749997809259266,
+      "y": 0.8474710648239587,
+      "z": 2.571665339173393,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.395,
+      "y": 1.2216998636812983,
+      "z": 3.0350201345884695,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -4.105,
+      "y": 1.2216998636812983,
+      "z": 3.0350201345884695,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.4549997809259265,
+      "y": 0.847471086122827,
+      "z": 2.571685473761862,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -4.184999780925926,
+      "y": 0.8474711074216952,
+      "z": 2.571029084836856,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.415,
+      "y": 1.2216998636812983,
+      "z": -0.30500000000000005,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.035,
+      "y": 1.2216998636812983,
+      "z": -0.30500000000000005,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.425,
+      "y": 1.2229840832809717,
+      "z": -0.09500000000000003,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.0450000000000004,
+      "y": 1.2229840832809717,
+      "z": -0.09500000000000003,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -3.745,
+      "y": 1.2216998636812983,
+      "z": -0.29501759431757624,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -3.745,
+      "y": 1.2229840832809717,
+      "z": -0.08694773148792163,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -3.8849997809259267,
+      "y": 0.8474711287205634,
+      "z": -0.7686463200526926,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.0749997809259266,
+      "y": 0.8474711500194316,
+      "z": -0.7683346608266074,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.4749997809259266,
+      "y": 0.8474711713182999,
+      "z": -0.7683346608266074,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": 1.2250002190740734,
+      "y": 0.8474711926171681,
+      "z": -0.7683346608266074,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": 1.2850000000000001,
+      "y": 1.2216998636812983,
+      "z": -0.30500000000000005,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": 1.305,
+      "y": 1.2354240197267385,
+      "z": -0.09500000000000003,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.31499978092592656,
+      "y": 0.8485304532003777,
+      "z": 0.3683346608266075,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": 1.3750002190740733,
+      "y": 0.8485304744992459,
+      "z": 0.3683346608266075,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -1.9349997809259265,
+      "y": 0.8485304744992459,
+      "z": 0.3683346608266075,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -3.7149997809259268,
+      "y": 0.8485304957981141,
+      "z": 0.3783170665090313,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-a",
+      "x": -3.7600000000000002,
+      "y": 0.40792963248782893,
+      "z": -3.0053116592260856,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -3.8699419552454093,
+      "y": 0.4750003996877218,
+      "z": -2.3621654590432946,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.0600000000000005,
+      "y": 0.40792969357752656,
+      "z": -3.0153116592260854,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.36000000000000054,
+      "y": 0.4079297546672242,
+      "z": -3.0053116592260856,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 1.3399999999999994,
+      "y": 0.40792981575692183,
+      "z": -3.0053116592260856,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 1.3399999999999994,
+      "y": 0.40792987684661947,
+      "z": -3.734688340773915,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.0600000000000005,
+      "y": 0.4079299379363171,
+      "z": -3.744688340773915,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -3.7600000000000007,
+      "y": 0.40792999902601473,
+      "z": -3.734688340773915,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.36000000000000054,
+      "y": 0.40792999902601473,
+      "z": -3.734688340773915,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -1.9899419552454092,
+      "y": 0.4750003996877218,
+      "z": -2.3721654590432943,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.38994195524540903,
+      "y": 0.4750003996877218,
+      "z": -2.3621654590432946,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 1.280058044754591,
+      "y": 0.4750003996877218,
+      "z": -2.3621654590432946,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -3.819941955245409,
+      "y": 0.4750003996877218,
+      "z": -4.377834540956706,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.0599419552454092,
+      "y": 0.4750003996877218,
+      "z": -4.387834540956706,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.4299419552454091,
+      "y": 0.4750003996877218,
+      "z": -4.377834540956706,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 1.2900580447545908,
+      "y": 0.4750003996877218,
+      "z": -4.377834540956706,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "keyboard",
+      "x": 1.1750002190740734,
+      "y": 0.8474712139160363,
+      "z": -3.938334660826608,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.4949997809259266,
+      "y": 0.8474712352149045,
+      "z": -3.938334660826608,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.0749997809259266,
+      "y": 0.8474712565137728,
+      "z": -3.9483346608266077,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -3.794999780925927,
+      "y": 0.847471277812641,
+      "z": -3.938334660826608,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": 1.3550002190740735,
+      "y": 0.8485304957981141,
+      "z": -2.8016653391733928,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.29499978092592666,
+      "y": 0.8485304744992459,
+      "z": -2.8016653391733928,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -1.8649997809259267,
+      "y": 0.8485304957981141,
+      "z": -2.8116653391733926,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -3.6349997809259267,
+      "y": 0.8466019631019246,
+      "z": -2.8016653391733928,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": 1.245,
+      "y": 1.2216998636812983,
+      "z": -3.4750000000000005,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.35500000000000004,
+      "y": 1.2216998636812983,
+      "z": -3.4750000000000005,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -1.9749999999999999,
+      "y": 1.2216998636812983,
+      "z": -3.4850000000000003,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -3.705,
+      "y": 1.2216998636812983,
+      "z": -3.4750000000000005,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": 1.2650000000000001,
+      "y": 1.2354240197267385,
+      "z": -3.2650000000000006,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.35500000000000004,
+      "y": 1.2354240197267385,
+      "z": -3.2650000000000006,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -1.9749999999999999,
+      "y": 1.2354240197267385,
+      "z": -3.2750000000000004,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -3.6950000000000003,
+      "y": 1.2354240197267385,
+      "z": -3.2650000000000006,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-d",
+      "x": -3.31500195568551,
+      "y": 0.2542895060733457,
+      "z": -8.556070983397051,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-d",
+      "x": -3.31000195568551,
+      "y": 1.3623575453720405,
+      "z": -8.556070983397051,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -3.77,
+      "y": 0.40792969357752656,
+      "z": -5.875311659226085,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -3.6599419552454093,
+      "y": 0.4750007993754436,
+      "z": -5.232165459043294,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric081A"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.0700000000000003,
+      "y": 0.40792969357752656,
+      "z": -5.875311659226085,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.37000000000000033,
+      "y": 0.40792969357752656,
+      "z": -5.875311659226085,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 1.3299999999999996,
+      "y": 0.40792969357752656,
+      "z": -5.875311659226085,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -3.77,
+      "y": 0.40792969357752656,
+      "z": -6.604688340773914,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.0700000000000003,
+      "y": 0.40792969357752656,
+      "z": -6.604688340773914,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -0.37000000000000033,
+      "y": 0.40792969357752656,
+      "z": -6.604688340773914,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 1.3299999999999996,
+      "y": 0.40792969357752656,
+      "z": -6.604688340773914,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -3.819941955245409,
+      "y": 0.4750003996877218,
+      "z": -7.247834540956705,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.079941955245409,
+      "y": 0.4750003996877218,
+      "z": -7.247834540956705,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.36994195524540907,
+      "y": 0.4750003996877218,
+      "z": -7.247834540956705,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 1.3300580447545909,
+      "y": 0.4750007993754436,
+      "z": -7.247834540956705,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.119941955245409,
+      "y": 0.4750003996877218,
+      "z": -5.232165459043294,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -0.39994195524540904,
+      "y": 0.4750003996877218,
+      "z": -5.232165459043294,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 1.270058044754591,
+      "y": 0.4750007993754436,
+      "z": -5.232165459043294,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric055"
+      }
+    },
+    {
+      "modelId": "monitor",
+      "x": -3.6850000000000005,
+      "y": 1.2216998636812983,
+      "z": -6.345,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -3.6850000000000005,
+      "y": 1.2354240197267385,
+      "z": -6.135,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -3.6349997809259267,
+      "y": 0.8466019844007928,
+      "z": -5.671665339173392,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -3.834999780925927,
+      "y": 0.847471277812641,
+      "z": -6.808334660826607,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.125,
+      "y": 1.2354240197267385,
+      "z": -6.135,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.435,
+      "y": 1.2354240197267385,
+      "z": -6.135,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": 1.2750000000000001,
+      "y": 1.2354240197267385,
+      "z": -6.135,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.115,
+      "y": 1.2216998636812983,
+      "z": -6.345,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -0.435,
+      "y": 1.2216998636812983,
+      "z": -6.345,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": 1.235,
+      "y": 1.2216998636812983,
+      "z": -6.345,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.024999780925927,
+      "y": 0.846602005699661,
+      "z": -5.671665339173392,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.39499978092592664,
+      "y": 0.8466020269985293,
+      "z": -5.671665339173392,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": 1.2950002190740735,
+      "y": 0.8466020482973975,
+      "z": -5.671665339173392,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": 1.2450002190740734,
+      "y": 0.8466020695962657,
+      "z": -6.808334660826607,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -0.5049997809259266,
+      "y": 0.8466020908951339,
+      "z": -6.808334660826607,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.2149997809259268,
+      "y": 0.8466021121940022,
+      "z": -6.808334660826607,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "table-a",
+      "x": 0.43999999999999995,
+      "y": 0.4079297546672242,
+      "z": -9.345311659226086,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-d",
+      "x": -3.31000195568551,
+      "y": 0.8081665221091399,
+      "z": -8.556070983397051,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -4.170106445510575,
+      "y": 0.40792981575692183,
+      "z": -10.535311650959283,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.4701087759825535,
+      "y": 0.39022807631272316,
+      "z": -10.545311659226085,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.4701087759825535,
+      "y": 0.3902281374024208,
+      "z": -11.274688340773915,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -4.170162944829837,
+      "y": 0.3902281984921184,
+      "z": -11.262811646571416,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 0.43999999999999995,
+      "y": 0.3902281374024208,
+      "z": -10.074688340773916,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 0.42999999999999994,
+      "y": 0.3902281374024208,
+      "z": -12.145311659226085,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4866898128794908,
+      "y": 1.105,
+      "z": -9.891187135913832,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4866898128794908,
+      "y": 1.105,
+      "z": -9.220678754035676,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4866898128794908,
+      "y": 1.105,
+      "z": -10.561695517791987,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4966898128794908,
+      "y": 1.105,
+      "z": -11.232203899670143,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4766898128794907,
+      "y": 1.105,
+      "z": -11.902712281548299,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4766898128794907,
+      "y": 1.105,
+      "z": -12.573220663426454,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4666898128794907,
+      "y": 1.105,
+      "z": -13.24372904530461,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4766898128794907,
+      "y": 1.105,
+      "z": -13.914237427182766,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4666898128794907,
+      "y": 1.105,
+      "z": -14.614237427182765,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 0.4700580447545909,
+      "y": 0.4750003996877218,
+      "z": -10.717834540956707,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -1.67,
+      "y": 0.3902281984921184,
+      "z": -14.088395940408333,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 0.49005804475459097,
+      "y": 0.4750003996877218,
+      "z": -8.702165459043295,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 0.49005804475459097,
+      "y": 0.4750003996877218,
+      "z": -11.502165459043294,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 0.4700580447545909,
+      "y": 0.4750003996877218,
+      "z": -13.517834540956706,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -4.20994195524541,
+      "y": 0.4750003996877218,
+      "z": -11.905957846754207,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.449941955245409,
+      "y": 0.4750003996877218,
+      "z": -11.917834540956706,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -4.179941955245409,
+      "y": 0.4750003996877218,
+      "z": -9.892165450776492,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": -2.449941955245409,
+      "y": 0.4750003996877218,
+      "z": -9.902165459043294,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4966898128794908,
+      "y": 1.105,
+      "z": -8.55017037215752,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 0.41999999999999993,
+      "y": 0.3902281984921184,
+      "z": -12.874688340773915,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": -2.8846883407739146,
+      "y": 0.3902281984921184,
+      "z": -13.620000000000001,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 1.4666898128794907,
+      "y": 1.105,
+      "z": -15.28474580906092,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.4549997809259265,
+      "y": 0.8466021334928704,
+      "z": -11.478334660826608,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.355,
+      "y": 1.2216998636812983,
+      "z": -11.015,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -4.155,
+      "y": 1.2216998636812983,
+      "z": -11.004999991733198,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -4.144999780925926,
+      "y": 0.8466021547917386,
+      "z": -11.466457966624109,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -1.7949997809259268,
+      "y": 0.8466021547917386,
+      "z": -14.292042260461026,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": -1.715,
+      "y": 1.2046478321500964,
+      "z": -13.845,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": -3.0883346608266073,
+      "y": 0.8466021760906068,
+      "z": -13.614999780925926,
+      "rotY": -1.5707963267948972
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.625,
+      "y": 1.2046478321500964,
+      "z": -13.685,
+      "rotY": -1.5707963267948963
+    },
+    {
+      "modelId": "monitor",
+      "x": -2.365,
+      "y": 1.2216998636812983,
+      "z": -10.805,
+      "rotY": 2.4492935982947064e-16
+    },
+    {
+      "modelId": "monitor",
+      "x": -4.135000000000001,
+      "y": 1.2216998636812983,
+      "z": -10.794999991733198,
+      "rotY": 2.4492935982947064e-16
+    },
+    {
+      "modelId": "monitor",
+      "x": 0.47500000000000003,
+      "y": 1.2216998636812983,
+      "z": -9.815000000000001,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": 0.4050002190740734,
+      "y": 0.8466021547917386,
+      "z": -10.278334660826609,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": 0.5650002190740734,
+      "y": 0.8466021760906068,
+      "z": -9.141665339173393,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": 0.465,
+      "y": 1.2216998636812983,
+      "z": -9.605,
+      "rotY": 2.4492935982947064e-16
+    },
+    {
+      "modelId": "monitor",
+      "x": 0.47500000000000003,
+      "y": 1.2216998636812983,
+      "z": -12.615,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": 0.505,
+      "y": 1.2216998636812983,
+      "z": -12.405,
+      "rotY": 2.4492935982947064e-16
+    },
+    {
+      "modelId": "keyboard",
+      "x": 0.3550002190740734,
+      "y": 0.8466021760906068,
+      "z": -13.078334660826608,
+      "rotY": 3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": 0.5250002190740735,
+      "y": 0.8466021973894751,
+      "z": -11.941665339173392,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-d",
+      "x": 7.616876833455166,
+      "y": 0.26035272027879447,
+      "z": -12.606070983397052,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-d",
+      "x": 7.616564333455165,
+      "y": 0.8105493975717872,
+      "z": -12.616070983397051,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-d",
+      "x": 7.616564333455165,
+      "y": 1.36430924563654,
+      "z": -12.64607098339705,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "rounded-table-c",
+      "x": 3.3400002938874644,
+      "y": 0.42494800870852734,
+      "z": -14.579999706112535,
+      "rotY": 0
+    },
+    {
+      "modelId": "rounded-table-c",
+      "x": 5.510000293887464,
+      "y": 0.40336517313694686,
+      "z": -14.579999706112535,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-C-01",
+      "x": 2.5608882682927163,
+      "y": 0.3199996563040813,
+      "z": -14.650888268292716,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-C-01",
+      "x": 4.119112319482213,
+      "y": 0.3199996563040813,
+      "z": -14.650888268292716,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-C-01",
+      "x": 4.730888268292716,
+      "y": 0.31999931260816256,
+      "z": -14.660888268292716,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-C-01",
+      "x": 6.2891123194822125,
+      "y": 0.31999896891224383,
+      "z": -14.660888268292716,
+      "rotY": 0
+    },
+    {
+      "modelId": "rounded-table-c",
+      "x": 7.700000293887465,
+      "y": 0.40336517313694686,
+      "z": -14.579999706112535,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-C-01",
+      "x": 6.920888268292717,
+      "y": 0.31999896891224383,
+      "z": -14.620888268292717,
+      "rotY": 0
+    },
+    {
+      "modelId": "chair-C-01",
+      "x": 8.479112319482212,
+      "y": 0.31999896891224383,
+      "z": -14.610888268292717,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -2.2849997809259266,
+      "y": 0.8466021973894751,
+      "z": -10.341665339173392,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": -4.114999780925927,
+      "y": 0.8466022186883433,
+      "z": -10.33166533090659,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-d",
+      "x": 4.996880744826186,
+      "y": 0.25684700158322077,
+      "z": -12.606070983397052,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-d",
+      "x": 4.996880744826186,
+      "y": 0.8113075917380976,
+      "z": -12.606070983397052,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "table-d",
+      "x": 4.996880744826186,
+      "y": 1.367405333774617,
+      "z": -12.616070983397051,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 4.740058044754591,
+      "y": 0.4750011990631654,
+      "z": -10.951542140591124,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "sofa-b",
+      "x": -1.8850000491148498,
+      "y": 0.44844691844923923,
+      "z": -14.90345748404282,
+      "rotY": 0,
+      "materials": {
+        "component-2": "Fabric063",
+        "component-1": "Fabric054"
+      }
+    },
+    {
+      "modelId": "sofa-b",
+      "x": -3.6997498844084022,
+      "y": 0.4380921750964569,
+      "z": -13.67500004911485,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-2": "Fabric063",
+        "component-1": "Fabric018"
+      }
+    },
+    {
+      "modelId": "chair-E-01",
+      "x": 7.190058044754591,
+      "y": 0.4750011990631654,
+      "z": -10.941542140591125,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "table-a",
+      "x": 4.41,
+      "y": 0.40792951030843366,
+      "z": -9.965311659226085,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-a",
+      "x": 6.11,
+      "y": 0.40792951030843366,
+      "z": -9.975311659226085,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-a",
+      "x": 7.8100000000000005,
+      "y": 0.40792951030843366,
+      "z": -9.985311659226085,
+      "rotY": 0
+    },
+    {
+      "modelId": "globe",
+      "x": 4.360910749143686,
+      "y": 1.8615171788999958,
+      "z": -12.576920383848764,
+      "rotY": 0
+    },
+    {
+      "modelId": "books-a",
+      "x": 3.9599995133846364,
+      "y": 0.9654460235088973,
+      "z": -9.970042568550536,
+      "rotY": 0
+    },
+    {
+      "modelId": "books-a",
+      "x": 6.139999513384637,
+      "y": 0.9653473856136268,
+      "z": -9.920042568550535,
+      "rotY": 0
+    },
+    {
+      "modelId": "monitor",
+      "x": 4.795,
+      "y": 1.2228586272875854,
+      "z": -9.695,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "monitor",
+      "x": 7.145,
+      "y": 1.2228586272875854,
+      "z": -9.695,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "keyboard",
+      "x": 7.195000219074074,
+      "y": 0.848399599499025,
+      "z": -10.178957979278778,
+      "rotY": 0
+    },
+    {
+      "modelId": "keyboard",
+      "x": 4.854999780925927,
+      "y": 0.8483996207978932,
+      "z": -10.148957979278778,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-d",
+      "x": 5.26999804431449,
+      "y": 0.27580993633049355,
+      "z": -2.1860709833970513,
+      "rotY": 0
+    },
+    {
+      "modelId": "sofa-a",
+      "x": 5.224999959904543,
+      "y": 0.4501878620993138,
+      "z": -3.2275542132468042,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Fabric063",
+        "component-2": "Fabric063"
+      }
+    },
+    {
+      "modelId": "sofa-b",
+      "x": 4.060373202860572,
+      "y": 0.4484470657937888,
+      "z": -4.310108377378759,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Fabric063",
+        "component-2": "Fabric063"
+      }
+    },
+    {
+      "modelId": "rounded-table-c",
+      "x": 5.330000293887465,
+      "y": 0.42494813446629986,
+      "z": -4.429999706112536,
+      "rotY": 0,
+      "materials": {
+        "component-2": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 5.850000221691208,
+      "y": 0.17257733160369404,
+      "z": -5.439999778308792,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 4.780000221691209,
+      "y": 0.17257733160369404,
+      "z": -5.429999778308792,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric063"
+      }
+    },
+    {
+      "modelId": "drawer-b",
+      "x": 5.340935645142512,
+      "y": 0.365,
+      "z": -6.087516738363484,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Wood092"
+      }
+    },
+    {
+      "modelId": "drawer-b",
+      "x": 5.330935645142512,
+      "y": 0.36500022158626627,
+      "z": -6.612483261636518,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Wood092"
+      }
+    },
+    {
+      "modelId": "television-b",
+      "x": 5.350000390179427,
+      "y": 1.162440547582374,
+      "z": -2.4586809862516623,
+      "rotY": 0
+    },
+    {
+      "modelId": "console-b",
+      "x": 6.115,
+      "y": 0.6457551001667371,
+      "z": -2.0720927421200326,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-c",
+      "x": 5.394979049201203,
+      "y": 0.1899676306756101,
+      "z": -0.12000029346429508,
+      "rotY": -1.5707963267948963
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 6.180000221691208,
+      "y": 0.1725773427852774,
+      "z": -0.5899997783087917,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 6.160000221691209,
+      "y": 0.17257735396686075,
+      "z": 0.26000022169120834,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 4.580000221691209,
+      "y": 0.1725773651484441,
+      "z": 0.22000022169120834,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 4.610000221691208,
+      "y": 0.1725773651484441,
+      "z": -0.5499997783087917,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 4.4600002216912085,
+      "y": 0.17257735396686075,
+      "z": -1.5321417451028942,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 4.900000665073625,
+      "y": 0.1725773651484441,
+      "z": -1.5321417451028942,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Onyx015"
+      }
+    },
+    {
+      "modelId": "shelf-b",
+      "x": 9.761551144811486,
+      "y": 1.1050017634393536,
+      "z": 0.7931962634191839,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095",
+        "component-2": "Wood095"
+      }
+    },
+    {
+      "modelId": "shelf-b",
+      "x": 11.026284065565545,
+      "y": 1.1050017634393536,
+      "z": 0.8031962634191839,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095",
+        "component-2": "Wood095"
+      }
+    },
+    {
+      "modelId": "shelf-b",
+      "x": 12.288761355188514,
+      "y": 1.1050035268787073,
+      "z": 0.8131962634191839,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095",
+        "component-2": "Wood095"
+      }
+    },
+    {
+      "modelId": "plant-a",
+      "x": 9.347278992019053,
+      "y": 0.6049992209626711,
+      "z": -4.558966787457692,
+      "rotY": 0
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 12.59084619048089,
+      "y": 1.1050036248477215,
+      "z": -6.000960672073085,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-b",
+      "x": 12.137373344713607,
+      "y": 0.18997828711430187,
+      "z": -2.062626655286394,
+      "rotY": -0.7853981633974484
+    },
+    {
+      "modelId": "television-b",
+      "x": 12.127889303849267,
+      "y": 0.9898554055035371,
+      "z": -2.0671027598544485,
+      "rotY": -0.7853981633974484
+    },
+    {
+      "modelId": "table-a",
+      "x": 10.78,
+      "y": 0.38610082524391864,
+      "z": -0.9095218646871531,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Travertine009"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 11.123269633721364,
+      "y": 0.5000003674402655,
+      "z": -1.5340635203675168,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Travertine009"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 10.421727115734523,
+      "y": 0.5000007348805311,
+      "z": -1.5340635203675168,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Travertine009"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 10.411727115734523,
+      "y": 0.5000011023207966,
+      "z": -0.28498020900678944,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Travertine009"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 11.161727115734523,
+      "y": 0.5000014697610622,
+      "z": -0.28498020900678944,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Travertine009"
+      }
+    },
+    {
+      "modelId": "carpet-A-01",
+      "x": 10.322892727887888,
+      "y": 0.025543322486632353,
+      "z": 3.6299999866376567,
+      "rotY": -1.5707963267948963
+    },
+    {
+      "modelId": "rounded-table-c",
+      "x": 5.300000293887464,
+      "y": 0.42494813446629986,
+      "z": 2.9500002938874643,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood095",
+        "component-2": "Wood095"
+      }
+    },
+    {
+      "modelId": "sofa-c",
+      "x": 4.29331054732122,
+      "y": 0.2774923252513839,
+      "z": 2.139999609812931,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "sofa-c",
+      "x": 6.3066900404537085,
+      "y": 0.2774923252513839,
+      "z": 2.169214703544399,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "sofa-c",
+      "x": 4.29331054732122,
+      "y": 0.2774920691911198,
+      "z": 3.739999609812931,
+      "rotY": 1.5707963267948963,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "sofa-c",
+      "x": 6.3066900404537085,
+      "y": 0.2774920691911198,
+      "z": 3.699999609812931,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "shelf-e",
+      "x": 5.342332091062767,
+      "y": 0.8200004906927842,
+      "z": 4.722969476455333,
+      "rotY": -3.141592653589793,
+      "materials": {
+        "component-1": "Wood095"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 1.4917271157345222,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 1.9217271157345222,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 2.3517271157345223,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 2.781727115734522,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 3.211727115734522,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 3.6417271157345223,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 4.071727115734522,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "chair-A-01",
+      "x": 12.660146685093551,
+      "y": 0.5000003674402655,
+      "z": 4.501727115734522,
+      "rotY": -1.5707963267948963,
+      "materials": {
+        "component-1": "Onyx015",
+        "component-2": "Onyx015"
+      }
+    },
+    {
+      "modelId": "toilet-01",
+      "x": 12.415,
+      "y": 0.52,
+      "z": 5.62,
+      "rotY": 0
+    },
+    {
+      "modelId": "sink-01",
+      "x": 9.654999914088133,
+      "y": 0.39,
+      "z": 5.230274960922859,
+      "rotY": 0
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 11.246888421345245,
+      "y": 1.1050036248477215,
+      "z": -5.990885412684125,
+      "rotY": 0
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 11.91838398328437,
+      "y": 1.1050054372715823,
+      "z": -5.995919419049833,
+      "rotY": 0
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 10.576196947965691,
+      "y": 1.105007249695443,
+      "z": -5.985857434335811,
+      "rotY": 0
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 10.56900420580083,
+      "y": 1.0851744823979366,
+      "z": -3.323443303449581,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 12.587754205800831,
+      "y": 1.0851762948217973,
+      "z": -3.323443303449581,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 11.91462920580083,
+      "y": 1.0851762948217973,
+      "z": -3.323443303449581,
+      "rotY": -3.141592653589793
+    },
+    {
+      "modelId": "shelf-a",
+      "x": 11.24337920580083,
+      "y": 1.0851762948217973,
+      "z": -3.323443303449581,
+      "rotY": -3.141592653589793
+    }
+  ],
+  "wallItems": [
+    {
+      "modelId": "clock",
+      "hostWallId": "d774e8e9-d16b-440d-89f4-01d164d46dc8",
+      "t": 0.19396345926341263,
+      "side": 1
+    },
+    {
+      "modelId": "clock",
+      "hostWallId": "cca8eb09-f634-41a1-90fb-2b994226c276",
+      "t": 0.02432432432432433,
+      "side": -1
+    },
+    {
+      "modelId": "clock",
+      "hostWallId": "cca8eb09-f634-41a1-90fb-2b994226c276",
+      "t": 0.0886272247620156,
+      "side": -1
+    },
+    {
+      "modelId": "clock",
+      "hostWallId": "cca8eb09-f634-41a1-90fb-2b994226c276",
+      "t": 0.1522214680802111,
+      "side": -1
+    },
+    {
+      "modelId": "door-c",
+      "hostWallId": "00aaec5d-206c-4dbe-a3b7-a51a567c7bb8",
+      "t": 0.16984240982985746,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.5667193833183708,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.6506609891577868,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.23095295996070672,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.31489456580012276,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.3988361716395388,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.4827777774789548,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.1444113421355751,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "f0166b65-2453-4218-9da6-aa20ac56a738",
+      "t": 0.060469736296159045,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "12bbab24-00c6-48aa-8f3b-40f5bc820246",
+      "t": 0.18585594825191953,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "12bbab24-00c6-48aa-8f3b-40f5bc820246",
+      "t": 0.28160062910298334,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "4ac012fa-77ba-4211-a6a5-d5aa66ba03b7",
+      "t": 0.7247839519552565,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "9f3e7386-c61e-4edb-8b6f-94c290ad2d00",
+      "t": 0.4324488212168695,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "1ad95a70-d7f0-4b69-833b-fc753b6341a9",
+      "t": 0.28532871262195114,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "1ad95a70-d7f0-4b69-833b-fc753b6341a9",
+      "t": 0.7630003723978015,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "604c64c2-463a-4e09-ad9e-4a8bd5a13cde",
+      "t": 0.2710934461748663,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "604c64c2-463a-4e09-ad9e-4a8bd5a13cde",
+      "t": 0.6996648747462949,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "cca8eb09-f634-41a1-90fb-2b994226c276",
+      "t": 0.8830891679125885,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "7996429e-bfb6-40c2-9df5-9fbc935e2edd",
+      "t": 0.5325143883819643,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "a6e178b1-a21a-40fa-97c2-b20ecb740717",
+      "t": 0.258920670808935,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "7bb22b59-2781-497f-8c91-46090b3cebc7",
+      "t": 0.711337636958102,
+      "side": 1
+    }
+  ],
+  "floors": {
+    "04a9e999-2bab-4ece-9352-f9fe477292d9,3123d3f4-1d20-48fe-bffe-d6fbae57b3a4,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,62593eea-4099-4534-8ca7-e1b8d3e7e59f,6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34,846ddb82-9e49-433a-a832-3e45dbecf353,b5003243-c1d4-42f2-8f41-c01144b050ce,d42e2edf-1082-4325-aed6-0368e8f7e184,d9c47793-75d1-40e9-83b9-1bca61c15c4e,e694be6e-58fe-4476-ad0a-62d9ac54d0cf,ed27df85-2999-480d-82bd-bf2b110f218a": "Travertine009",
+    "04a9e999-2bab-4ece-9352-f9fe477292d9,3123d3f4-1d20-48fe-bffe-d6fbae57b3a4,367215d8-2a7a-46ec-99ba-8f6589a094b2,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,56bc883c-8bfe-4581-9635-9d149656e33a,62593eea-4099-4534-8ca7-e1b8d3e7e59f,6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34,846ddb82-9e49-433a-a832-3e45dbecf353,b0d1647f-372c-44d0-99f8-08a048397ed3,b5003243-c1d4-42f2-8f41-c01144b050ce,c9f7bcfd-5cfa-4f42-9344-9a535299f040,d42e2edf-1082-4325-aed6-0368e8f7e184,d9c47793-75d1-40e9-83b9-1bca61c15c4e,e694be6e-58fe-4476-ad0a-62d9ac54d0cf,ed27df85-2999-480d-82bd-bf2b110f218a": "Travertine009",
+    "04a9e999-2bab-4ece-9352-f9fe477292d9,3123d3f4-1d20-48fe-bffe-d6fbae57b3a4,367215d8-2a7a-46ec-99ba-8f6589a094b2,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,56bc883c-8bfe-4581-9635-9d149656e33a,5c6220ff-fe2e-46d7-b276-72b622b02498,62593eea-4099-4534-8ca7-e1b8d3e7e59f,6c92e8ff-357f-4c64-88b6-1855ac690c42,6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34,846ddb82-9e49-433a-a832-3e45dbecf353,8a8258c4-365b-4055-b287-8bc69bd1aca0,b0d1647f-372c-44d0-99f8-08a048397ed3,b5003243-c1d4-42f2-8f41-c01144b050ce,c9f7bcfd-5cfa-4f42-9344-9a535299f040,d42e2edf-1082-4325-aed6-0368e8f7e184,d9c47793-75d1-40e9-83b9-1bca61c15c4e,e694be6e-58fe-4476-ad0a-62d9ac54d0cf,ed27df85-2999-480d-82bd-bf2b110f218a,f674aca6-582e-4c06-84b4-eff44311431a": "Travertine009",
+    "04a9e999-2bab-4ece-9352-f9fe477292d9,3123d3f4-1d20-48fe-bffe-d6fbae57b3a4,367215d8-2a7a-46ec-99ba-8f6589a094b2,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,56bc883c-8bfe-4581-9635-9d149656e33a,5c6220ff-fe2e-46d7-b276-72b622b02498,62593eea-4099-4534-8ca7-e1b8d3e7e59f,6c92e8ff-357f-4c64-88b6-1855ac690c42,6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34,846ddb82-9e49-433a-a832-3e45dbecf353,8a8258c4-365b-4055-b287-8bc69bd1aca0,92e155ac-1300-4fc3-9819-f44a1e2f5a8c,b0d1647f-372c-44d0-99f8-08a048397ed3,b5003243-c1d4-42f2-8f41-c01144b050ce,c9f7bcfd-5cfa-4f42-9344-9a535299f040,d9c47793-75d1-40e9-83b9-1bca61c15c4e,e694be6e-58fe-4476-ad0a-62d9ac54d0cf,ed27df85-2999-480d-82bd-bf2b110f218a,f2b9348a-37e8-45b4-bb42-70fd8bb2cf40,f674aca6-582e-4c06-84b4-eff44311431a,fd4fa7b1-0390-4ca2-a71d-96a7b20142d2": "Travertine009",
+    "1b4f8bf0-0599-43fb-8d38-320bbd4bde85,4b2f93c4-a142-4ceb-9803-2ab0e8047420,b9272d00-9a8a-4b29-9f77-ad3291dc0c37,c209a15d-570b-4146-b195-9eeb000197da,c9d196f9-a224-40a0-a01a-eab64dfd2e55,ed27df85-2999-480d-82bd-bf2b110f218a": "Travertine009",
+    "04a9e999-2bab-4ece-9352-f9fe477292d9,3123d3f4-1d20-48fe-bffe-d6fbae57b3a4,367215d8-2a7a-46ec-99ba-8f6589a094b2,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,4b2f93c4-a142-4ceb-9803-2ab0e8047420,56bc883c-8bfe-4581-9635-9d149656e33a,5c6220ff-fe2e-46d7-b276-72b622b02498,62593eea-4099-4534-8ca7-e1b8d3e7e59f,6c92e8ff-357f-4c64-88b6-1855ac690c42,6cf6e7d9-93a9-4df7-9e5d-3fac85b056e6,6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34,846ddb82-9e49-433a-a832-3e45dbecf353,8a8258c4-365b-4055-b287-8bc69bd1aca0,92e155ac-1300-4fc3-9819-f44a1e2f5a8c,b0d1647f-372c-44d0-99f8-08a048397ed3,b5003243-c1d4-42f2-8f41-c01144b050ce,c209a15d-570b-4146-b195-9eeb000197da,c9f7bcfd-5cfa-4f42-9344-9a535299f040,d9c47793-75d1-40e9-83b9-1bca61c15c4e,e694be6e-58fe-4476-ad0a-62d9ac54d0cf,ed27df85-2999-480d-82bd-bf2b110f218a,f2b9348a-37e8-45b4-bb42-70fd8bb2cf40,f674aca6-582e-4c06-84b4-eff44311431a,fd4fa7b1-0390-4ca2-a71d-96a7b20142d2": "Travertine009",
+    "6cf6e7d9-93a9-4df7-9e5d-3fac85b056e6,c209a15d-570b-4146-b195-9eeb000197da,c9d196f9-a224-40a0-a01a-eab64dfd2e55,fc59d620-49a6-449a-a1ac-4513fd9cac42": "Travertine009",
+    "04a9e999-2bab-4ece-9352-f9fe477292d9,3123d3f4-1d20-48fe-bffe-d6fbae57b3a4,367215d8-2a7a-46ec-99ba-8f6589a094b2,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,49affa5a-23ec-43ce-90f0-8c2959bdbbc0,4b2f93c4-a142-4ceb-9803-2ab0e8047420,53e155f6-93bb-4d72-90b5-16b446a4c6ee,56bc883c-8bfe-4581-9635-9d149656e33a,5c6220ff-fe2e-46d7-b276-72b622b02498,62593eea-4099-4534-8ca7-e1b8d3e7e59f,6c92e8ff-357f-4c64-88b6-1855ac690c42,6cf6e7d9-93a9-4df7-9e5d-3fac85b056e6,6dfd4b46-cb0a-4e0b-9fde-b22c8c294c34,825d03a3-2216-4b4c-901e-3e2b3cbb0dca,846ddb82-9e49-433a-a832-3e45dbecf353,8a8258c4-365b-4055-b287-8bc69bd1aca0,92e155ac-1300-4fc3-9819-f44a1e2f5a8c,b0d1647f-372c-44d0-99f8-08a048397ed3,b49a65ec-b529-472e-85d2-6df0b533c06e,b5003243-c1d4-42f2-8f41-c01144b050ce,c209a15d-570b-4146-b195-9eeb000197da,c9f7bcfd-5cfa-4f42-9344-9a535299f040,d9c47793-75d1-40e9-83b9-1bca61c15c4e,de5f169f-8235-4808-b240-58941f460c86,e694be6e-58fe-4476-ad0a-62d9ac54d0cf,ed27df85-2999-480d-82bd-bf2b110f218a,f2b9348a-37e8-45b4-bb42-70fd8bb2cf40,f674aca6-582e-4c06-84b4-eff44311431a,fd4fa7b1-0390-4ca2-a71d-96a7b20142d2": "Travertine009",
+    "1b4f8bf0-0599-43fb-8d38-320bbd4bde85,4b2f93c4-a142-4ceb-9803-2ab0e8047420,53e155f6-93bb-4d72-90b5-16b446a4c6ee,825d03a3-2216-4b4c-901e-3e2b3cbb0dca,b49a65ec-b529-472e-85d2-6df0b533c06e,b9272d00-9a8a-4b29-9f77-ad3291dc0c37,c209a15d-570b-4146-b195-9eeb000197da,c9d196f9-a224-40a0-a01a-eab64dfd2e55,de5f169f-8235-4808-b240-58941f460c86,ed27df85-2999-480d-82bd-bf2b110f218a": "Travertine009",
+    "1b4f8bf0-0599-43fb-8d38-320bbd4bde85,3d56567f-8833-416b-9e7b-53a281ee1795,b5a55a0f-52fb-44b2-b645-d5ab0ad3afc5,fc821712-5a2d-4dda-ad6e-fd2e59027c69": "Tiles133A",
+    "3d56567f-8833-416b-9e7b-53a281ee1795,b6529a8d-4b32-4c11-888a-8293ffebd774,ed27df85-2999-480d-82bd-bf2b110f218a,fc821712-5a2d-4dda-ad6e-fd2e59027c69": "Tiles133A",
+    "1b4f8bf0-0599-43fb-8d38-320bbd4bde85,4b2f93c4-a142-4ceb-9803-2ab0e8047420,53e155f6-93bb-4d72-90b5-16b446a4c6ee,825d03a3-2216-4b4c-901e-3e2b3cbb0dca,b49a65ec-b529-472e-85d2-6df0b533c06e,b9272d00-9a8a-4b29-9f77-ad3291dc0c37,c209a15d-570b-4146-b195-9eeb000197da,c9d196f9-a224-40a0-a01a-eab64dfd2e55,de5f169f-8235-4808-b240-58941f460c86,ed27df85-2999-480d-82bd-bf2b110f218a,fc821712-5a2d-4dda-ad6e-fd2e59027c69": "Travertine009"
+  }
+}

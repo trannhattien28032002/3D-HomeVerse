@@ -7,14 +7,16 @@
 -- Current date: 2026-05-20 — partition is active.
 
 CREATE TABLE public.project_operations (
-  id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id            BIGINT GENERATED ALWAYS AS IDENTITY,
   project_id    UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   session_id    UUID NOT NULL,
   user_id       UUID NOT NULL REFERENCES public.profiles(id),
   op_type       TEXT NOT NULL,
   op_data       JSONB NOT NULL,
   vector_clock  JSONB,
-  applied_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  applied_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- A PK on a partitioned table must include all partition-key columns.
+  PRIMARY KEY (id, applied_at)
 )
 PARTITION BY RANGE (applied_at);
 

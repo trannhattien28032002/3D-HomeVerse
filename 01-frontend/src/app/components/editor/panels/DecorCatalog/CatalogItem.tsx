@@ -9,6 +9,7 @@
  *   CSS :hover để tránh conflict với animation class.
  */
 import { useState } from "react";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 
 type ItemProps = {
   thumbnailUrl?: string;
@@ -41,13 +42,13 @@ export function CatalogItem({ thumbnailUrl, name, index, wallConstrained, onClic
         padding: "14px 10px",
         aspectRatio: "1 / 1",
         borderRadius: 16,
-        background: hovered ? "rgba(248,180,0,0.10)" : "#fdf9f0",
-        border: hovered ? "1px solid #7c5800" : "1px solid #d5c4ac",
+        background: hovered ? alpha(RGB.primaryContainer, 0.10) : "#fdf9f0",
+        border: hovered ? `1px solid ${T.primary}` : "1px solid #d5c4ac",
         cursor: "pointer",
         transform: hovered ? "translateY(-3px)" : "translateY(0)",
         boxShadow: hovered
-          ? "0 8px 24px rgba(124,88,0,0.16)"
-          : "0 1px 3px rgba(124,88,0,0.06)",
+          ? `0 8px 24px ${alpha(RGB.primary, 0.16)}`
+          : `0 1px 3px ${alpha(RGB.primary, 0.06)}`,
         transition: "background 0.18s, border-color 0.18s, transform 0.18s, box-shadow 0.18s",
         gap: 8,
         animationDelay: `${delay}ms`,
@@ -63,11 +64,11 @@ export function CatalogItem({ thumbnailUrl, name, index, wallConstrained, onClic
             width: 20,
             height: 20,
             borderRadius: "50%",
-            background: "#f8b400",
+            background: T.primaryContainer,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 1px 4px rgba(124,88,0,0.30)",
+            boxShadow: `0 1px 4px ${alpha(RGB.primary, 0.30)}`,
             zIndex: 1,
           }}
         >
@@ -113,7 +114,7 @@ export function CatalogItem({ thumbnailUrl, name, index, wallConstrained, onClic
             className="material-symbols-outlined"
             style={{
               fontSize: 40,
-              color: hovered ? "#7c5800" : "#837560",
+              color: hovered ? T.primary : "#837560",
               transition: "color 0.18s",
               lineHeight: 1,
               fontVariationSettings: "'FILL' 0, 'wght' 300",

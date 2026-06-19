@@ -7,7 +7,6 @@ import pino from 'pino';
 import { createApp } from './app';
 import { env } from './configs/env';
 import { pool } from './shared/db/client';
-import { warmupCompatibilityCache } from './domains/materials/materials.service';
 
 const logger = pino({ name: 'server' });
 
@@ -57,14 +56,11 @@ async function pingDatabase(): Promise<boolean> {
 server.listen(env.PORT, () => {
   logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server listening');
 
-  // Verify DB connectivity on startup, then warm up the in-memory cache.
-  // Both operations are fire-and-forget: a failure logs a clear, actionable
-  // error but does not crash the process (so /health remains reachable).
-  void pingDatabase().then((ok) => {
-    if (ok) {
-      void warmupCompatibilityCache();
-    }
-  });
+  // Verify DB connectivity on startup. Fire-and-forget: a failure logs a clear,
+  // actionable error but does not crash the process (so /health remains reachable).
+  // No compatibility cache to warm up — compatibility is resolved client-side from
+  // each object's materialSlots[].allowedCategories (Decision B).
+  void pingDatabase();
 });
 
 function shutdown(signal: string): void {

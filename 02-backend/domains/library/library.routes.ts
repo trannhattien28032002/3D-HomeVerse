@@ -8,13 +8,13 @@ import * as service from './library.service';
 
 export const libraryRouter = Router();
 
-// GET /library/categories — full category tree (cached 5 min).
+// GET /library/categories — distinct category slugs (cached 5 min).
 libraryRouter.get(
   '/categories',
   requireAuth,
   async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const data = await service.getCategoryTree();
+      const data = await service.getCategories();
       res.json({ data });
     } catch (err) {
       next(err);
@@ -22,7 +22,7 @@ libraryRouter.get(
   }
 );
 
-// GET /library/objects/search — FTS + trigram search (must be before /:id route).
+// GET /library/objects/search — FTS + trigram search (must be before /:slug route).
 libraryRouter.get(
   '/objects/search',
   searchLimiter,
@@ -53,13 +53,13 @@ libraryRouter.get(
   }
 );
 
-// GET /library/objects/:id — single object detail with resolved URLs.
+// GET /library/objects/:slug — single object detail with resolved URLs.
 libraryRouter.get(
-  '/objects/:id',
+  '/objects/:slug',
   requireAuth,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const obj = await service.getObjectById(String(req.params.id));
+      const obj = await service.getObjectBySlug(String(req.params.slug));
       res.json(obj);
     } catch (err) {
       next(err);

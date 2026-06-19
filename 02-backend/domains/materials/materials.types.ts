@@ -1,41 +1,21 @@
-export interface MaterialCategory {
-  id: string;
-  slug: string;
-  name: string;
-  sortOrder: number;
+// KTX2 texture map paths (Decision A). All optional — a material may omit maps.
+export interface MaterialTextures {
+  color?: string;
+  normal?: string;
+  roughness?: string;
+  ao?: string;
 }
 
+// A material catalog entry. Identity is the catalog slug (Decision A).
 export interface Material {
-  id: string;
-  categoryId: string;
-  slug: string;
+  id: string; // catalog slug, e.g. 'Asphalt031'
   name: string;
-  description: string | null;
-  albedoUrl: string | null;
-  normalUrl: string | null;
-  roughnessUrl: string | null;
-  metalnessUrl: string | null;
-  aoUrl: string | null;
-  thumbnailUrl: string;
-  pbrDefaults: Record<string, unknown>;
-  tags: string[];
+  category: string; // category slug, e.g. 'ground'
+  iconUrl: string | null;
+  textures: MaterialTextures;
   isPremium: boolean;
   isActive: boolean;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-}
-
-// In-memory compatibility matrix:
-// object_category_id → Set of allowed material_category_ids
-// Also stores per-object overrides keyed by library_object_id.
-export interface CompatMatrixEntry {
-  objectCategoryId: string;
-  materialCategoryId: string;
-}
-
-export interface CompatOverrideEntry {
-  libraryObjectId: string;
-  materialCategoryId: string;
-  allow: boolean;
 }

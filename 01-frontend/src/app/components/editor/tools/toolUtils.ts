@@ -11,7 +11,7 @@
  *   Chỉ kích hoạt khi cursor cách snap angle < ANGLE_SNAP_THRESHOLD_DEG.
  */
 
-import type { Node2D, Wall2D } from "src/app/plan2d/types";
+import type { Node2D, Wall2D } from "src/app/features/plan2d/types";
 import type { Vec2 } from "src/shared/types/primitives";
 import { PX_PER_WORLD } from "src/shared/math/coords";
 

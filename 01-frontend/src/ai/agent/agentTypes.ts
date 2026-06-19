@@ -9,7 +9,7 @@
  * (Anthropic↔Gemini↔...) không đụng FE.
  */
 import type { SceneSummary, ScenePerceptionSource } from "src/ai/perception/describeScene";
-import type { EngineApi } from "src/app/hooks/useEngineApi";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 
 /** JSON-schema mô tả 1 tool (provider-neutral; backend map sang định dạng provider). */
 export type ToolSchema = {
@@ -47,7 +47,7 @@ export interface LlmTransport {
 /** Context cấp cho tool handler khi execute. */
 export type ToolContext = {
     /** Facade dispatch (null-safe) — đường DUY NHẤT đổi scene. */
-    api: EngineApi;
+    api: EngineApiFacade;
     /** Nguồn re-perceive sau khi đổi scene. Optional ở WP1a. */
     perception?: ScenePerceptionSource;
 };

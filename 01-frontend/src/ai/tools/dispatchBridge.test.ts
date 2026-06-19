@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
-import type { EngineApi } from "src/app/hooks/useEngineApi";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 import { assertKnownModel, dispatchCommands, ToolInputError } from "src/ai/tools/dispatchBridge";
 
 describe("assertKnownModel", () => {
@@ -21,7 +21,7 @@ describe("dispatchCommands", () => {
         const got: EngineCommand[] = [];
         const api = {
             dispatchAsync: async (cmd: EngineCommand) => { got.push(cmd); },
-        } as unknown as EngineApi;
+        } as unknown as EngineApiFacade;
 
         const commands: EngineCommand[] = [
             { type: "ENSURE_NODE", nodeId: "n1", x: 0, z: 0 },

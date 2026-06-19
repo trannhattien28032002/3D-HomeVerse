@@ -9,7 +9,8 @@
 
 | Lớp kiến trúc | Điểm bám thật trong repo | Đã đọc |
 |---|---|---|
-| Dispatch (mutation chokepoint) | `src/engine/commands/dispatcher.ts` — `dispatch` / `dispatchAsync` | ✅ |
+| Dispatch (mutation chokepoint) | `src/engine/
+commands/dispatcher.ts` — `dispatch` / `dispatchAsync` | ✅ |
 | Command shapes | `src/engine/commands/EngineCommands.ts` — union ~25 lệnh | ✅ |
 | Facade UI dùng để dispatch | `src/app/hooks/useEngineApi.ts` — `dispatchAsync`, `withTransaction`, `asyncTransaction`, `nextNodeId`, `nextWallId` | ✅ |
 | Perception source | `src/engine/serialization/serialize.ts` — `serializeScene(engine): SceneDocument` | ✅ |
@@ -19,7 +20,8 @@
 | Catalog data | `src/data/catalog/objects.json` (v2, `objects[]`), `materials.json` | ✅ |
 
 > **Bất biến:** AI **không** chạm ECS / Three.js / toạ độ thô. AI chỉ biên dịch ngôn ngữ → `EngineCommand[]`,
-> đẩy qua `useEngineApi.dispatchAsync` trong `asyncTransaction` (gói cả lượt → undo 1 phát). Mọi đảm bảo (collision, reconcile, undo) kế thừa miễn phí.
+> đẩy qua `useEngineApi.dispatchAsync` trong `asyncTransaction` (gói cả lượt → undo 1 phát). Đa số đảm bảo (reconcile item bám tường, undo) kế thừa miễn phí.
+> **⚠️ Ngoại lệ:** **collision KHÔNG kế thừa cho `PLACE_FURNITURE`** (chỉ enforce trên MOVE/ROTATE tương tác — xem Sai khác #7). WP4 solver phải tự tránh chồng.
 
 ---
 
@@ -52,7 +54,8 @@ Model **đã biết khái niệm** style (Gemini học sẵn). Nút thắt là *
 | WP2 `searchCatalog` | ✅ **Done + test** | tool search thay catalog tĩnh trong prompt; 8 test, chỉ trả id thật |
 | WP3 macro tools | ✅ **3/5 macro** | createRoom + addOpening + resizeRoom + guard constraint; furnishRoom→WP4, setSurfaceMaterial→WP7 |
 | WP-DATA tag style/tone | ⏳ chưa làm | **điều kiện cần** cho style (WP5/WP7); khảo sát 2026-06-16: 107 obj + 63 mat hiện **0 tag**, material thiếu `tone` |
-| WP4 – WP7 | ⏳ chưa làm | |
+| WP4 solver + WP4-EVAL | 📐 **spec chi tiết** | **tiếp theo**; bất biến đã sửa: `PLACE_FURNITURE` không check collision → solver tự chống chồng; cần calibrate rotY/hướng trước khi code |
+| WP5 – WP7 | ⏳ chưa làm | |
 
 **Provider: Google Gemini** (đổi từ Anthropic ngày 2026-06-12 do hết credit). SDK `@google/genai`, model mặc định `gemini-2.5-flash` (env `GEMINI_MODEL` đổi `gemini-2.5-pro` / `gemini-2.5-flash-lite`). Có retry+backoff cho lỗi tạm thời (503/429). Wire FE↔BE **trung lập** → đổi provider chỉ sửa `ai.service.ts`.
 
@@ -63,6 +66,7 @@ Model **đã biết khái niệm** style (Gemini học sẵn). Nút thắt là *
 4. **Guard chống hallucinate (`assertKnownModel`) làm sớm từ WP1** thay vì đợi WP2 — rẻ, reject modelId bịa trước dispatcher, trả lỗi dạng tool_result để LLM tự sửa.
 5. **Wire FE↔BE TRUNG LẬP + backend stateless proxy** (không có trong plan) — provider bị cô lập hoàn toàn trong backend; `parseTurn`/`toTurn` tách thuần để test không cần network.
 6. **Auth tạm thời:** `/ai/chat` chưa gắn `requireAuth` (FE chưa có Supabase token) → route **refuse khi `NODE_ENV=production`** chống open-relay. Phải thay bằng `requireAuth` khi FE có auth.
+7. **⚠️ `PLACE_FURNITURE` KHÔNG check va chạm** (verify `handlers/furnitureHandlers.ts:49-54`: `handlePlaceFurniture` chỉ gọi `spawnFurnitureGLB` → spawn ngay, **không có cổng collision**). Collision **chỉ** enforce trên thao tác **tương tác** MOVE/ROTATE (`CannonCollisionSystem.wouldCollideCustom`). → **Bất biến "collision kế thừa miễn phí" là SAI với furniture đặt mới.** Hệ quả sống còn cho WP4: **solver là người DUY NHẤT đảm bảo không-chồng**; test WP4 phải assert trực tiếp bằng AABB, **không** trông vào "dispatcher reject". (`PLACE_WALL_ITEM` thì CÓ guard chồng-opening — khác furniture sàn.)
 
 ### File đã tạo
 - **FE:** `src/ai/perception/describeScene.ts`; `src/ai/agent/{agentTypes,toolRegistry,AgentClient,systemPrompt,createAgentRunner}.ts`; `src/ai/tools/{dispatchBridge,placeFurniture}.ts`; `src/ai/transport/backendTransport.ts`; `src/ai/catalog/catalogSummary.ts` (+ 4 file `.test.ts`). Ráp vào `src/app/components/editor/overlays/AIChatbot.tsx`.
@@ -153,14 +157,107 @@ Model **đã biết khái niệm** style (Gemini học sẵn). Nút thắt là *
 
 ---
 
-## WP4 — Layout solver (Cấp B, CODE — ranh giới sống còn, doc §4)
+## WP4 — Layout solver (Cấp B, CODE — ranh giới sống còn, doc §4) — 📐 SPEC CHI TIẾT, chưa code
 
-**Goal:** AI quyết *ý định* ("giường áp tường bắc, chừa lối đi 0.7m"); **code tính toạ độ**.
+**Goal:** AI quyết *ý định* ("giường áp tường bắc, chừa lối đi 0.7m"); **code tính toạ độ**. Đây là **lõi giá trị** + **test khó nhất** → spec hoá kỹ trước khi code.
 
-- **Tạo:** `src/ai/solver/layoutSolver.ts` (+ `anchors.ts` cho named anchor: `north-wall`/`center`/`corner-…`).
-- **Binds to:** `getFootprint2D(modelId)` (kích thước XZ), `RoomGeometry.points` (biên phòng từ WP0), collision-check kế thừa khi dispatch.
-- **API:** `solvePlacement({ room, modelId, against, clearance, facing }) → { x, z, rotY }`. Bố trí nhiều món: greedy theo footprint + clearance, tránh chồng.
-- **Done-when:** Test spatial: "giường + 2 tủ đầu giường áp tường, lối đi ≥0.7m" → toạ độ không chồng (verify bằng footprint), dispatcher không reject. Đây là test khó nhất — ưu tiên coverage.
+### 0. Ranh giới trách nhiệm (đọc trước)
+- **AI (LLM) quyết:** *chọn món nào* (`modelId` qua `searchCatalog`), *ý định bố cục* (`against: "north-wall"`, `clearance: 0.7`, `facing: "into-room"`), *thứ tự ưu tiên*. **KHÔNG** sinh toạ độ thô.
+- **CODE (solver) quyết:** `{x, z, rotY}` cụ thể sao cho **không chồng**, **trong phòng**, **chừa lối đi**.
+- **⚠️ Bất biến đã sửa (Sai khác #7):** `PLACE_FURNITURE` **không** check va chạm → **solver là người DUY NHẤT** chống chồng. Không có lưới an toàn ở engine.
+
+### 1. Module
+```
+src/ai/solver/
+  layoutSolver.ts   # solvePlacement (1 món) + solveLayout (nhiều món, greedy)
+  anchors.ts        # giải named anchor → toạ độ/hướng từ room geometry
+  rect.ts           # AABB: footprintRect, inflate, overlaps, insideRoom (thuần, test riêng)
+  types.ts          # SolverRoom, PlacementIntent, Placement, LayoutResult
+```
+Tất cả **pure** (input room geometry + catalog getter, output toạ độ) — **không** chạm ECS/dispatch. Tool `placeFurniture`/`furnishRoom` gọi solver rồi mới `dispatchCommands`.
+
+### 2. Kiểu dữ liệu (grounded vào API thật)
+```ts
+// Lấy từ describeScene().rooms[i] — KHÔNG query lại engine trong solver.
+type SolverRoom = {
+  bbox: { minX: number; minZ: number; maxX: number; maxZ: number }; // RoomSummary.bbox
+  points: { x: number; z: number }[];   // perimeter order (RoomDetection.findRooms .points)
+  centroid: { x: number; z: number };   // RoomSummary.centroid
+  wallThickness: number;                // max thickness tường bao (từ WallSummary.thickness)
+};
+type Obstacle = { rect: Rect; kind: "furniture" | "opening-clearance" }; // đã chiếm chỗ
+type PlacementIntent = {
+  modelId: string;
+  against?: Anchor;          // "north-wall"|"south-wall"|"east-wall"|"west-wall"|"center"|"corner-ne"|...
+  clearance?: number;        // lối đi tối thiểu quanh món (m), default 0.6
+  facing?: "into-room" | "to-wall" | number; // number = rotY radian tường minh
+  align?: number;            // vị trí dọc tường 0..1 (default 0.5 = giữa cạnh)
+};
+type Placement = { modelId: string; x: number; z: number; rotY: number };
+type LayoutResult = {
+  placed: Placement[];
+  skipped: { modelId: string; reason: string }[]; // trả về agent → agent tự xử (bỏ/hỏi)
+};
+```
+> **Footprint** lấy từ `getFootprint2D(modelId) → {width, depth}` (đã có chuỗi fallback, luôn dùng được). **Constraint** lấy từ `getPlacement(modelId).constraint`: solver **chỉ** xử `"floor"`; `"wall"` thuộc `addOpening`/wall-mount, **reject** ở solver nếu lọt vào.
+
+### 3. Quy ước hệ toạ độ — **PHẢI calibrate trước khi code** (2 ẩn số thật)
+1. **rotY=0 quay về hướng nào?** Phụ thuộc trục forward của GLB — **chưa biết, không đoán.** *Bước calibrate:* đặt 1 sofa `rotY=0`, quan sát trong 3D, ghi lại "mặt trước = +Z hay −Z". Viết hằng `FORWARD_AXIS` + comment. Mọi `facing` suy từ đó.
+2. **north/south/east/west ↔ XZ?** Chốt convention (tuỳ ý nhưng nhất quán + ghi rõ): `north = minZ`, `south = maxZ`, `west = minX`, `east = maxX`. "Áp tường bắc" = sát cạnh `minZ`, mặt quay vào phòng (+Z).
+> Hai ẩn số này là **rủi ro #1 của WP4** — sai là toàn bộ đặt sai hướng. Calibrate (10 phút thủ công) **trước** khi viết `anchors.ts`.
+
+### 4. Thuật toán
+**`solvePlacement(room, intent)` — 1 món:**
+1. `fp = getFootprint2D(modelId)`. Nếu `against` xoay 90° (đông/tây tường) → hoán đổi `width↔depth` cho AABB.
+2. Giải anchor → vị trí neo + rotY (anchors.ts). Ví dụ `north-wall`: `z = minZ + wallThickness/2 + fp.depth/2`; `x = lerp(minX', maxX', align)` (với `minX'/maxX'` đã inset nửa bề dày tường + nửa footprint để không lú ra ngoài); `rotY` = quay mặt vào +Z.
+3. Trả `{x, z, rotY}`. (1 món **không** cần tránh chồng — đó là việc của `solveLayout`.)
+
+**`solveLayout(room, intents[], existingObstacles[])` — nhiều món (greedy):**
+1. **Khởi tạo obstacles** = furniture đã có (`describeScene().furniture` → rect) + **clearance trước mỗi opening** (`wallItems[kind=opening]` → rect rộng = doorWidth, sâu = 0.9m vào phòng) → KHÔNG đặt chặn cửa.
+2. **Sắp ưu tiên:** món "neo cứng" (bed/sofa/wardrobe — có `against` rõ) đặt trước; món phụ (nightstand/coffee-table) sau.
+3. Mỗi món:
+   a. Lấy vị trí lý tưởng từ `solvePlacement`.
+   b. `rect = inflate(footprintRect(placement), clearance/2)`.
+   c. **Nếu** `overlaps(rect, anyObstacle)` **hoặc** `!insideRoom(rect, room)` → **trượt tìm**: quét dọc tường mục tiêu theo bước `0.1m` (rồi fallback quét lưới toàn phòng), lấy vị trí hợp lệ đầu tiên.
+   d. Không tìm được → đẩy vào `skipped` (lý do: "hết chỗ tránh chồng/lối đi") — **không** đặt liều.
+   e. Thành công → push placement + thêm rect vào obstacles.
+4. Trả `LayoutResult`. Tool đẩy `placed[]` thành `PLACE_FURNITURE[]`; trả `skipped[]` cho agent.
+
+**Giới hạn M1 có chủ đích (ghi rõ, như resizeRoom):**
+- Chỉ **xoay bội số 90°** → AABB chính xác (xoay tự do làm footprint AABB phình sai). Đủ cho bố cục áp tường.
+- Phòng **lồi (convex)**; phòng lõm → vẫn chạy nhưng chỉ đảm bảo trong `bbox` (ghi cảnh báo, không bảo đảm tối ưu).
+
+### 5. AABB overlap — dùng chung ngữ nghĩa với engine
+`rect.ts` tự viết (thuần) NHƯNG **đối chiếu** với adapter engine `src/engine/adapters/furnitureBoxes.ts` (`collectFurnitureBoxes`) để overlap-test của solver **khớp** cách engine hiểu box va chạm → tránh "solver bảo OK mà move tay lại báo chồng". Test WP4 dùng chính AABB này để verify (không có dispatcher reject để dựa — xem Sai khác #7).
+
+### 6. API công khai
+```ts
+solvePlacement(room: SolverRoom, intent: PlacementIntent): Placement;
+solveLayout(room: SolverRoom, intents: PlacementIntent[], existing?: Obstacle[]): LayoutResult;
+```
+`placeFurniture` (đã có, WP1) nâng cấp: thêm chế độ nhận `intent` thay toạ độ thô → gọi `solvePlacement`. `furnishRoom` (WP3 còn nợ) = `solveLayout` → nhiều `PLACE_FURNITURE`.
+
+### 7. Done-when (đo được, nối thẳng eval harness §WP4-EVAL)
+- 5 scenario vàng pass (xem §WP4-EVAL), gồm case khó: "giường + 2 tủ đầu giường áp tường bắc, lối đi ≥0.7m".
+- **Assert trực tiếp** (KHÔNG dùng dispatcher reject): (a) `assertNoOverlap` mọi cặp box (clearance tính vào); (b) `assertInsideRoom` mọi box ⊂ phòng; (c) `assertWalkway ≥ 0.7m` ở trục chính; (d) cửa không bị chặn.
+- Solver thuần → test **không cần engine/LLM**, chạy nhanh trong CI.
+
+---
+
+## WP4-EVAL — Eval harness không-gian (làm CÙNG WP4, là cổng nghiệm thu)
+
+**Goal:** Biến "bố cục đúng" thành thứ **đo được & regression-test được**. Thiếu cái này, WP4 không biết khi nào *xong*. Tách 2 tầng rõ:
+
+### Tầng A — Deterministic (chặn CI, cho solver)
+- **Tạo:** `src/ai/eval/spatialAssertions.ts` (`assertNoOverlap`, `assertInsideRoom`, `assertWalkway`, `assertDoorClear`) + `src/ai/eval/scenes/*.ts` (fixtures phòng vàng, tái dùng `buildEngineHarness` + `describeScene`).
+- **Corpus tối thiểu (5):** ① phòng ngủ 3×4 — giường đôi áp bắc + 2 nightstand; ② phòng khách 4×5 — sofa + bàn trà + kệ TV đối diện, chừa lối; ③ phòng nhỏ 2.5×3 (stress: ít chỗ → buộc `skipped`); ④ phòng có 1 cửa + 1 cửa sổ (test clearance cửa); ⑤ phòng chữ L / lõm (test fallback bbox + cảnh báo).
+- **Done-when:** cả 5 pass assertion A; thêm 1 fixture mới chỉ là thêm 1 file scene + kỳ vọng.
+
+### Tầng B — LLM-as-judge (KHÔNG chặn CI, cho style ở WP5/WP7)
+- "Có đúng Scandinavian/đủ thoáng không" là **chủ quan, code không verify được** (đã ghi ở §Style grounding). → rubric chấm bằng LLM-judge, chạy **thủ công/định kỳ**, không nhồi vào unit test.
+- **Tạo (sau WP-DATA):** `src/ai/eval/styleRubric.md` + script chấm điểm; output = bảng điểm/đề xuất, không phải pass/fail cứng.
+
+> **Vì sao tách:** trộn "không chồng" (test cứng) với "đẹp/đúng style" (chủ quan) vào một gate sẽ làm CI giòn hoặc làm style bị bỏ. A đo hình học, B đo thẩm mỹ.
 
 ---
 
@@ -223,8 +320,20 @@ Model **đã biết khái niệm** style (Gemini học sẵn). Nút thắt là *
 
 - **Guardrails:** validate mọi `modelId`/`materialId` qua `catalogMap`/`materials.json` TRƯỚC dispatch; giới hạn số bước loop (chống không hội tụ); fallback "cần làm rõ…".
 - **Telemetry:** log mỗi tool-call + command emit để debug spatial reasoning.
-- **Test harness:** scene fixtures tái dùng cho WP0/WP3/WP4.
+- **Test harness:** scene fixtures tái dùng cho WP0/WP3/WP4 (`buildEngineHarness` headless + `describeScene`).
 - **Model routing:** ~~Anthropic~~ → **Gemini** (đổi 2026-06-12). Mặc định `gemini-2.5-flash` (env `GEMINI_MODEL`); task khó/planner → `gemini-2.5-pro`; bước rẻ giữ `flash` / `gemini-2.5-flash-lite`.
+
+---
+
+## 🧾 Nợ kỹ thuật cần theo dõi (không cản build, PHẢI trả trước khi ship)
+
+| # | Nợ | Nguồn | Khi nào phải trả |
+|---|---|---|---|
+| TD-1 | `/ai/chat` chưa có `requireAuth` (chỉ refuse khi `NODE_ENV=production`) | Sai khác #6 | **Trước production** — thay bằng `requireAuth` ngay khi FE có Supabase token. Open-relay risk. |
+| TD-2 | `PLACE_FURNITURE` không check collision — solver gánh hết | Sai khác #7 | Bám chặt khi làm WP4; nếu sau này có lệnh đặt furniture **ngoài** solver (vd import) → phải tự kiểm chồng. |
+| TD-3 | `describeScene` đọc thẳng ECS, KHÔNG qua `serializeScene` → 2 đường perception dễ phân kỳ | Sai khác #1 | Thêm 1 test khoá shape (`SceneSummary` vs entity thật) để bắt drift khi ECS đổi component. |
+| TD-4 | Loop chưa có cap số bước cứng (chống không hội tụ) | Cross-cutting/Guardrails | Trước WP6 (planner gọi nhiều tool) — đặt max-steps + fallback "cần làm rõ". |
+| TD-5 | rotY=0 forward-axis & convention N/S/E/W **chưa calibrate** | WP4 §3 | **Trước khi viết `anchors.ts`** — 10 phút thủ công, ghi hằng số + comment. |
 
 ---
 
@@ -232,13 +341,14 @@ Model **đã biết khái niệm** style (Gemini học sẵn). Nút thắt là *
 
 ```
 WP0 (mắt, không chặn) ──► WP2 (catalog) ──┐
-                                          ├──► WP3 (macro) ──► WP4 (solver, khó nhất)
+                                          ├──► WP3 (macro) ──► WP4 (solver) + WP4-EVAL ◄── khó nhất, làm cùng nhau
 WP1 (loop + 1 lệnh, cần §5) ──────────────┘                         │
-                                                                    ▼
+                                          (calibrate TD-5 trước)     ▼
 WP-DATA (tag style/tone) ───────────────► WP5 (style skills) ─► WP6 (1 tầng) ─► WP7 (tinh chỉnh)
 ```
 
 > **WP-DATA** chạy song song được ngay (không chặn bởi WP4) — chỉ là gán tag data. Hoàn thành trước khi vào WP5/WP7 thì style mới có nghĩa.
+> **WP4 + WP4-EVAL đi đôi:** viết assertion (Tầng A) song song solver — eval là cổng nghiệm thu, không phải bước sau.
 
 **Mốc nhìn thấy kết quả (~1 tuần):** WP0 + WP1 → chat điều khiển được scene, validate toàn trục kỹ thuật gồm §5.
 **Lõi giá trị:** WP4 (solver) — quyết định chất lượng sản phẩm.

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tiny Home - Welcome Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&amp;family=Nunito+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#1c1c17",
+                        "surface-container-high": "#ece8df",
+                        "surface-container-highest": "#e6e2d9",
+                        "secondary-fixed-dim": "#afd0a1",
+                        "on-tertiary-fixed": "#410006",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#8c2c2f",
+                        "surface-dim": "#dddad1",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#062104",
+                        "tertiary-fixed": "#ffdad8",
+                        "inverse-primary": "#ffbb16",
+                        "on-primary-fixed": "#271900",
+                        "tertiary-fixed-dim": "#ffb3b0",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e6e2d9",
+                        "tertiary-container": "#ffa9a6",
+                        "on-primary-fixed-variant": "#5e4200",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#fdf9f0",
+                        "surface-tint": "#7c5800",
+                        "inverse-on-surface": "#f4f0e7",
+                        "primary-fixed-dim": "#ffbb16",
+                        "on-tertiary-fixed-variant": "#832428",
+                        "tertiary": "#a23c3e",
+                        "surface-container-low": "#f7f3ea",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#f8b400",
+                        "on-surface-variant": "#504532",
+                        "on-surface": "#1c1c17",
+                        "surface": "#fdf9f0",
+                        "primary": "#7c5800",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#4f6c45",
+                        "secondary": "#496640",
+                        "surface-container": "#f1eee5",
+                        "primary-fixed": "#ffdea6",
+                        "outline": "#837560",
+                        "on-secondary-fixed-variant": "#324e2a",
+                        "inverse-surface": "#31312b",
+                        "background": "#fdf9f0",
+                        "secondary-fixed": "#caecbc",
+                        "outline-variant": "#d5c4ac",
+                        "on-primary-container": "#674900",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#caecbc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-xl": ["Cinzel"],
+                        "label-lg": ["Nunito Sans"],
+                        "headline-sm": ["Cinzel"],
+                        "headline-md": ["Cinzel"],
+                        "body-sm": ["Nunito Sans"],
+                        "headline-lg": ["Cinzel"],
+                        "body-md": ["Nunito Sans"],
+                        "body-lg": ["Nunito Sans"],
+                        "label-sm": ["Nunito Sans"]
+                    },
+                    "fontSize": {
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "0.02em", "fontWeight": "400"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+        }
+        .ethereal-blur {
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px)
+        }
+        .paper-grain {
+            background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBKEip2mI4X79JEqY6rSsiZP9JIum06QydajFLqDdX4HGBQgbk6Iqbn5UrF-aM1UYeDwrvAcAWiPx6NYNGdRLEOM93eh6GqetOy2v3nbIeueuk9Yl9fW7cT_072IqNAgDatrYQMpYioG7cPBnW6kkL_Qf6aLYR5cEM7i122vFe_xADUtf0LfUGAoMrOeKhj_2oFNX6Z6SffNofxROuer9A4MxzKhvglzL155GnIF-7qc-gUi3WZ43tMGFIlvfr2P8Uvb359q1fAe1k2);
+            opacity: 0.05
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex font-body-md relative overflow-hidden">
+<!-- Split Screen Container -->
+<div class="flex flex-col md:flex-row w-full min-h-screen">
+<!-- Left Side: Immersive Visual -->
+<div class="relative w-full md:w-1/2 h-[40vh] md:h-screen overflow-hidden group">
+<!-- Immersive Background Image -->
+<img alt="Sun-drenched medieval village street with honey-colored stone walls and golden sunlight" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkUvBeS6DezNSp_RBLfL6XYJZCSn3iX0iGeSF-UGzGfwWjPPBEg_GcI51Qlo-WYPev2gR5Z5L_sxCUZiAif0qfa9TGxdXCQEsPuu-kprYGzd8oURyDNmktJ7Zc6q8Gjkpf1VT81jpJ6Zl4poi_833ZNrhYlmgim3jGvyO0bAHBlWjutredDavCRQ6Z4V-W1-Dwm3itBWJps-JDObOBBImjcFy3JXbWpgmIPJBaQBFqO3by4oTP7gz9HVQ-fCMMvJLV7KCXjXI1oikS"/>
+<!-- Gradient Overlay for Seamless Transition -->
+<div class="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-transparent via-transparent to-background/20 pointer-events-none"></div>
+<!-- Decorative Grain -->
+<div class="absolute inset-0 paper-grain pointer-events-none"></div>
+<!-- Branding/Inspiration Content -->
+<div class="absolute bottom-10 left-10 right-10 z-20 text-white drop-shadow-lg hidden md:block">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 bg-white/20 ethereal-blur rounded-full flex items-center justify-center border border-white/30">
+<span class="material-symbols-outlined text-white" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<span class="font-headline-sm text-headline-sm uppercase tracking-widest text-white/90">Tiny Home Heritage</span>
+</div>
+<h2 class="font-headline-xl text-headline-xl max-w-md leading-tight">Every threshold is the start of a story.</h2>
+</div>
+<!-- Subtle Vignette -->
+<div class="absolute inset-0 bg-black/10"></div>
+</div>
+<!-- Right Side: Login Form -->
+<div class="relative w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 lg:p-24 bg-background">
+<!-- Background Texture for consistency -->
+<div class="absolute inset-0 paper-grain pointer-events-none opacity-[0.03]"></div>
+<!-- Glassmorphic Form Card -->
+<main class="z-10 w-full max-w-md">
+<div class="bg-surface/60 backdrop-blur-xl border border-primary/10 rounded-xl shadow-[0_20px_50px_rgba(124,88,0,0.08)] p-8 md:p-10 relative overflow-hidden ring-1 ring-white/20">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary-container/40 to-transparent"></div>
+<div class="flex flex-col items-center mb-10">
+<div class="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center mb-4 shadow-[0_4px_15px_rgba(248,180,0,0.25)] ring-4 ring-primary-container/20">
+<span class="material-symbols-outlined text-on-primary-container text-[32px]" data-icon="home">home</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-widest">Welcome Home</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-2">Enter the threshold of your sanctuary</p>
+</div>
+<form action="#" class="space-y-6" method="POST">
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface ml-1" for="email">Email</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors" data-icon="mail">mail</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border border-outline-variant/60 rounded-xl focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container transition-all shadow-sm placeholder:text-outline/60 font-body-md" id="email" name="email" placeholder="Scribe your address..." type="email"/>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center px-1">
+<label class="font-label-lg text-label-lg text-on-surface" for="password">Password</label>
+<a class="font-label-sm text-label-sm text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">Forgot Password?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors" data-icon="key">key</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border border-outline-variant/60 rounded-xl focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container transition-all shadow-sm placeholder:text-outline/60 font-body-md" id="password" name="password" placeholder="The secret passage..." type="password"/>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full py-4 px-6 bg-primary-container text-on-primary-container font-headline-sm text-headline-sm rounded-lg shadow-[0_8px_20px_rgba(248,180,0,0.2)] hover:shadow-[0_12px_30px_rgba(248,180,0,0.4)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-3" type="submit">
+                                Enter the Sanctuary
+                                <span class="material-symbols-outlined" data-icon="login">login</span>
+</button>
+</div>
+</form>
+<div class="mt-8 flex flex-col items-center gap-4">
+<div class="flex items-center w-full gap-4">
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-widest opacity-60">or</span>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            New to the realm? 
+                            <a class="text-primary font-bold hover:underline decoration-primary-container/50 decoration-2 underline-offset-4" href="#">Join the Guild</a>
+</p>
+</div>
+</div>
+<footer class="mt-8 text-center opacity-40">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-widest">© Tiny Home MMXXIV</p>
+</footer>
+</main>
+</div>
+</div>
+<!-- Floating Branding Elements -->
+<div class="fixed top-8 left-8 z-30 md:hidden">
+<img alt="Tiny Home Icon" class="w-8 h-8 grayscale opacity-40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyQSJpsiUM4qXaoy0hBzi5_V3AziVFJEa2M-pUFOg3hL_fptdXB3a_7YuIMFrb059eWDTafHq3bm4-TwcxsgZX1PKpsD7V-n66w0RKDpkaRimjcSp0Wsn5QMG7zH8l3pS0oaTejFfFYS4Gi134iMjKz6WhwYA5_XfTEv5qplo9gltjiaCdUpogzjEjzwoj9hVRDHt-74lancB7TNMO-Al2c9PtsXTcfc3wtk6xTzXynGWixxfyUj1SG48_e1R8CLXjxDbOpoB60vtl"/>
+</div>
+</body></html>

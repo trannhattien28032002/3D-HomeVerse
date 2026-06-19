@@ -1,0 +1,175 @@
+/**
+ * Lớp Konva vẽ tường, cap, và ký hiệu cửa/cửa sổ kiến trúc trong Plan 2D.
+ *
+ * Chia thành 2 Layer tách biệt:
+ *   1. Outline layer (listening=false) — viền ngoài tường + ký hiệu cửa.
+ *   2. Fill layer (listening chỉ khi tool="select") — tô màu + delegate event chuột.
+ *
+ * Ký hiệu lỗ cửa/cửa sổ (chỉ cho wallBehavior="opening"):
+ *   - Rect trắng khoét lỗ trên tường tại vị trí cutWidth.
+ *   - Line đánh dấu vị trí lỗ (A→B dọc tim tường).
+ *   (Đã bỏ swing arc + nét hướng mở cửa — chỉ giữ ký hiệu lỗ tối giản.)
+ */
+import { memo, useMemo } from "react";
+import { Layer, Line, Rect } from "react-konva";
+import type { Wall2D, Cap2D, Furniture2D, Node2D } from "src/app/features/plan2d/types";
+import { PX_PER_WORLD } from "src/shared/math/coords";
+import type { ToolBase } from "src/app/components/editor/tools/ToolBase";
+import type { ToolId } from "src/app/components/editor/tools/toolRegistry";
+
+type Props = {
+    walls: Wall2D[];
+    caps: Cap2D[];
+    furniture: Furniture2D[];
+    activeTool: ToolBase;
+    activeTool2D: ToolId;
+    nodeById: Map<string, Node2D>;
+    /**
+     * Chỉ để bust React.memo khi selection đổi — màu fill được tính trong
+     * activeTool.getWallProps() (đọc ctx.selectedWallIds), không đọc trực tiếp ở đây.
+     * activeTool là reference ổn định nên nếu thiếu prop này, Ctrl+A / click đổi
+     * selectedWallIds sẽ không re-render fill (vàng không sáng). Set là new ref mỗi
+     * lần đổi selection → memo render lại; drag furniture giữ nguyên ref → vẫn freeze (R2).
+     */
+    selectedWallIds: Set<string>;
+};
+
+/**
+ * Tính điểm tâm tim tường tại t, hướng unit, và pháp tuyến unit.
+ * Trả về null nếu thiếu node hoặc tường quá ngắn.
+ */
+function wallBasis2D(
+    wall: Wall2D,
+    t: number,
+    nodeById: Map<string, Node2D>,
+): { px: number; py: number; ux: number; uy: number; nx: number; ny: number; len: number } | null {
+    const a = nodeById.get(wall.startNodeId);
+    const b = nodeById.get(wall.endNodeId);
+    if (!a || !b) return null;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-6) return null;
+    const ux = dx / len;
+    const uy = dy / len;
+    return {
+        px: a.x + dx * t,
+        py: a.y + dy * t,
+        ux, uy,
+        nx: -uy, ny: ux, // pháp tuyến (rot 90° CCW)
+        len,
+    };
+}
+
+// selectedWallIds KHÔNG destructure ở đây: React.memo so sánh props object do parent
+// truyền (xem JSDoc của Props.selectedWallIds), không phụ thuộc việc destructure trong thân.
+function WallLayerInner({ walls, caps, furniture, activeTool, activeTool2D, nodeById }: Props) {
+    // Gom danh sách opening items theo hostWallId để tra cứu nhanh.
+    // MD-03: memo theo [furniture] — chỉ rebuild Map khi furniture đổi, không phải mỗi render.
+    const openingsByWall = useMemo(() => {
+        const m = new Map<string, Furniture2D[]>();
+        for (const f of furniture) {
+            if (f.isWallItem && f.wallBehavior === "opening" && f.hostWallId && f.wallT !== undefined && f.cutWidthPx !== undefined) {
+                const arr = m.get(f.hostWallId) ?? [];
+                arr.push(f);
+                m.set(f.hostWallId, arr);
+            }
+        }
+        return m;
+    }, [furniture]);
+
+    // MD-03: ký hiệu cửa kiến trúc — memo theo [walls, openingsByWall, nodeById].
+    // wallBasis2D + atan2 + tạo nhiều Konva element/cửa khá đắt; chỉ tính lại khi
+    // topology tường, openings, hoặc node thay đổi (không phải mỗi render WallLayer).
+    const doorSymbols = useMemo(() => walls.flatMap(wall => {
+        const openings = openingsByWall.get(wall.id);
+        if (!openings || openings.length === 0) return [];
+        return openings.flatMap(f => {
+            if (f.wallT === undefined || f.cutWidthPx === undefined) return [];
+            const basis = wallBasis2D(wall, f.wallT, nodeById);
+            if (!basis) return [];
+            const { px, py, ux, uy } = basis;
+            const hw = f.cutWidthPx / 2; // nửa bề rộng lỗ (px)
+            const wallThickPx = wall.thickness * PX_PER_WORLD; // thickness mét → px
+
+            // Điểm A, B = 2 mép lỗ dọc tim tường.
+            const ax = px - ux * hw;
+            const ay = py - uy * hw;
+            const bx = px + ux * hw;
+            const by = py + uy * hw;
+
+            return [
+                // Khoét trắng che outline tường (approximation — rect trên tim tường).
+                <Rect
+                    key={`opening-mask-${f.entityId}`}
+                    x={px}
+                    y={py}
+                    width={f.cutWidthPx}
+                    height={wallThickPx}
+                    offsetX={hw}
+                    offsetY={wallThickPx / 2}
+                    rotation={Math.atan2(uy, ux) * (180 / Math.PI)}
+                    fill="#f7f3ea"
+                    listening={false}
+                />,
+                // Nét đánh dấu vị trí lỗ cửa/cửa sổ (line A→B dọc tim tường).
+                <Line
+                    key={`door-leaf-${f.entityId}`}
+                    points={[ax, ay, bx, by]}
+                    stroke="#504532"
+                    strokeWidth={2}
+                    listening={false}
+                />,
+            ];
+        });
+    }), [walls, openingsByWall, nodeById]);
+
+    return (
+        // Phase 3: outlines + fills gộp 1 Layer — giảm số canvas Konva. Z-order giữ
+        // nguyên (outlines + ký hiệu cửa trước, fills sau); outlines set listening={false}
+        // để không vào hit-graph khi layer ở chế độ select. Chỉ wall-fill là interactive.
+        <Layer listening={activeTool2D === "select"}>
+            {/* Outlines + ký hiệu cửa — no interaction, always visible */}
+            {caps.map(cap => (
+                <Line key={`cap-outline-${cap.nodeId}`} points={cap.polygon.flatMap(p => [p.x, p.y])} closed
+                    stroke="#504532" strokeWidth={3} lineJoin="round" listening={false} />
+            ))}
+            {walls.map(wall => wall.polygon
+                ? <Line key={`outline-${wall.id}`} points={wall.polygon.flatMap(p => [p.x, p.y])} closed stroke="#504532" strokeWidth={3} lineJoin="round" listening={false} />
+                : <Line key={`outline-${wall.id}`} points={[wall.cx, wall.cy, wall.cx, wall.cy]} stroke="#504532" strokeWidth={3} listening={false} />
+            )}
+            {/* Ký hiệu cửa kiến trúc */}
+            {doorSymbols}
+
+            {/* Fills + tool-delegated handlers */}
+            {caps.map(cap => (
+                <Line key={`cap-fill-${cap.nodeId}`} points={cap.polygon.flatMap(p => [p.x, p.y])} closed
+                    fill="#d5c4ac" stroke="#d5c4ac" strokeWidth={1} lineJoin="miter" listening={false} />
+            ))}
+            {walls.map(wall => {
+                if (!wall.polygon) return null;
+                const { fill, stroke, draggable, ...handlers } = activeTool.getWallProps(wall);
+                return (
+                    <Line
+                        key={`fill-${wall.id}`}
+                        points={wall.polygon.flatMap(p => [p.x, p.y])}
+                        closed
+                        fill={fill}
+                        stroke={stroke}
+                        strokeWidth={1}
+                        lineJoin="miter"
+                        draggable={draggable}
+                        {...handlers}
+                    />
+                );
+            })}
+        </Layer>
+    );
+}
+
+/**
+ * WallLayer — React.memo'd để không re-render khi chỉ furniture thay đổi (R2).
+ * activeTool là object reference — thay đổi mỗi render nên không làm memo tốt hơn
+ * cho prop này, nhưng walls/caps/furniture/nodeById là stable khi drag chỉ đổi furniture.
+ */
+export const WallLayer = memo(WallLayerInner);

@@ -14,6 +14,7 @@ import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import { EntityRegistry } from "src/engine/registries/EntityRegistry";
 import { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import { createDispatcher } from "src/engine/commands/dispatcher";
+import { EngineEvents } from "src/engine/events/EngineEvents";
 import { SurfaceMaterial } from "src/engine/components/render/SurfaceMaterial";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
 
@@ -26,7 +27,7 @@ function buildDeps(): { deps: DispatcherDeps; world: World } {
     const entityRegistry = new EntityRegistry(world, meshRegistry, modelRegistry);
     const nodeRegistry = new NodeRegistry();
     const deps: DispatcherDeps = {
-        world, scene, nodeRegistry,
+        world, scene, events: new EngineEvents(), nodeRegistry,
         wallEntityByWallId: new Map<string, string>(),
         meshRegistry, materialRegistry, entityRegistry,
         floorMaterials: new Map(),

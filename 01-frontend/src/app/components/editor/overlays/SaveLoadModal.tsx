@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { T } from "../../../constants/designTokens";
+import { T, RGB, alpha } from "../../../constants/designTokens";
 
 type Props = {
     isOpen: boolean;
@@ -43,7 +43,7 @@ export default function SaveLoadModal({ isOpen, onClose, onSave, onLoad }: Props
                     WebkitBackdropFilter: "blur(20px)",
                     border: `1px solid ${T.outlineVariant}`,
                     borderRadius: 20,
-                    boxShadow: `0 24px 64px rgba(124,88,0,0.22), 0 4px 16px rgba(124,88,0,0.10)`,
+                    boxShadow: `0 24px 64px ${alpha(RGB.primary, 0.22)}, 0 4px 16px ${alpha(RGB.primary, 0.10)}`,
                     width: 480,
                     maxWidth: "calc(100vw - 32px)",
                     padding: "28px 28px 24px",
@@ -73,7 +73,7 @@ export default function SaveLoadModal({ isOpen, onClose, onSave, onLoad }: Props
                             display: "flex", alignItems: "center", justifyContent: "center",
                             transition: "background 0.15s",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,88,0,0.10)"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = alpha(RGB.primary, 0.10); }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     >
                         <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
@@ -109,7 +109,7 @@ export default function SaveLoadModal({ isOpen, onClose, onSave, onLoad }: Props
                     margin: 0, fontSize: 11.5, color: T.onSurfaceVariant,
                     textAlign: "center", letterSpacing: "0.01em",
                 }}>
-                    Phím tắt: <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>S</kbd> để lưu &nbsp;·&nbsp; <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>O</kbd> để tải
+                    <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>S</kbd> lưu lên máy chủ &nbsp;·&nbsp; <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>O</kbd> mở file từ máy
                 </p>
             </div>
         </div>

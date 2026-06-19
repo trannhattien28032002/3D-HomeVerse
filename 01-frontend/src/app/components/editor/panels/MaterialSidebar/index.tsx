@@ -13,10 +13,10 @@
  */
 import { useMemo, useState } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
-import type { SelectedTarget } from "src/app/store/useUIStore";
+import type { SelectedTarget } from "src/app/store/useSelectionStore";
 import type { WallFace } from "src/engine/components/render/SurfaceMaterial";
 import { getCatalogItem, getMaterialSlots } from "src/engine/catalog/FurnitureCatalog";
-import { T } from "src/app/constants/designTokens";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 import { MaterialGrid } from "./MaterialGrid";
 import { WALL_CATEGORIES, FLOOR_CATEGORIES } from "./materialCatalog";
 
@@ -33,27 +33,15 @@ function ResetButton({ onClick }: { onClick: () => void }) {
         <button
             onClick={onClick}
             title="Khôi phục material mặc định"
+            className="material-reset-btn"
             style={{
                 display: "flex", alignItems: "center", gap: 4,
                 padding: "4px 10px",
-                background: "transparent",
-                border: "1px solid rgba(213,196,172,0.6)",
                 borderRadius: 9999,
                 cursor: "pointer",
                 color: T.onSurfaceVariant,
                 fontSize: 11,
                 lineHeight: 1,
-                transition: "background 0.18s, border-color 0.18s",
-            }}
-            onMouseEnter={(e) => {
-                const btn = e.currentTarget as HTMLButtonElement;
-                btn.style.borderColor = "#f8b400";
-                btn.style.background = "rgba(248,180,0,0.12)";
-            }}
-            onMouseLeave={(e) => {
-                const btn = e.currentTarget as HTMLButtonElement;
-                btn.style.borderColor = "rgba(213,196,172,0.6)";
-                btn.style.background = "transparent";
             }}
         >
             <span className="material-symbols-outlined" style={{ fontSize: 14 }}>restart_alt</span>
@@ -183,9 +171,9 @@ export default function MaterialSidebar({ open, selected, engine, onClose }: Pro
                 background: "rgba(253,249,240,0.72)",
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
-                border: "1px solid rgba(248,180,0,0.25)",
+                border: `1px solid ${alpha(RGB.primaryContainer, 0.25)}`,
                 borderRadius: 20,
-                boxShadow: "0 16px 48px rgba(124,88,0,0.20)",
+                boxShadow: `0 16px 48px ${alpha(RGB.primary, 0.20)}`,
                 overflow: "hidden",
             }}
         >
@@ -322,15 +310,15 @@ export default function MaterialSidebar({ open, selected, engine, onClose }: Pro
                                             style={{
                                                 display: "flex", alignItems: "center", justifyContent: "space-between",
                                                 padding: "10px 12px",
-                                                background: isSel ? "rgba(248,180,0,0.18)" : "transparent",
-                                                border: isSel ? "1px solid rgba(248,180,0,0.5)" : "1px solid transparent",
+                                                background: isSel ? alpha(RGB.primaryContainer, 0.18) : "transparent",
+                                                border: isSel ? `1px solid ${alpha(RGB.primaryContainer, 0.5)}` : "1px solid transparent",
                                                 borderLeft: isSel ? `3px solid ${T.primary}` : "3px solid transparent",
                                                 borderRadius: 12,
                                                 cursor: "pointer",
                                                 textAlign: "left",
                                                 transition: "background 0.15s, border-color 0.15s",
                                             }}
-                                            onMouseEnter={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = "rgba(248,180,0,0.08)"; }}
+                                            onMouseEnter={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = alpha(RGB.primaryContainer, 0.08); }}
                                             onMouseLeave={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                                         >
                                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -393,13 +381,13 @@ export default function MaterialSidebar({ open, selected, engine, onClose }: Pro
                                         style={{
                                             display: "flex", alignItems: "center", justifyContent: "space-between",
                                             padding: "10px 12px",
-                                            background: isSel ? "rgba(248,180,0,0.18)" : "transparent",
-                                            border: isSel ? "1px solid rgba(248,180,0,0.5)" : "1px solid transparent",
+                                            background: isSel ? alpha(RGB.primaryContainer, 0.18) : "transparent",
+                                            border: isSel ? `1px solid ${alpha(RGB.primaryContainer, 0.5)}` : "1px solid transparent",
                                             borderLeft: isSel ? `3px solid ${T.primary}` : "3px solid transparent",
                                             borderRadius: 12, cursor: "pointer", textAlign: "left",
                                             transition: "background 0.15s, border-color 0.15s",
                                         }}
-                                        onMouseEnter={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = "rgba(248,180,0,0.08)"; }}
+                                        onMouseEnter={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = alpha(RGB.primaryContainer, 0.08); }}
                                         onMouseLeave={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                                     >
                                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

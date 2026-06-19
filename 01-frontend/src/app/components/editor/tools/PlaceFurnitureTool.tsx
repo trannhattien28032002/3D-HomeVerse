@@ -6,7 +6,8 @@ import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import { obbCorners, collidesWithFurniture, collidesWithWalls } from "./collision2D";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveAlignment, type AlignGuide } from "src/shared/geometry/alignment";
-import { buildWallSegments2D, buildFurnitureBoxes2D } from "src/app/components/editor/views/PlanView2D/wallSegments2D";
+import { buildWallSegments2D, buildFurnitureBoxes2D } from "src/app/features/plan2d/wallSegments2D";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 
 /**
  * PlaceFurnitureTool — đặt nội thất trong PlanView2D (tab 2D) bằng ghost top-down.
@@ -135,7 +136,7 @@ export class PlaceFurnitureTool implements ToolBase {
         const d = transform.toPxDim(this.footprint.depth);
 
         const bad = this.colliding;
-        const crossColor = bad ? "#c81e1e" : "#7c5800";
+        const crossColor = bad ? "#c81e1e" : T.primary;
 
         return (
             <Layer listening={false}>
@@ -147,15 +148,15 @@ export class PlaceFurnitureTool implements ToolBase {
                             transform.toPxX(g.x1), transform.toPxY(g.z1),
                             transform.toPxX(g.x2), transform.toPxY(g.z2),
                         ]}
-                        stroke="#f8b400" strokeWidth={ss(2)} dash={[ss(8), ss(5)]} listening={false}
+                        stroke={T.primaryContainer} strokeWidth={ss(2)} dash={[ss(8), ss(5)]} listening={false}
                     />
                 ))}
                 <Group x={cx} y={cy} opacity={0.6} perfectDrawEnabled={false}>
                     <Rect
                         width={w} height={d}
                         offsetX={w / 2} offsetY={d / 2}
-                        fill={bad ? "rgba(200,30,30,0.22)" : "rgba(248,180,0,0.18)"}
-                        stroke={bad ? "#c81e1e" : "#7c5800"}
+                        fill={bad ? "rgba(200,30,30,0.22)" : alpha(RGB.primaryContainer, 0.18)}
+                        stroke={bad ? "#c81e1e" : T.primary}
                         strokeWidth={ss(1.5)}
                         dash={[ss(6), ss(4)]}
                     />

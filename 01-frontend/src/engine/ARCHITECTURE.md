@@ -99,7 +99,42 @@ nạp GLB) dùng `asyncTransaction`: chụp snapshot TRƯỚC → await → push
 
 ---
 
-## 5. Ghi chú & quy ước
+## 5. Quy ước seam (engine ↔ app ↔ ai)
+
+Ranh giới giữa các tầng — đọc trước khi thêm import xuyên tầng.
+
+**Chiều phụ thuộc (một chiều, cấm vòng):**
+```
+shared  ◄── engine  ◄── ai  ◄── app  ──►  data
+```
+- `engine` không biết ai/app/react. `ai` chỉ biết `engine` + `shared` (**CẤM `ai → app`**).
+- `app` biết tất cả; `data` chỉ biết `shared`.
+
+**`EngineApi` vs `EngineApiFacade`** (cả hai ở [`engineTypes.ts`](./engineTypes.ts) — một nguồn duy nhất):
+- `EngineApi` — bề mặt ĐẦY ĐỦ trên `engine.api` (events, camera, undo, material read…). Engine cấp.
+- `EngineApiFacade` — facade NULL-SAFE, subset tiện dụng mà **UI (React) + AI tools** tiêu thụ.
+  Hiện thực: `app/hooks/useEngineApi()`; mock trong test/AI. Đặt ở engine layer để `ai`
+  import được mà KHÔNG tạo vòng `ai → app`. Khác `EngineApi` ở: null-safe + `withTransaction`
+  (gói `transaction`) + `nextNodeId`/`nextWallId` (tách `getNextIds`).
+
+**Toạ độ (ở [`shared/types/primitives.ts`](../shared/types/primitives.ts) — nguồn duy nhất):**
+- `Vec2 = {x, y}` — điểm MÀN HÌNH / Konva (2D).
+- `Vec2XZ = {x, z}` / `BBoxXZ` — điểm/hộp trên mặt SÀN (toạ độ thế giới XZ). Đừng tự khai lại.
+
+## 6. Ba biểu diễn scene (đừng nhầm lẫn)
+
+Cùng một floor plan tồn tại dưới 3 hình thức, mỗi cái cho một mục đích khác nhau:
+
+| Biểu diễn | Định nghĩa | Mục đích | Nguồn / đường đi |
+|---|---|---|---|
+| **`SceneDocument`** | [`serialization/SceneDocument.ts`](./serialization/SceneDocument.ts) | LƯU/TẢI (persist) + snapshot undo | `serialize(world)` ↔ `deserialize()`; furniture/wallItem chỉ có toạ độ + modelId, **không entityId** |
+| **`ECSSnapshot`** | [`events/EngineEvents.ts`](./events/EngineEvents.ts) | RENDER 2D — payload event `"snapshot"` | `SnapshotSystem` emit mỗi mutation → React `useFloorPlanSnapshot` → `PlanView2D` |
+| **`SceneSummary`** | [`ai/perception/describeScene.ts`](../ai/perception/describeScene.ts) | AI đọc (LLM) — gọn, ổn định | `describeScene(world,nodes)`; CÓ `entityId` (để AI tham chiếu món cụ thể mà không bịa id) |
+
+Quy tắc: persist dùng `SceneDocument`, vẽ 2D dùng `ECSSnapshot`, mô tả cho AI dùng
+`SceneSummary`. Không tái dùng chéo (vd. đừng cho AI đọc `SceneDocument` — thiếu entityId).
+
+## 7. Ghi chú & quy ước
 
 - **Comment tiếng Việt** là quy ước của codebase — giữ nguyên khi di chuyển code.
 - Quy ước đặt tên: method `private` KHÔNG có tiền tố `_`; chỉ field cache/temp mới dùng

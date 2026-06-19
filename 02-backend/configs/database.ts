@@ -1,3 +1,7 @@
+// Must run before the pg Pool is created so the patched dns.lookup is in place
+// for the first connection (some networks REFUSE *.pooler.supabase.com — see
+// dns-fix.ts).
+import './dns-fix';
 import pg from 'pg';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { env } from './env';

@@ -2,9 +2,10 @@ import React from "react";
 import { Circle, Layer, Line, Text } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-import type { Wall2D } from "src/app/plan2d/types";
+import type { Wall2D } from "src/app/features/plan2d/types";
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import { snapToNodeOrGrid, WALL_THICKNESS, HANDLE_HIDE_BELOW } from "./toolUtils";
+import { T } from "src/app/constants/designTokens";
 
 // ── Internal drag state ───────────────────────────────────────────────────────
 
@@ -71,8 +72,8 @@ export class SelectTool implements ToolBase {
         const selected = this.ctx.selectedWallIds.has(wall.id);
 
         return {
-            fill:     selected ? "#f8b400" : "#d5c4ac",
-            stroke:   selected ? "#7c5800" : "#d5c4ac",
+            fill:     selected ? T.primaryContainer : "#d5c4ac",
+            stroke:   selected ? T.primary : "#d5c4ac",
             draggable: true,
 
             onMouseDown: (e: KonvaEventObject<MouseEvent>) => {
@@ -223,7 +224,7 @@ export class SelectTool implements ToolBase {
                 <Text
                     x={singleWall.cx - ss(30)} y={singleWall.cy - ss(20)}
                     text={`Wall #${singleWall.id}`}
-                    fill="#7c5800" fontSize={ss(12)} fontStyle="bold"
+                    fill={T.primary} fontSize={ss(12)} fontStyle="bold"
                     listening={false}
                 />
             </Layer>

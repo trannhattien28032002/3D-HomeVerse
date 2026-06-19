@@ -5,12 +5,15 @@
  * Nút Grid luân phiên bước lưới snap (SNAP_OPTIONS) — áp dụng ngay cho snap 2D + 3D.
  * Nút Screenshot chụp khung hình 3D tại vị trí camera hiện tại (tự bỏ chọn trước khi chụp)
  * rồi tải về dạng PNG. Help hiện chưa có logic — chỉ là UI placeholder.
+ * Nút Logout (A5) gọi signOut() của useAuthStore (Supabase signOut) rồi điều hướng về /login.
  */
 import type { MouseEvent } from "react";
-import { T } from "../../../constants/designTokens";
+import { useNavigate } from "react-router-dom";
+import { T, RGB, alpha } from "../../../constants/designTokens";
 import type { Mode } from "../../../constants/navigation";
 import { useUIStore } from "../../../store/useUIStore";
-import { useEngineOrNull } from "../../../engine/EngineContext";
+import { useAuthStore } from "../../../store/useAuthStore";
+import { useEngineOrNull } from "../../../engineBinding/EngineContext";
 
 type Props = { mode: Mode };
 
@@ -26,7 +29,16 @@ export default function TopNavBar({ mode }: Props) {
     const isChatbotOpen = useUIStore((s) => s.isChatbotOpen);
     const toggleChatbot = useUIStore((s) => s.toggleChatbot);
     const openSaveLoad = useUIStore((s) => s.openSaveLoad);
+    const openVersions = useUIStore((s) => s.openVersions);
+    const signOut = useAuthStore((s) => s.signOut);
     const engine = useEngineOrNull();
+    const navigate = useNavigate();
+
+    /** Đăng xuất khỏi Supabase rồi điều hướng về /login. */
+    const handleLogout = async () => {
+        await signOut();
+        navigate("/login", { replace: true });
+    };
 
     /** Chụp khung hình 3D tại vị trí camera hiện tại → tải về PNG (tự bỏ chọn trước). */
     const handleScreenshot = () => {
@@ -40,7 +52,7 @@ export default function TopNavBar({ mode }: Props) {
     };
 
     const hoverIn = (e: MouseEvent<HTMLButtonElement>) => {
-        e.currentTarget.style.background = "rgba(248,180,0,0.15)";
+        e.currentTarget.style.background = alpha(RGB.primaryContainer, 0.15);
         e.currentTarget.style.color = T.primary;
     };
     const hoverOut = (e: MouseEvent<HTMLButtonElement>) => {
@@ -58,22 +70,44 @@ export default function TopNavBar({ mode }: Props) {
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
             borderBottom: `1px solid ${T.outlineVariant}`,
-            boxShadow: "0 0 15px rgba(248,180,0,0.10)",
+            boxShadow: `0 0 15px ${alpha(RGB.primaryContainer, 0.10)}`,
         }}>
-            <span style={{
-                fontFamily: "Cinzel, serif",
-                fontSize: 20, fontWeight: 700,
-                color: T.primary,
-                letterSpacing: "0.02em",
-            }}>
-                Tiny Home
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                    aria-label="Quay lại Projects"
+                    title="Quay lại danh sách dự án"
+                    onClick={() => navigate("/projects")}
+                    style={{
+                        background: "transparent", border: "none",
+                        color: T.onSurfaceVariant, cursor: "pointer",
+                        borderRadius: 9999, width: 36, height: 36,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "background 0.2s, color 0.2s",
+                    }}
+                    onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: 22 }}>arrow_back</span>
+                </button>
+
+                <span style={{
+                    fontFamily: "Cinzel, serif",
+                    fontSize: 20, fontWeight: 700,
+                    color: T.primary,
+                    letterSpacing: "0.02em",
+                }}>
+                    Tiny Home
+                </span>
+            </div>
 
             <span style={{
+                position: "absolute",
+                left: "50%",
+                transform: "translateX(-50%)",
                 fontSize: 12, fontWeight: 600,
                 color: T.onSurfaceVariant,
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
+                pointerEvents: "none",
             }}>
                 {mode === "3d" ? "3D Editor" : "Floor Plan"}
             </span>
@@ -114,6 +148,22 @@ export default function TopNavBar({ mode }: Props) {
                 </button>
 
                 <button
+                    aria-label="Lịch sử phiên bản"
+                    title="Lịch sử phiên bản"
+                    onClick={openVersions}
+                    style={{
+                        background: "transparent", border: "none",
+                        color: T.onSurfaceVariant, cursor: "pointer",
+                        borderRadius: 9999, width: 36, height: 36,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "background 0.2s, color 0.2s",
+                    }}
+                    onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: 22 }}>history</span>
+                </button>
+
+                <button
                     aria-label={`Grid snap ${snapCm(snapM)}cm`}
                     title={`Lưới snap: ${snapCm(snapM)}cm — bấm để đổi`}
                     onClick={cycleSnap}
@@ -147,21 +197,21 @@ export default function TopNavBar({ mode }: Props) {
                     title="AI Architect Assistant"
                     onClick={toggleChatbot}
                     style={{
-                        background: isChatbotOpen ? "rgba(248,180,0,0.20)" : "transparent",
+                        background: isChatbotOpen ? alpha(RGB.primaryContainer, 0.20) : "transparent",
                         border: "none",
                         color: isChatbotOpen ? T.primary : T.onSurfaceVariant,
                         cursor: "pointer",
                         borderRadius: 9999, width: 36, height: 36,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         transition: "background 0.2s, color 0.2s",
-                        boxShadow: isChatbotOpen ? "0 0 0 2px rgba(248,180,0,0.45)" : "none",
+                        boxShadow: isChatbotOpen ? `0 0 0 2px ${alpha(RGB.primaryContainer, 0.45)}` : "none",
                     }}
                     onMouseEnter={(e) => {
-                        e.currentTarget.style.background = isChatbotOpen ? "rgba(248,180,0,0.28)" : "rgba(248,180,0,0.15)";
+                        e.currentTarget.style.background = isChatbotOpen ? alpha(RGB.primaryContainer, 0.28) : alpha(RGB.primaryContainer, 0.15);
                         e.currentTarget.style.color = T.primary;
                     }}
                     onMouseLeave={(e) => {
-                        e.currentTarget.style.background = isChatbotOpen ? "rgba(248,180,0,0.20)" : "transparent";
+                        e.currentTarget.style.background = isChatbotOpen ? alpha(RGB.primaryContainer, 0.20) : "transparent";
                         e.currentTarget.style.color = isChatbotOpen ? T.primary : T.onSurfaceVariant;
                     }}
                 >
@@ -174,6 +224,22 @@ export default function TopNavBar({ mode }: Props) {
                     >
                         auto_awesome
                     </span>
+                </button>
+
+                <button
+                    aria-label="Đăng xuất"
+                    title="Đăng xuất"
+                    onClick={handleLogout}
+                    style={{
+                        background: "transparent", border: "none",
+                        color: T.onSurfaceVariant, cursor: "pointer",
+                        borderRadius: 9999, width: 36, height: 36,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "background 0.2s, color 0.2s",
+                    }}
+                    onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: 22 }}>logout</span>
                 </button>
             </div>
         </nav>

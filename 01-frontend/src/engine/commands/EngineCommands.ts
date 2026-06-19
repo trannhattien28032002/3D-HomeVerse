@@ -105,14 +105,17 @@ export type EngineCommand =
     /**
      * Di chuyển furniture entity đến vị trí mới (x, z) trong 2D floor plan.
      * Dispatcher kiểm tra va chạm — nếu bị chặn, entity giữ nguyên vị trí cũ.
+     * force=true: BỎ QUA snap + collision, đặt thẳng vị trí — dùng cho group-move/rotate
+     * (cả cụm dời/xoay theo delta cứng, giữ layout tương đối, cho chồng tạm; xem MULTISELECT-PLAN).
      */
-    | { type: "MOVE_FURNITURE"; entityId: string; x: number; z: number }
+    | { type: "MOVE_FURNITURE"; entityId: string; x: number; z: number; force?: boolean }
 
     /**
      * Xoay furniture entity đến góc rotY mới (radians, quanh trục Y).
      * Dispatcher kiểm tra va chạm — nếu bị chặn, entity giữ nguyên góc cũ.
+     * force=true: BỎ QUA collision, đặt thẳng góc — dùng cho group-rotate (va chạm nới lỏng).
      */
-    | { type: "ROTATE_FURNITURE"; entityId: string; rotY: number }
+    | { type: "ROTATE_FURNITURE"; entityId: string; rotY: number; force?: boolean }
 
     /**
      * Xóa vĩnh viễn furniture entity khỏi scene.

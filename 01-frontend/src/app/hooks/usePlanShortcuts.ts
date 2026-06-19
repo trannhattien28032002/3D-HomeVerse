@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
+import { isTypingTarget } from "src/shared/dom/isTypingTarget";
 import type { EngineInstance } from "src/engine/engineTypes";
-import type { Wall2D, Furniture2D } from "src/app/plan2d/types";
+import type { Wall2D, Furniture2D } from "src/app/features/plan2d/types";
 import type { ToolBase } from "src/app/components/editor/tools/ToolBase";
 import type { ToolId, WallToolId } from "src/app/components/editor/tools/toolRegistry";
 
@@ -134,11 +135,6 @@ function matches(s: Shortcut, e: KeyboardEvent): boolean {
     return true;
 }
 
-function isTypingTarget(target: EventTarget | null): boolean {
-    const el = target as HTMLElement | null;
-    if (!el) return false;
-    return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
-}
 
 export function usePlanShortcuts(params: Params): void {
     // getActiveTool có thể đổi mỗi render; ref để handler luôn gọi bản mới nhất.

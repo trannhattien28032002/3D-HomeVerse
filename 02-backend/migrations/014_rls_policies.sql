@@ -5,16 +5,11 @@
 -- ─── Enable RLS on all tables ───────────────────────────────────────────────
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_objects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_autosaves ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.library_objects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.object_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.material_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.category_material_compat ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.object_material_compat_override ENABLE ROW LEVEL SECURITY;
 
 -- ─── profiles ───────────────────────────────────────────────────────────────
 CREATE POLICY "profiles: users can view their own profile"
@@ -68,42 +63,6 @@ CREATE POLICY "projects: owner can delete"
   ON public.projects FOR DELETE
   USING (owner_id = auth.uid());
 
--- ─── project_objects ────────────────────────────────────────────────────────
--- Access mirrors the parent project's access
-CREATE POLICY "project_objects: access via project ownership"
-  ON public.project_objects FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.projects p
-      WHERE p.id = project_id
-        AND p.owner_id = auth.uid()
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.projects p
-      WHERE p.id = project_id
-        AND p.owner_id = auth.uid()
-    )
-  );
-
--- Shared viewers and editors can read
-CREATE POLICY "project_objects: shared read"
-  ON public.project_objects FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.projects p
-      LEFT JOIN public.project_shares ps ON ps.project_id = p.id
-      WHERE p.id = project_id
-        AND (
-          p.is_public = TRUE
-          OR p.owner_id = auth.uid()
-          OR (ps.shared_with = auth.uid()
-              AND (ps.expires_at IS NULL OR ps.expires_at > NOW()))
-        )
-    )
-  );
-
 -- ─── Library tables (public read, admin write) ──────────────────────────────
 -- Library objects are public to any authenticated user
 CREATE POLICY "library_objects: authenticated users can read"
@@ -118,21 +77,6 @@ CREATE POLICY "materials: authenticated users can read"
   ON public.materials FOR SELECT
   TO authenticated
   USING (is_active = TRUE AND deleted_at IS NULL);
-
-CREATE POLICY "object_categories: authenticated users can read"
-  ON public.object_categories FOR SELECT
-  TO authenticated
-  USING (TRUE);
-
-CREATE POLICY "material_categories: authenticated users can read"
-  ON public.material_categories FOR SELECT
-  TO authenticated
-  USING (TRUE);
-
-CREATE POLICY "category_material_compat: authenticated users can read"
-  ON public.category_material_compat FOR SELECT
-  TO authenticated
-  USING (TRUE);
 
 -- ─── project_shares ─────────────────────────────────────────────────────────
 -- Owner can manage shares

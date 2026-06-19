@@ -16,10 +16,13 @@ import type { GLTFModelLoader } from "src/engine/rendering/GLTFModelLoader";
 import type { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import type { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import type { EntityRegistry } from "src/engine/registries/EntityRegistry";
+import type { EngineEvents } from "src/engine/events/EngineEvents";
 
 export type DispatcherDeps = {
     world: World;
     scene: THREE.Scene;
+    /** EventBus engine — handler phát event ra UI (vd entityLimitReached → toast). */
+    events: EngineEvents;
     nodeRegistry: NodeRegistry;
     /** Tra cứu: wallId (uuid logic) → entity (uuid ECS). wallId khác entity id. */
     wallEntityByWallId: Map<string, string>;

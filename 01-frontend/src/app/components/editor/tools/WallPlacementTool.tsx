@@ -7,7 +7,7 @@ import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
 import { occupancyLane } from "src/shared/geometry/wallMount";
 import { buildOccupiedRanges, occupiedOverlaps } from "src/engine/utils/wallOccupancy";
-import { projectToNearestWall, buildOpeningOccupancy } from "src/app/components/editor/views/PlanView2D/wallItemDrag2D";
+import { projectToNearestWall, buildOpeningOccupancy } from "src/app/features/plan2d/wallItemDrag2D";
 
 /**
  * WallPlacementTool — đặt wall item (cửa, cửa sổ, kệ treo) lên tường trong PlanView2D.

@@ -38,6 +38,14 @@ import { DEFAULT_WALL_HEIGHT } from "src/shared/constants/wall";
 let _generation = 0;
 
 /**
+ * Callback tiến độ nạp scene. `loaded`/`total` đếm số item nặng (furniture +
+ * wall-item) đã spawn xong — đây là phần async thật (tải + parse GLB). Node/tường
+ * dựng đồng bộ nên không tính vào tiến độ. `total === 0` ⇒ scene không có item nào
+ * cần tải (consumer nên coi như 100%).
+ */
+export type DeserializeProgress = (loaded: number, total: number) => void;
+
+/**
  * Dựng lại scene từ SceneDocument. ASYNC (C1): furniture/wall-item được spawn qua
  * `dispatchAsync` và await TUẦN TỰ — thay cho fire-and-forget sync `dispatch` cũ
  * (vốn in cảnh báo "undo will NOT be undo-safe" và để promise GLB chạy tự do).
@@ -49,8 +57,15 @@ let _generation = 0;
  * chưa-cache của lần cũ đang bay, lần cũ có thể spawn TỐI ĐA một entity sót trước khi
  * generation guard chặn — so với hành vi cũ (interleave nhiều entity). Trade-off chấp
  * nhận được; đóng hẳn cần generation token luồn xuống tận FurnitureFactory.
+ *
+ * `onProgress` (optional): được gọi sau mỗi item spawn xong để host (LoadingScreen)
+ * hiển thị tiến độ thật. Caller undo/redo/file-load bỏ qua tham số này.
  */
-export async function deserializeScene(doc: SceneDocument, engine: EngineInstance): Promise<void> {
+export async function deserializeScene(
+    doc: SceneDocument,
+    engine: EngineInstance,
+    onProgress?: DeserializeProgress,
+): Promise<void> {
     const myGen = ++_generation;
     const dispatch = engine.api.dispatch;
     const dispatchAsync = engine.api.dispatchAsync;
@@ -108,17 +123,25 @@ export async function deserializeScene(doc: SceneDocument, engine: EngineInstanc
     // ── 4. Khôi phục furniture ────────────────────────────────────────────────
     // dispatchAsync + await tuần tự: entity tồn tại xong mới sang item kế. Guard
     // generation trước mỗi spawn để dừng nếu một deserialize mới đã chen vào (C1).
-    for (const f of (doc.furniture ?? [])) {
+    const furniture = doc.furniture ?? [];
+    const wallItems = doc.wallItems ?? [];
+    const total = furniture.length + wallItems.length;
+    let loaded = 0;
+    onProgress?.(0, total);
+
+    for (const f of furniture) {
         if (myGen !== _generation) return;
         await dispatchAsync({ type: "PLACE_FURNITURE", modelId: f.modelId, x: f.x, y: f.y, z: f.z, rotY: f.rotY, materials: f.materials });
+        onProgress?.(++loaded, total);
     }
 
     // ── 5. Khôi phục đồ bám tường ─────────────────────────────────────────────
     // Phải SAU khi tường được tạo (bước 3) vì PLACE_WALL_ITEM suy Transform từ
     // topology tường theo hostWallId. Cũng await tuần tự + guard generation.
-    for (const w of (doc.wallItems ?? [])) {
+    for (const w of wallItems) {
         if (myGen !== _generation) return;
         await dispatchAsync({ type: "PLACE_WALL_ITEM", modelId: w.modelId, hostWallId: w.hostWallId, t: w.t, side: w.side, materials: w.materials });
+        onProgress?.(++loaded, total);
     }
 
     // ── 6. Khôi phục material sàn ─────────────────────────────────────────────

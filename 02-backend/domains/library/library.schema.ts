@@ -1,10 +1,9 @@
 import { z } from 'zod';
 
+// Filters use the category *slug* (Decision A) — there is no UUID category id.
 export const LibrarySearchQuerySchema = z.object({
   q: z.string().min(2).optional(),
-  categoryId: z.string().uuid().optional(),
-  placement: z.enum(['floor', 'wall', 'ceiling', 'wall_floor', 'any']).optional(),
-  tags: z.string().optional(), // CSV — split to array in service
+  category: z.string().optional(), // category slug, e.g. 'bathroom'
   isPremium: z
     .string()
     .optional()

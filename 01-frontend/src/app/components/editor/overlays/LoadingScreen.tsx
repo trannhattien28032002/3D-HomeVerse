@@ -6,6 +6,7 @@
  * gọi onFadeOutEnd để host gỡ component.
  */
 import { useEffect, useRef, useState } from "react";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 
 const LOGO_URL =
     "https://lh3.googleusercontent.com/aida-public/AB6AXuDj8iVj8LYluoTpES8dpsgurXNqMnF5_lFgeWmfaiDhoBd2CkQGb2iMBNCZXfQVpbVjOK0UHWTT9ejM_fpsbRj8-Nf42ZfOH8f131KGBqzypOj7Ze0vzWELf-_qsjeXgaervXJc_F4v8k1J4Bw3Woc1NGobQYiBHReFFrGNg6w2JqTdM3NYnJprmUG2QrF5s1zc9WSaSR_K9sYnxOvX3S6XVHzOhxIgHHI2_6pPKi-sFgBD8jd5eXkFA-8QTbXYwHp6VpRjdW77RkkB";
@@ -64,7 +65,7 @@ export default function LoadingScreen({ progress, done, onFadeOutEnd }: Props) {
                 position: "absolute",
                 width: 320, height: 320,
                 borderRadius: "50%",
-                background: "rgba(248,180,0,0.12)",
+                background: alpha(RGB.primaryContainer, 0.12),
                 filter: "blur(80px)",
                 pointerEvents: "none",
                 zIndex: 11,
@@ -83,7 +84,7 @@ export default function LoadingScreen({ progress, done, onFadeOutEnd }: Props) {
                     border: "4px solid #ece8df",
                     background: "rgba(255,255,255,0.5)",
                     backdropFilter: "blur(8px)",
-                    boxShadow: "0 10px 40px rgba(124,88,0,0.10), inset 0 0 20px rgba(124,88,0,0.04)",
+                    boxShadow: `0 10px 40px ${alpha(RGB.primary, 0.10)}, inset 0 0 20px ${alpha(RGB.primary, 0.04)}`,
                     overflow: "hidden",
                     padding: 16,
                     boxSizing: "border-box",
@@ -104,7 +105,7 @@ export default function LoadingScreen({ progress, done, onFadeOutEnd }: Props) {
                         fontFamily: "Cinzel, serif",
                         fontSize: 48, lineHeight: "56px",
                         fontWeight: 400,
-                        color: "#7c5800",
+                        color: T.primary,
                         letterSpacing: "0.02em",
                         margin: 0,
                     }}>
@@ -123,9 +124,9 @@ export default function LoadingScreen({ progress, done, onFadeOutEnd }: Props) {
                             <div style={{
                                 height: "100%",
                                 width: `${progress}%`,
-                                background: "#f8b400",
+                                background: T.primaryContainer,
                                 borderRadius: 9999,
-                                boxShadow: "0 0 8px rgba(248,180,0,0.55)",
+                                boxShadow: `0 0 8px ${alpha(RGB.primaryContainer, 0.55)}`,
                                 transition: "width 0.4s ease",
                             }} />
                         </div>

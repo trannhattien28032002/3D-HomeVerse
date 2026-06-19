@@ -14,8 +14,20 @@ export function validate(schema: ZodSchema, target: RequestTarget = 'body') {
       throw new ValidationError(result.error.issues);
     }
     // Replace raw input with the parsed (and possibly coerced) value.
-    // Double-cast required because TypeScript's Request type lacks an index signature.
-    (req as unknown as Record<string, unknown>)[target] = result.data;
+    // In Express 5 `req.query` is a getter-only property, so a plain
+    // assignment throws "Cannot set property query ... which has only a
+    // getter". Redefine it as a data property instead. `body`/`params`
+    // remain writable, so a direct assignment is fine for those.
+    if (target === 'query') {
+      Object.defineProperty(req, 'query', {
+        value: result.data,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    } else {
+      (req as unknown as Record<string, unknown>)[target] = result.data;
+    }
     next();
   };
 }

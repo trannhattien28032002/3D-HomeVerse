@@ -1,10 +1,8 @@
 import { pool } from '../../shared/db/client';
-import { withTransaction } from '../../shared/db/transaction';
 import { ForbiddenError } from '../../shared/errors/ForbiddenError';
 import { NotFoundError } from '../../shared/errors/NotFoundError';
 import { AppError } from '../../shared/errors/AppError';
 import * as repo from './projects.repository';
-import { copyProjectObjects } from '../scenes/scenes.repository';
 import type { ProjectMeta, CreateProjectInput, UpdateProjectMetaInput } from './projects.types';
 import type { ShareContext } from '../../shared/types/shareContext';
 
@@ -99,18 +97,7 @@ export async function duplicateProject(
   if (!source) throw new NotFoundError('Source project not found');
   if (source.ownerId !== userId) throw new ForbiddenError('Only the owner can duplicate this project');
 
-  return withTransaction(pool, async (client) => {
-    // Step 1: copy the project row.
-    const newId = await repo.duplicateProjectRow(client, sourceId, userId);
-
-    // Step 2: copy project_objects into the new project (Phase 4 complete).
-    await copyProjectObjects(client, sourceId, newId);
-
-    // Fetch the new project name to return it.
-    const { rows } = await client.query<{ name: string }>(
-      'SELECT name FROM public.projects WHERE id = $1',
-      [newId]
-    );
-    return { id: newId, name: rows[0]?.name ?? '' };
-  });
+  // Per Decision B, duplicate is a single-row copy that includes scene_data.
+  // No project_objects copy leg, so no transaction is required.
+  return repo.duplicateProjectRow(pool, sourceId, userId);
 }

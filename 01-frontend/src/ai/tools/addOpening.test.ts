@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
-import type { EngineApi } from "src/app/hooks/useEngineApi";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 import { World } from "src/engine/ecs/World";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import { addOpeningTool } from "src/ai/tools/addOpening";
@@ -11,7 +11,7 @@ import type { ScenePerceptionSource } from "src/ai/perception/describeScene";
 
 function mockApi() {
     const dispatched: EngineCommand[] = [];
-    const api = { dispatchAsync: async (c: EngineCommand) => { dispatched.push(c); } } as unknown as EngineApi;
+    const api = { dispatchAsync: async (c: EngineCommand) => { dispatched.push(c); } } as unknown as EngineApiFacade;
     return { api, dispatched };
 }
 

@@ -12,6 +12,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { AnimationEvent as ReactAnimationEvent } from "react";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 
 import { CATALOG_ENTRIES, FILTER_CHIPS, ALL_CATEGORIES, filterCatalog } from "./catalogData";
 import { CategoryTabs } from "./CategoryTabs";
@@ -123,8 +124,8 @@ export default function DecorCatalog({ isOpen, onClose, onSelect }: Props) {
           backdropFilter: "blur(28px)",
           WebkitBackdropFilter: "blur(28px)",
           borderRadius: 24,
-          border: "1px solid rgba(248,180,0,0.30)",
-          boxShadow: "0 16px 64px rgba(124,88,0,0.22)",
+          border: `1px solid ${alpha(RGB.primaryContainer, 0.30)}`,
+          boxShadow: `0 16px 64px ${alpha(RGB.primary, 0.22)}`,
           overflow: "hidden",
         }}
       >
@@ -144,7 +145,7 @@ export default function DecorCatalog({ isOpen, onClose, onSelect }: Props) {
               fontSize: 20,
               fontWeight: 700,
               lineHeight: "28px",
-              color: "#7c5800",
+              color: T.primary,
               margin: 0,
             }}
           >
@@ -232,17 +233,17 @@ export default function DecorCatalog({ isOpen, onClose, onSelect }: Props) {
                 color: "#1c1c17",
                 boxSizing: "border-box",
                 transition: "border-color 0.18s, box-shadow 0.18s",
-                boxShadow: "0 1px 3px rgba(124,88,0,0.06)",
+                boxShadow: `0 1px 3px ${alpha(RGB.primary, 0.06)}`,
               }}
               onFocus={(e) => {
-                (e.currentTarget as HTMLInputElement).style.borderColor = "#f8b400";
+                (e.currentTarget as HTMLInputElement).style.borderColor = T.primaryContainer;
                 (e.currentTarget as HTMLInputElement).style.boxShadow =
-                  "0 0 0 2px rgba(248,180,0,0.25)";
+                  `0 0 0 2px ${alpha(RGB.primaryContainer, 0.25)}`;
               }}
               onBlur={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor = "#d5c4ac";
                 (e.currentTarget as HTMLInputElement).style.boxShadow =
-                  "0 1px 3px rgba(124,88,0,0.06)";
+                  `0 1px 3px ${alpha(RGB.primary, 0.06)}`;
               }}
             />
           </div>

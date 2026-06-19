@@ -1,51 +1,33 @@
--- Migration 006: Library objects catalog
--- Depends on: 005_object_categories.sql, 001_extensions_and_triggers.sql (pg_trgm, citext)
-
-CREATE TYPE placement_surface AS ENUM (
-  'floor',
-  'wall',
-  'ceiling',
-  'wall_floor',
-  'any'
-);
+-- Migration 006: Library objects catalog (slug-keyed — Decision A)
+-- Depends on: 001_extensions_and_triggers.sql (pg_trgm, set_updated_at)
+--
+-- Identity is the catalog slug (e.g. 'bath-01'), embedded directly in scene_data.
+-- Category is a plain string slug (e.g. 'bathroom'), not a UUID tree (Decision B).
+-- Per-slot material compatibility lives inside material_slots[].allowedCategories
+-- and is resolved client-side — there are no compatibility tables.
 
 CREATE TABLE public.library_objects (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id       UUID NOT NULL REFERENCES public.object_categories(id),
-  slug              CITEXT NOT NULL UNIQUE,
+  id                TEXT PRIMARY KEY,                         -- catalog slug, e.g. 'bath-01'
   name              TEXT NOT NULL,
-  description       TEXT,
+  category          TEXT NOT NULL,                            -- category slug, e.g. 'bathroom'
   model_url         TEXT NOT NULL,
-  thumbnail_url     TEXT NOT NULL,
-  lod_urls          JSONB,
-  placement         placement_surface NOT NULL DEFAULT 'floor',
-  bounding_box      JSONB,
-  tags              TEXT[] NOT NULL DEFAULT '{}',
-  metadata          JSONB NOT NULL DEFAULT '{}'::JSONB,
+  thumbnail_url     TEXT,
+  topdown_url       TEXT,                                     -- topDown.imageUrl (2D plan view)
+  bounding_box      JSONB NOT NULL DEFAULT '{}'::JSONB,       -- { width, depth, height }
+  collision_box     JSONB NOT NULL DEFAULT '{}'::JSONB,       -- { width, depth }
+  material_slots    JSONB NOT NULL DEFAULT '[]'::JSONB,       -- [{ id, label, allowedCategories[] }]
+  material_bindings JSONB NOT NULL DEFAULT '[]'::JSONB,       -- [{ meshName, materialName, slotId }]
   is_premium        BOOLEAN NOT NULL DEFAULT FALSE,
   is_active         BOOLEAN NOT NULL DEFAULT TRUE,
   deleted_at        TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  search_vector     TSVECTOR
+  search_vector     TSVECTOR GENERATED ALWAYS AS (
+    to_tsvector('english',
+      COALESCE(name, '') || ' ' || COALESCE(category, '')
+    )
+  ) STORED
 );
-
-CREATE OR REPLACE FUNCTION public.update_library_objects_search_vector()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.search_vector :=
-  to_tsvector('english',
-    COALESCE(NEW.name, '') || ' ' ||
-    COALESCE(NEW.description, '') || ' ' ||
-    COALESCE(array_to_string(NEW.tags, ' '), '')
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_library_objects_search_vector
-  BEFORE INSERT OR UPDATE ON public.library_objects
-  FOR EACH ROW EXECUTE FUNCTION public.update_library_objects_search_vector();
 
 CREATE TRIGGER trg_library_objects_updated_at
   BEFORE UPDATE ON public.library_objects

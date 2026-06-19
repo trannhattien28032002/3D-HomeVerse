@@ -3,16 +3,17 @@ import { Circle, Layer, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type Konva from "konva";
 
-import type { Wall2D } from "src/app/plan2d/types";
+import type { Wall2D } from "src/app/features/plan2d/types";
 import type { ToolBase, ToolContext, WallHandlers } from "./ToolBase";
 import {
     snapToNodeOrGrid, applyAngleSnap,
     WALL_THICKNESS, WALL_THICKNESS_M, MIN_WALL_PX, HANDLE_HIDE_BELOW,
 } from "./toolUtils";
 import { wallSegmentPolygon, collidesWithFurniture } from "./collision2D";
+import { T } from "src/app/constants/designTokens";
 
 /** Màu preview tường: bình thường vs khi cắt qua nội thất. */
-const PREVIEW_STROKE_OK = "#7c5800";
+const PREVIEW_STROKE_OK = T.primary;
 const PREVIEW_STROKE_BAD = "#c81e1e";
 
 // ── Internal state type ───────────────────────────────────────────────────────
@@ -218,7 +219,7 @@ export class DrawWallTool implements ToolBase {
                     {ds && (
                         <Circle
                             x={ds.startPos.x} y={ds.startPos.y}
-                            radius={sh(6)} fill="#f8b400"
+                            radius={sh(6)} fill={T.primaryContainer}
                         />
                     )}
                 </Layer>
@@ -231,7 +232,7 @@ export class DrawWallTool implements ToolBase {
                                 key={`guide-${n.id}`}
                                 x={n.x} y={n.y}
                                 radius={sh(5)}
-                                fill="#7c5800" stroke="#f8b400" strokeWidth={sh(1.5)}
+                                fill={T.primary} stroke={T.primaryContainer} strokeWidth={sh(1.5)}
                             />
                         ))}
                     </Layer>

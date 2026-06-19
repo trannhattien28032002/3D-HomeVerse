@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useEngineOrNull } from "src/app/engine/EngineContext";
+import { useEngineOrNull } from "src/app/engineBinding/EngineContext";
 import { useEngineApi } from "src/app/hooks/useEngineApi";
 import { createAgentRunner } from "src/ai/agent/createAgentRunner";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 
 type Message = {
     id: number;
@@ -107,8 +108,8 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
                 borderRadius: 24,
-                border: "1px solid rgba(248,180,0,0.30)",
-                boxShadow: "0 16px 64px rgba(124,88,0,0.25)",
+                border: `1px solid ${alpha(RGB.primaryContainer, 0.30)}`,
+                boxShadow: `0 16px 64px ${alpha(RGB.primary, 0.25)}`,
                 overflow: "hidden",
                 fontFamily: "'Nunito Sans', sans-serif",
                 // animate open/close
@@ -125,11 +126,11 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                 justifyContent: "space-between",
                 padding: "12px 16px",
                 borderBottom: "1px solid rgba(213,196,172,0.35)",
-                background: "rgba(248,180,0,0.10)",
+                background: alpha(RGB.primaryContainer, 0.10),
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span className="material-symbols-outlined" style={{ color: "#7c5800", fontSize: 20 }}>auto_awesome</span>
-                    <span style={{ fontFamily: "Cinzel, serif", fontSize: 15, fontWeight: 700, color: "#7c5800" }}>
+                    <span className="material-symbols-outlined" style={{ color: T.primary, fontSize: 20 }}>auto_awesome</span>
+                    <span style={{ fontFamily: "Cinzel, serif", fontSize: 15, fontWeight: 700, color: T.primary }}>
                         Tiny Home Architect
                     </span>
                 </div>
@@ -177,7 +178,7 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                                 : "18px 18px 18px 4px",
                             maxWidth: "85%",
                             background: msg.sender === "user"
-                                ? "#f8b400"
+                                ? T.primaryContainer
                                 : "#fdf9f0",
                             border: msg.sender === "user"
                                 ? "none"
@@ -185,7 +186,7 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                             color: msg.sender === "user" ? "#271900" : "#1c1c17",
                             fontSize: 13,
                             lineHeight: 1.5,
-                            boxShadow: "0 2px 8px rgba(124,88,0,0.08)",
+                            boxShadow: `0 2px 8px ${alpha(RGB.primary, 0.08)}`,
                         }}>
                             {msg.text}
                         </div>
@@ -210,7 +211,7 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                                 <span key={i} style={{
                                     width: 7, height: 7,
                                     borderRadius: "50%",
-                                    background: "#7c5800",
+                                    background: T.primary,
                                     display: "inline-block",
                                     animation: `chatbot-bounce 1s ease-in-out ${i * 0.18}s infinite`,
                                     opacity: 0.7,
@@ -249,16 +250,16 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                             fontSize: 13,
                             color: "#1c1c17",
                             fontFamily: "'Nunito Sans', sans-serif",
-                            boxShadow: "0 2px 8px rgba(124,88,0,0.06)",
+                            boxShadow: `0 2px 8px ${alpha(RGB.primary, 0.06)}`,
                             transition: "border-color 0.2s, box-shadow 0.2s",
                         }}
                         onFocus={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(248,180,0,0.8)";
-                            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(248,180,0,0.15)";
+                            e.currentTarget.style.borderColor = alpha(RGB.primaryContainer, 0.8);
+                            e.currentTarget.style.boxShadow = `0 0 0 3px ${alpha(RGB.primaryContainer, 0.15)}`;
                         }}
                         onBlur={(e) => {
                             e.currentTarget.style.borderColor = "rgba(213,196,172,0.8)";
-                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(124,88,0,0.06)";
+                            e.currentTarget.style.boxShadow = `0 2px 8px ${alpha(RGB.primary, 0.06)}`;
                         }}
                     />
                     <button
@@ -270,7 +271,7 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                             width: 34,
                             height: 34,
                             borderRadius: 9999,
-                            background: input.trim() ? "#f8b400" : "rgba(248,180,0,0.35)",
+                            background: input.trim() ? T.primaryContainer : alpha(RGB.primaryContainer, 0.35),
                             border: "none",
                             cursor: input.trim() ? "pointer" : "default",
                             display: "flex",
@@ -278,7 +279,7 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                             justifyContent: "center",
                             color: input.trim() ? "#271900" : "#a08050",
                             transition: "all 0.2s",
-                            boxShadow: input.trim() ? "0 2px 8px rgba(124,88,0,0.20)" : "none",
+                            boxShadow: input.trim() ? `0 2px 8px ${alpha(RGB.primary, 0.20)}` : "none",
                         }}
                         onMouseEnter={(e) => { if (input.trim()) e.currentTarget.style.transform = "scale(1.08)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}

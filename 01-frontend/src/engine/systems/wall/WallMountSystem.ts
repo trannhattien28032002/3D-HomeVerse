@@ -25,6 +25,7 @@ import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import { findMountWall } from "src/engine/adapters/wallRefs";
 import { wallItemPose } from "src/shared/geometry/wallMount";
+import { setYawQuaternion } from "src/shared/math/yaw";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
 import { GizmoHeld } from "src/engine/components/interaction/GizmoHeld";
 
@@ -91,8 +92,7 @@ export class WallMountSystem extends System {
         t.rotY = rotY;
         model.root.position.x = x;
         model.root.position.z = z;
-        const half = rotY / 2;
-        model.root.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
+        setYawQuaternion(model.root, rotY);
         world.markDirty();
     }
 }

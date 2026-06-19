@@ -29,13 +29,15 @@ import { CachedClientRect } from "src/shared/dom/cachedRect";
 import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
 import { PointerRotateTracker } from "src/engine/systems/gizmo/pointerRotate";
-import { SNAP_M, ROT_STEP_RAD } from "src/shared/constants/placement";
+import { ROT_STEP_RAD } from "src/shared/constants/placement";
+import { quatToYaw, setYawQuaternion } from "src/shared/math/yaw";
+import { isTypingTarget } from "src/shared/dom/isTypingTarget";
 import { type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import { collectWallSegments } from "src/engine/adapters/wallSegments";
 import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import {
-    type MeshWithEntity,
+    readEntity,
     resolvePick,
     applyRotateCheck,
     isWallItem,
@@ -61,17 +63,14 @@ import { Query } from "src/engine/ecs/Query";
 import { findMountWall } from "src/engine/adapters/wallRefs";
 import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
 import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
+import { perfEnabled, perfMark } from "src/engine/rendering/perfProbe";
+
 
 /**
- * True khi focus đang ở một ô nhập liệu (input/textarea/contentEditable).
- * Định nghĩa cục bộ ở tầng engine để không phụ thuộc vào tầng app
- * (các hook React 2D có bản sao riêng — chủ ý giữ engine độc lập).
+ * Số frame trễ giữa lúc thả gizmo và lúc gỡ DynamicBody / phục hồi static.
+ * Để vật lý settle 1–2 frame sau drag trước khi đổi loại body (tránh giật).
  */
-function isTypingTarget(target: EventTarget | null): boolean {
-    const el = target as HTMLElement | null;
-    if (!el) return false;
-    return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
-}
+const RELEASE_FRAMES = 2;
 
 export class GizmoSystem extends System {
     private camera: THREE.Camera;
@@ -167,8 +166,7 @@ export class GizmoSystem extends System {
         this.controls.setMode("translate");
         // Snap góc do gizmo tự bắt (15°). Snap VỊ TRÍ KHÔNG dùng translationSnap nữa
         // vì resolveAlignment (edge-snap + wall-snap) là nguồn có thẩm quyền — dùng
-        // translationSnap (center-based) sẽ lệch với edge-snap. SNAP_M giữ để tham chiếu.
-        void SNAP_M;
+        // translationSnap (center-based) sẽ lệch với edge-snap.
         this.controls.setRotationSnap(ROT_STEP_RAD);
 
         // Gizmo vào overlayScene (render sau composer) — KHÔNG vào scene chính, nếu không
@@ -218,7 +216,7 @@ export class GizmoSystem extends System {
         this.orbitControls.enabled = !isDragging;
 
         const object = this.controls.object;
-        const entity = object ? (object as MeshWithEntity).__entity ?? null : null;
+        const entity = readEntity(object);
 
         if (isDragging) {
             if (entity == null) return;
@@ -263,7 +261,7 @@ export class GizmoSystem extends System {
             } else {
                 // Rotate "vô-lăng": chốt yaw gốc + góc con trỏ gốc làm mốc cộng dồn.
                 const tr = this.world.getComponent(entity, Transform);
-                const startYaw = tr ? 2 * Math.atan2(tr.qy, tr.qw) : 0;
+                const startYaw = tr ? quatToYaw(tr.qx, tr.qy, tr.qz, tr.qw) : 0;
                 this.pointerRotate.begin(object, startYaw);
             }
             this.events?.emit("draggingChanged", { entityId: entity, dragging: true });
@@ -301,7 +299,7 @@ export class GizmoSystem extends System {
         this.dragWallSegments = [];
         this.dragFurnitureBoxes = [];
         this.onCommitTransaction?.();
-        this.releaseFramesLeft = 2;
+        this.releaseFramesLeft = RELEASE_FRAMES;
         this.events?.emit("draggingChanged", { entityId: this.draggingEntity, dragging: false });
     };
 
@@ -314,7 +312,7 @@ export class GizmoSystem extends System {
         const object = this.controls.object;
         if (!object) return;
 
-        const entity = (object as MeshWithEntity).__entity;
+        const entity = readEntity(object);
         if (entity == null) return;
 
         const transform = this.world.getComponent(entity, Transform);
@@ -378,7 +376,7 @@ export class GizmoSystem extends System {
         if (isTypingTarget(event.target)) return;
         const object = this.controls.object;
         if (!object) return;
-        const entity = (object as MeshWithEntity).__entity ?? null;
+        const entity = readEntity(object);
         if (entity == null) return;
         this.onDeleteEntity?.(entity);
         this.controls.detach();
@@ -408,11 +406,13 @@ export class GizmoSystem extends System {
 
         // Mỗi click chỉ phát ĐÚNG MỘT sự kiện chọn — setSelected (phía UI) thay thế
         // toàn bộ selection nên không cần phát kèm null để dọn loại còn lại.
+        const _t0 = perfEnabled() ? performance.now() : 0;
         const pick = resolvePick(this.raycaster, this.world, this.meshRegistry, {
             furniture: this.pickObjects,
             wall: this.wallPickObjects,
             room: this.roomPickObjects,
         });
+        if (perfEnabled()) perfMark("resolvePick (click raycast)", performance.now() - _t0);
 
         switch (pick.kind) {
             case "none":
@@ -480,8 +480,7 @@ export class GizmoSystem extends System {
         const rotY = side === 1 ? wallRotY0 : wallRotY0 + Math.PI;
         const model = this.world.getComponent(entity, Model3D);
         if (!model) return;
-        const half = rotY / 2;
-        model.root.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
+        setYawQuaternion(model.root, rotY);
         this.world.markDirty();
     }
 
@@ -490,7 +489,7 @@ export class GizmoSystem extends System {
         this.currentMode = mode;
         this.controls.setMode(mode);
         // Trục gizmo phụ thuộc cả mode → áp lại cho entity đang gắn (nếu có).
-        const entity = (this.controls.object as MeshWithEntity | undefined)?.__entity;
+        const entity = readEntity(this.controls.object);
         if (entity != null) this.applyGizmoAxes(entity);
         this.events?.emit("gizmoModeChanged", { mode });
         this.requestRender();

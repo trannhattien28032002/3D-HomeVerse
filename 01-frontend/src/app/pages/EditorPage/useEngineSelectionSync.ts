@@ -11,34 +11,25 @@
  * Mỗi event được mirror vào useUIStore.selected để Material Sidebar đọc được
  * (cùng nguồn với selection 2D — R6 single owner).
  */
-import { useEffect } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
-import { useUIStore } from "src/app/store/useUIStore";
+import { useSelectionStore } from "src/app/store/useSelectionStore";
+import { useEngineEvent } from "src/app/hooks/useEngineEvent";
 
 export function useEngineSelectionSync(engine: EngineInstance | null): void {
-    const setSelected = useUIStore(s => s.setSelected);
+    const setSelected = useSelectionStore(s => s.setSelected);
 
     // Furniture/wall-item GLB pick được qua gizmo → kind "object" (kèm di chuyển/xoay).
-    useEffect(() => {
-        if (!engine) return;
-        return engine.api.events.on("entitySelected", ({ entityId }) =>
-            setSelected(entityId ? { kind: "object", id: entityId } : null),
-        );
-    }, [engine, setSelected]);
+    useEngineEvent(engine, "entitySelected", ({ entityId }) =>
+        setSelected(entityId ? { kind: "object", id: entityId } : null),
+    );
 
     // Tường pick được qua raycast riêng → kind "wall" (chỉ đổi material, không gizmo).
-    useEffect(() => {
-        if (!engine) return;
-        return engine.api.events.on("wallSelected", ({ wallId }) =>
-            setSelected(wallId ? { kind: "wall", id: wallId } : null),
-        );
-    }, [engine, setSelected]);
+    useEngineEvent(engine, "wallSelected", ({ wallId }) =>
+        setSelected(wallId ? { kind: "wall", id: wallId } : null),
+    );
 
     // Sàn phòng pick được qua raycast riêng → kind "room" (chỉ đổi material sàn, không gizmo).
-    useEffect(() => {
-        if (!engine) return;
-        return engine.api.events.on("floorSelected", ({ roomKey }) =>
-            setSelected(roomKey ? { kind: "room", id: roomKey } : null),
-        );
-    }, [engine, setSelected]);
+    useEngineEvent(engine, "floorSelected", ({ roomKey }) =>
+        setSelected(roomKey ? { kind: "room", id: roomKey } : null),
+    );
 }
