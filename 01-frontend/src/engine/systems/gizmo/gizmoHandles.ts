@@ -457,6 +457,12 @@ export function handleFurnitureTranslate(ctx: FurnitureTranslateCtx): void {
     const q = object.quaternion;
     const halfH = (world.hasComponent(entity, Model3D) && collider) ? collider.height : 0;
 
+    // ⭐ SEAM CHUNG furniture-translate (Phase 5.3): `resolveAlignment` (edge-snap +
+    // wall-snap, OBB-aware) là NGUỒN SNAP có thẩm quyền dùng CHUNG với đường 2D
+    // (useFurnitureDrag.applyFurnitureDrag). Trả {x,z} world (mét). Phần SAU seam KHÁC
+    // backend có chủ đích → KHÔNG gộp (xem PHASE5 §5.3): ở đây dùng Cannon sweep
+    // (wouldCollide/clampMovement, có trục Y) + clampCenterAboveFloor + dragGhost; 2D
+    // dùng SAT miter-poly (không Y) + wouldFurnitureCollide + lastSafePos.
     const yaw = quatToYaw(q.x, q.y, q.z, q.w);
     const aligned = resolveAlignment({
         cx: object.position.x,
@@ -469,6 +475,8 @@ export function handleFurnitureTranslate(ctx: FurnitureTranslateCtx): void {
     });
     ctx.updateGuide(aligned.guides);
 
+    // ix/iz = vị trí mong muốn (world, mét) sau snap. (2D gọi giá trị tương ứng `r.x/r.z`
+    // rồi đổi sang px `intendedX/intendedY` — cùng seam, khác đơn vị.)
     const ix = aligned.x;
     const iz = aligned.z;
 

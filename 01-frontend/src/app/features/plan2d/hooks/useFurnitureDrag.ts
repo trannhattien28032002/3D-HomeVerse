@@ -193,6 +193,11 @@ export function useFurnitureDrag({
      */
     function applyFurnitureDrag(node: Konva.Group, f: Furniture2D): { x: number; z: number } {
         const pos = node.position();
+        // ⭐ SEAM CHUNG furniture-translate (Phase 5.3): `resolveAlignment` dùng CHUNG với
+        // đường 3D (gizmoHandles.handleFurnitureTranslate) — cùng nguồn snap, kết quả {x,z}
+        // world khớp nhau. Phần SAU seam KHÁC backend có chủ đích (không gộp, xem PHASE5
+        // §5.3): 2D dùng SAT miter-poly (không trục Y) + wouldFurnitureCollide + lastSafePos;
+        // 3D dùng Cannon sweep (có Y) + dragGhost.
         const r = resolveAlignment({
             cx: transform.toWorldX(pos.x),
             cz: transform.toWorldZ(pos.y),
@@ -202,6 +207,7 @@ export function useFurnitureDrag({
             walls: wallSegments,
             neighbors: neighborBoxesRef.current ?? buildFurnitureBoxes2D(furniture, transform, f.entityId),
         });
+        // intendedX/intendedY = `r.x/r.z` (world) đổi sang px Konva — tương ứng `ix/iz` của 3D.
         const intendedX = transform.toPxX(r.x);
         const intendedY = transform.toPxY(r.z);
 
