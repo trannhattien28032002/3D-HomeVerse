@@ -25,6 +25,7 @@ import { konvaDegToThreeRotY, threeRotYToKonvaDeg } from "src/shared/math/coords
 import { snapAngleRad } from "src/shared/constants/placement";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import { obbCorners, collidesWithWalls } from "src/app/components/editor/tools/collision2D";
+import { groupHitsWall, memberPoseHitsWall } from "src/app/features/plan2d/hooks/furnitureGroupDrag";
 import { buildFurnitureBoxes2D } from "src/app/features/plan2d/wallSegments2D";
 import { projectToNearestWall, buildOpeningOccupancy } from "src/app/features/plan2d/wallItemDrag2D";
 import { buildOccupiedRanges, occupiedOverlaps } from "src/engine/utils/wallOccupancy";
@@ -226,15 +227,6 @@ export function useFurnitureDrag({
 
     // ── Group drag (multi-select) ─────────────────────────────────────────────
 
-    /** Bất kỳ thành viên nào của cụm chạm tường tại delta cho trước? (OBB px → SAT miter-poly). */
-    function groupHitsWall(g: NonNullable<typeof groupDragRef.current>, dx: number, dy: number): boolean {
-        for (const m of g.members) {
-            const poly = obbCorners(m.originX + dx, m.originY + dy, m.width, m.depth, m.rotDeg);
-            if (collidesWithWalls(poly, walls)) return true;
-        }
-        return false;
-    }
-
     /**
      * Cụm RIGID dời theo con trỏ leader, CHẶN TƯỜNG (phương án B). Đọc groupDragRef; no-op
      * khi kéo đơn. Đặt vị trí imperative cho MỌI thành viên (gồm leader) → giữ layout tương đối.
@@ -247,7 +239,7 @@ export function useFurnitureDrag({
         if (!g) return;
         const rawDx = leaderNode.x() - g.leaderOriginPx.x;
         const rawDy = leaderNode.y() - g.leaderOriginPx.y;
-        const blocked = groupHitsWall(g, rawDx, rawDy);
+        const blocked = groupHitsWall(g.members, rawDx, rawDy, walls);
         const dx = blocked ? g.lastGoodDelta.dx : rawDx;
         const dy = blocked ? g.lastGoodDelta.dy : rawDy;
         if (!blocked) g.lastGoodDelta = { dx: rawDx, dy: rawDy };
@@ -400,8 +392,7 @@ export function useFurnitureDrag({
                 if (!target || !sib || target.isWallItem) continue;
                 const rotY = snapAngleRad(konvaDegToThreeRotY(sib.rotation()));
                 const rotDeg = threeRotYToKonvaDeg(rotY);
-                const poly = obbCorners(sib.x(), sib.y(), target.width, target.depth, rotDeg);
-                if (collidesWithWalls(poly, walls)) { hitsWall = true; break; }
+                if (memberPoseHitsWall({ x: sib.x(), y: sib.y(), width: target.width, depth: target.depth, rotDeg }, walls)) { hitsWall = true; break; }
                 poses.push({ id, rotY, px: sib.x(), py: sib.y() });
             }
 
