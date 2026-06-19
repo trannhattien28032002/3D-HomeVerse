@@ -7,6 +7,7 @@
  * SET_FLOOR_MATERIAL: ghi registry roomKey→materialId + gán mesh sàn hiện tại.
  *   RoomSystem re-apply khi dựng lại floor mesh (đổi topology).
  */
+import type * as THREE from "three";
 import { Mesh } from "src/engine/components/render/Mesh";
 import { SurfaceMaterial } from "src/engine/components/render/SurfaceMaterial";
 import { RoomGeometry } from "src/engine/components/room/RoomGeometry";
@@ -71,23 +72,36 @@ export function handleSetWallMaterial(command: SetWallMaterialCmd, deps: Dispatc
     reskinWall(entity, deps);
 }
 
+/**
+ * Tìm mesh sàn của phòng khớp `roomKey` rồi gọi `apply(mesh)`. No-op nếu phòng/mesh
+ * chưa tồn tại. Gom khối Query RoomGeometry → meshRegistry dùng chung cho SET/RESET.
+ */
+function withRoomFloorMesh(
+    roomKey: string,
+    deps: DispatcherDeps,
+    apply: (mesh: THREE.Mesh) => void,
+): void {
+    const { world, meshRegistry } = deps;
+    for (const e of Query.entitiesWith(world, RoomGeometry)) {
+        const geo = world.getComponent(e, RoomGeometry)!;
+        if (geo.key !== roomKey) continue;
+        const mesh = meshRegistry.get(`room-${e}`);
+        if (mesh) apply(mesh);
+        break;
+    }
+}
+
 export function handleSetFloorMaterial(command: SetFloorMaterialCmd, deps: DispatcherDeps): void {
-    const { world, materialLibrary, meshRegistry, floorMaterials } = deps;
+    const { materialLibrary, floorMaterials } = deps;
     floorMaterials.set(command.roomKey, command.materialId);
 
     // Áp ngay lên mesh sàn của phòng hiện có khớp roomKey (nếu đang tồn tại).
-    for (const e of Query.entitiesWith(world, RoomGeometry)) {
-        const geo = world.getComponent(e, RoomGeometry)!;
-        if (geo.key !== command.roomKey) continue;
-        const mesh = meshRegistry.get(`room-${e}`);
-        if (mesh) {
-            const prev = mesh.material;
-            buildSurfaceMaterial(materialLibrary, command.materialId)
-                .then((mat) => { if (mat) { mesh.material = mat; releaseSurfaceMaterial(prev); } })
-                .catch((err) => console.error("SET_FLOOR_MATERIAL failed:", err));
-        }
-        break;
-    }
+    withRoomFloorMesh(command.roomKey, deps, (mesh) => {
+        const prev = mesh.material;
+        buildSurfaceMaterial(materialLibrary, command.materialId)
+            .then((mat) => { if (mat) { mesh.material = mat; releaseSurfaceMaterial(prev); } })
+            .catch((err) => console.error("SET_FLOOR_MATERIAL failed:", err));
+    });
 }
 
 /** Khôi phục material mặc định cho MỘT MẶT tường: xoá faces[face]; cả 2 trống → gỡ component. */
@@ -106,18 +120,12 @@ export function handleResetWallMaterial(command: ResetWallMaterialCmd, deps: Dis
 
 /** Khôi phục material mặc định cho sàn: xoá registry + gán lại mesh sàn mặc định. */
 export function handleResetFloorMaterial(command: ResetFloorMaterialCmd, deps: DispatcherDeps): void {
-    const { world, materialRegistry, meshRegistry, floorMaterials } = deps;
+    const { materialRegistry, floorMaterials } = deps;
     floorMaterials.delete(command.roomKey);
 
-    for (const e of Query.entitiesWith(world, RoomGeometry)) {
-        const geo = world.getComponent(e, RoomGeometry)!;
-        if (geo.key !== command.roomKey) continue;
-        const mesh = meshRegistry.get(`room-${e}`);
-        if (mesh) {
-            const prev = mesh.material;
-            mesh.material = materialRegistry.get(FLOOR_DEFAULT_MATERIAL);
-            releaseSurfaceMaterial(prev); // thu hồi surface-material cũ về default (C2)
-        }
-        break;
-    }
+    withRoomFloorMesh(command.roomKey, deps, (mesh) => {
+        const prev = mesh.material;
+        mesh.material = materialRegistry.get(FLOOR_DEFAULT_MATERIAL);
+        releaseSurfaceMaterial(prev); // thu hồi surface-material cũ về default (C2)
+    });
 }

@@ -20,6 +20,7 @@ import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { findMountWall } from "src/engine/adapters/wallRefs";
 import { wallItemPose } from "src/shared/geometry/wallMount";
+import { setYawQuaternion } from "src/shared/math/yaw";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
@@ -158,8 +159,7 @@ export async function spawnFurnitureGLB(
     const centerY = y ?? sy / 2;
     root.position.y = centerY - sy / 2;
     if (rotY !== 0) {
-        const half = rotY / 2;
-        root.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
+        setYawQuaternion(root, rotY);
     }
 
     applyShadowFlags(root, template.size);
@@ -250,8 +250,7 @@ export async function spawnWallItemGLB(
     root.position.x = pose.x;
     root.position.z = pose.z;
     root.position.y += pose.baseY;
-    const half = pose.rotY / 2;
-    root.quaternion.set(0, Math.sin(half), 0, Math.cos(half));
+    setYawQuaternion(root, pose.rotY);
 
     // Cửa/cửa sổ là opening nằm phẳng trong tường ⇒ không cast; kệ treo theo size-gate.
     applyShadowFlags(root, template.size, { forceNoCast: isOpening });
