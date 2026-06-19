@@ -47,7 +47,7 @@ import {
 } from "src/engine/systems/gizmo/gizmoHandles";
 import { GizmoHeld } from "src/engine/components/interaction/GizmoHeld";
 import { Model3D } from "src/engine/components/render/Model3D";
-import { WallMounted } from "src/engine/components/wall/WallMounted";
+import { getWallItemTopology } from "src/engine/adapters/wallItemTopology";
 import { wallNaturalRotY } from "src/shared/geometry/wallMount";
 import {
     WallOpeningPreviewController,
@@ -469,13 +469,11 @@ export class GizmoSystem extends System {
      * Gọi khi kết thúc drag rotate để xác nhận chiều quay cuối cùng.
      */
     private snapWallItemRotation(entity: string): void {
-        const wo = this.world.getComponent(entity, WallOpening);
-        const wm = this.world.getComponent(entity, WallMounted);
-        const hostWallId = wo ? wo.hostWallId : wm?.hostWallId;
-        if (!hostWallId) return;
-        const wall = findMountWall(this.world, this.nodeRegistry, hostWallId);
+        const topo = getWallItemTopology(this.world, entity);
+        if (!topo) return;
+        const wall = findMountWall(this.world, this.nodeRegistry, topo.hostWallId);
         if (!wall) return;
-        const side = wo ? wo.side : (wm?.side ?? 1);
+        const side = topo.side;
         const wallRotY0 = wallNaturalRotY(wall);
         const rotY = side === 1 ? wallRotY0 : wallRotY0 + Math.PI;
         const model = this.world.getComponent(entity, Model3D);

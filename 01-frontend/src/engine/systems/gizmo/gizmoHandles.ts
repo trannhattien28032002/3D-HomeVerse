@@ -21,6 +21,7 @@ import { quatToYaw, setYawQuaternion } from "src/shared/math/yaw";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import type { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
 import { findMountWall, findWallEntity } from "src/engine/adapters/wallRefs";
+import { getWallItemTopology, setWallItemTopology } from "src/engine/adapters/wallItemTopology";
 import { projectPointToWall, wallItemPose, wallNaturalRotY, occupancyLane, lanesConflict, wallItemOverlaps, type WallItemRange } from "src/shared/geometry/wallMount";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
@@ -283,11 +284,11 @@ export function slideWallItem(
     x: number,
     z: number,
 ): { success: boolean; isOverlapping: boolean; intendedPose?: { x: number; y: number; z: number; qx: number; qy: number; qz: number; qw: number } } {
-    // `entity` là tham số (không lọc qua Query) → KHÔNG dùng `!`, guard thật. (M6)
-    const wo = world.getComponent(entity, WallOpening);
-    const wm = world.getComponent(entity, WallMounted);
-    const hostWallId = wo ? wo.hostWallId : wm?.hostWallId;
-    if (hostWallId === undefined) return { success: false, isOverlapping: false };
+    // `entity` là tham số (không lọc qua Query) → đọc topology qua accessor (opening/mount
+    // chung một đường, không non-null `!` ở nhánh mount). (M6 + Phase 5.1)
+    const topo = getWallItemTopology(world, entity);
+    if (!topo) return { success: false, isOverlapping: false };
+    const hostWallId = topo.hostWallId;
     const wall = findMountWall(world, nodeReg, hostWallId);
     if (!wall) return { success: false, isOverlapping: false };
 
@@ -302,8 +303,9 @@ export function slideWallItem(
     const halfWidthT = halfWidth / wallLen;
     const occupied = collectOccupiedRanges(world, hostWallId, wallLen, entity);
 
+    const isOpening = topo.kind === "opening";
     // Lane của item đang kéo: cửa (opening) chiếm cả hai mặt; kệ chiếm mặt theo con trỏ.
-    const lane = occupancyLane(wo ? "opening" : "mount", wo ? wo.side : side);
+    const lane = occupancyLane(isOpening ? "opening" : "mount", isOpening ? topo.side : side);
 
     // Tìm vị trí an toàn (safeT) bằng cách đẩy ra khỏi vùng overlap CÙNG LANE.
     const safeT = clampTAgainstOccupied(t, halfWidthT, lane, occupied);
@@ -314,16 +316,12 @@ export function slideWallItem(
     // khi cửa chỉ bị đẩy ra mép tường bởi Math.max/min, không phải do overlap item khác).
     const isOverlapping = wallItemOverlaps(finalSafeT, halfWidthT, lane, occupied);
 
-    if (wo) {
-        wo.t = finalSafeT;                   // opening: giữ side hiện tại (flip qua gizmo rotate)
-    } else {
-        wm!.t = finalSafeT;                  // mount (kệ): đổi cả mặt theo con trỏ
-        wm!.side = side;
-    }
+    // opening: giữ side hiện tại (flip qua gizmo rotate); mount (kệ): đổi cả mặt theo con trỏ.
+    const curSide = isOpening ? topo.side : side;
+    setWallItemTopology(world, entity, isOpening ? { t: finalSafeT } : { t: finalSafeT, side });
 
     // Ghim root thật vào tường theo finalSafeT
-    const curSide = wo ? wo.side : wm!.side;
-    const safePose = wallItemPose(wall, wo ? wo.t : wm!.t, curSide, resolveWallItemDims(model.modelId));
+    const safePose = wallItemPose(wall, finalSafeT, curSide, resolveWallItemDims(model.modelId));
     model.root.position.x = safePose.x;
     model.root.position.z = safePose.z;
     setYawQuaternion(model.root, safePose.rotY);
@@ -332,6 +330,7 @@ export function slideWallItem(
     // gizmo đã khoá trục Y). Gizmo (attach = root) đã đổi root.position.y theo thao tác kéo; ở
     // đây CLAMP đáy model trong [sàn, đỉnh tường] rồi đồng bộ mountHeight + Transform.y để bền
     // vững sau khi thả (WallMountSystem không động tới Y → giá trị này được giữ nguyên).
+    const wm = world.getComponent(entity, WallMounted);
     if (wm) {
         const wallEnt = findWallEntity(world, hostWallId);
         const wallHeight = (wallEnt && world.getComponent(wallEnt, WallSize)?.height) || Infinity;
@@ -394,10 +393,9 @@ export function flipWallItemByGizmo(
     entity: string,
     object: THREE.Object3D,
 ): void {
-    const wo = world.getComponent(entity, WallOpening);
-    const wm = world.getComponent(entity, WallMounted);
-    const hostWallId = wo ? wo.hostWallId : wm!.hostWallId;
-    const wall = findMountWall(world, nodeReg, hostWallId);
+    const topo = getWallItemTopology(world, entity);
+    if (!topo) return;
+    const wall = findMountWall(world, nodeReg, topo.hostWallId);
     if (!wall) return;
 
     // Yaw mà gizmo rotate đặt lên object — dùng công thức Euler Y đúng để tránh sai lệch
@@ -419,8 +417,7 @@ export function flipWallItemByGizmo(
     // |delta| < 90° → side +1; ngược lại → side -1 (flip 180°).
     const newSide = Math.abs(delta) < Math.PI / 2 ? 1 : -1;
 
-    if (wo) wo.side = newSide;
-    else wm!.side = newSide;
+    setWallItemTopology(world, entity, { side: newSide });
 
     // Không snap quaternion ở đây — gizmo cần giữ tự do xoay để delta tích lũy.
     // WallMountSystem đang bị skip (GizmoHeld) nên sẽ không reset; snap về wall-derived

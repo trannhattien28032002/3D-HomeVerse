@@ -16,8 +16,6 @@ import { Transform } from "src/engine/components/core/Transform";
 import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Model3D } from "src/engine/components/render/Model3D";
-import { WallOpening } from "src/engine/components/wall/WallOpening";
-import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { spawnFurnitureGLB, spawnWallItemGLB } from "src/engine/factories/FurnitureFactory";
 import { applyMaterialToSlot, resetSlotToOriginal } from "src/engine/rendering/materialApply";
 import { snapAngleRad } from "src/shared/constants/placement";
@@ -28,6 +26,7 @@ import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
 import { findMountWall } from "src/engine/adapters/wallRefs";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
+import { getWallItemTopology, setWallItemTopology } from "src/engine/adapters/wallItemTopology";
 import { wallItemOverlaps, occupancyLane } from "src/shared/geometry/wallMount";
 import { countFurniture, MAX_FURNITURE_ENTITIES } from "src/engine/utils/furnitureLimit";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
@@ -92,10 +91,9 @@ export function handlePlaceWallItem(command: PlaceWallItemCmd, deps: DispatcherD
 export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDeps): void {
     const { world, nodeRegistry } = deps;
 
-    const wo = world.getComponent(command.entityId, WallOpening);
-    const wm = world.getComponent(command.entityId, WallMounted);
+    const topo = getWallItemTopology(world, command.entityId);
     const model = world.getComponent(command.entityId, Model3D);
-    if ((!wo && !wm) || !model) { world.markDirty(); return; }
+    if (!topo || !model) { world.markDirty(); return; }
 
     const wall = findMountWall(world, nodeRegistry, command.hostWallId);
     if (!wall) { world.markDirty(); return; }
@@ -109,19 +107,11 @@ export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDep
 
     // Chồng opening/kệ khác trên cùng tường → từ chối (giữ nguyên, markDirty để 2D snap lại).
     // Lane: cửa (opening) chiếm cả hai mặt; kệ chỉ chiếm mặt theo command.side.
-    const lane = occupancyLane(wo ? "opening" : "mount", command.side);
+    const lane = occupancyLane(topo.kind, command.side);
     const occupied = collectOccupiedRanges(world, command.hostWallId, wallLen, command.entityId);
     if (wallItemOverlaps(t, halfWidthT, lane, occupied)) { world.markDirty(); return; }
 
-    if (wo) {
-        wo.hostWallId = command.hostWallId;
-        wo.t = t;
-        wo.side = command.side;
-    } else {
-        wm!.hostWallId = command.hostWallId;
-        wm!.t = t;
-        wm!.side = command.side;
-    }
+    setWallItemTopology(world, command.entityId, { hostWallId: command.hostWallId, t, side: command.side });
     world.markDirty();
 }
 
