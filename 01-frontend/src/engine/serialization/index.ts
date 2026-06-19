@@ -8,3 +8,4 @@ export type { ValidationResult } from "./validate";
 export { validateSceneDocument, validationFailed } from "./validate";
 export { serializeScene } from "./serialize";
 export { deserializeScene } from "./deserialize";
+export type { DeserializeProgress } from "./deserialize";

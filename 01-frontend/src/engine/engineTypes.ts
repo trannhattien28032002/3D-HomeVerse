@@ -47,6 +47,12 @@ export type EngineApi = {
      */
     dispatchAsync: (command: EngineCommand) => Promise<void>;
     clampNodeMove: (nodeId: string, newX: number, newZ: number) => { x: number; z: number };
+    /**
+     * Kiểm va chạm 3D CHỈ với đồ nội thất khác (loại tường/sàn) ở Y thật của entity.
+     * Dùng cho preview kéo 2D để vật xếp chồng (bàn phím trên bàn) không bị chặn.
+     * Cùng nguồn Cannon với commit MOVE_FURNITURE → preview khớp kết quả thả.
+     */
+    wouldFurnitureCollide: (entityId: string, worldX: number, worldZ: number) => boolean;
     /** Sinh nodeId và wallId uuid mới cho thao tác kế tiếp. */
     getNextIds: () => { nodeId: string; wallId: string };
     /** Chuyển camera sang preset (plan / perspective / eye-level) với animation. */
@@ -102,6 +108,13 @@ export type EngineApi = {
         fromHostWallId: string, fromT: number, fromSide: number,
         toHostWallId: string, toT: number, toSide: number,
     ) => void;
+    /**
+     * Bật/tắt chế độ 2D cho game loop (P3 — perf). Khi active=true, loop chuyển sang
+     * "pump theo revision": chỉ chạy world.update khi ECS thay đổi (sau mutation từ
+     * 2D) thay vì mỗi frame → bỏ chi phí physics/orbit/render 3D khi đang ở Plan 2D.
+     * SnapshotSystem vẫn emit sau mỗi mutation nên Konva cập nhật bình thường.
+     */
+    setActive2D: (active: boolean) => void;
     /** Vào chế độ đặt đồ xem-trước (ghost) cho model cho trước. */
     beginPlacement: (modelId: string) => void;
     /** Huỷ phiên đặt đồ đang chạy (nếu có) và gỡ ghost. */
@@ -119,6 +132,37 @@ export type EngineApi = {
      * có Model3D) → caller (Ctrl+C) bỏ qua, không copy.
      */
     getFurnitureClipboard: (entityId: string) => FurnitureClipboard | null;
+};
+
+/**
+ * Facade NULL-SAFE quanh {@link EngineApi} — bề mặt mà UI (React) và AI tools
+ * thực sự tiêu thụ. KHÁC `EngineApi` ở hai điểm cố ý:
+ *   1. Null-safe: engine có thể chưa init ở first render → method tự warn/fallback
+ *      thay vì ném "Cannot read property of undefined".
+ *   2. Subset + tên tiện dụng cho call-site React/AI: `withTransaction` (gói
+ *      `transaction`), `nextNodeId`/`nextWallId` (tách `getNextIds`).
+ *
+ * Đặt ở engine layer (không phải app) để AI layer import được mà KHÔNG tạo vòng
+ * `ai → app`. Hiện thực cụ thể: `useEngineApi()` (app/hooks). Mock trong test/AI.
+ */
+export type EngineApiFacade = {
+    dispatch: (cmd: EngineCommand) => void;
+    dispatchAsync: (cmd: EngineCommand) => Promise<void>;
+    withTransaction: (label: string, fn: () => void) => void;
+    asyncTransaction: (label: string, fn: () => Promise<void>) => Promise<void>;
+    beginTransaction: (label: string) => void;
+    commitTransaction: () => void;
+    cancelTransaction: () => void;
+    /** Ghi command-inverse cho MOVE_FURNITURE (rẻ hơn snapshot toàn scene, R3). */
+    recordMoveUndo: (entityId: string, fromX: number, fromZ: number, toX: number, toZ: number) => void;
+    /** Ghi command-inverse cho ROTATE_FURNITURE (R3). */
+    recordRotateUndo: (entityId: string, fromRotY: number, toRotY: number) => void;
+    /** Ghi command-inverse cho MOVE_WALL_ITEM (R3). */
+    recordWallItemMoveUndo: (entityId: string, fromHostWallId: string, fromT: number, fromSide: number, toHostWallId: string, toT: number, toSide: number) => void;
+    nextNodeId: () => string;
+    nextWallId: () => string;
+    /** Kiểm va chạm 3D với đồ khác (loại tường) ở Y thật — preview kéo 2D. */
+    wouldFurnitureCollide: (entityId: string, worldX: number, worldZ: number) => boolean;
 };
 
 /**

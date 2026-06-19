@@ -26,6 +26,7 @@ import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
 import { createScene } from "src/engine/setup/sceneSetup";
 import { createSystems } from "src/engine/setup/systemSetup";
+import { setOutlineResolution } from "src/engine/setup/postprocessSetup";
 import { createDispatcher } from "src/engine/commands/dispatcher";
 import { UndoHistory } from "src/engine/commands/history";
 import { createTransactionApi } from "src/engine/commands/transactionApi";
@@ -99,7 +100,7 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
 
     // initDefaultScene(world, scene, nodeRegistry, wallEntityByWallId);
 
-    const { dispatch, dispatchAsync } = createDispatcher({ world, scene, nodeRegistry, wallEntityByWallId, meshRegistry, materialRegistry, materialLibrary, gltfLoader, modelRegistry, collisionSystem, entityRegistry, floorMaterials });
+    const { dispatch, dispatchAsync } = createDispatcher({ world, scene, events, nodeRegistry, wallEntityByWallId, meshRegistry, materialRegistry, materialLibrary, gltfLoader, modelRegistry, collisionSystem, entityRegistry, floorMaterials });
 
     // ── Undo / redo ────────────────────────────────────────────────────────────
     // instanceRef: ref vòng — cho phép transaction/undo/redo truy cập engineInstance
@@ -128,6 +129,8 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
         renderer.setSize(window.innerWidth, window.innerHeight);
         // Composer (+ OutlinePass) phải đồng bộ kích thước, nếu không viền lệch vị trí.
         composer.setSize(window.innerWidth, window.innerHeight);
+        // composer.setSize reset OutlinePass về full-res → áp lại scale đã hạ.
+        setOutlineResolution(outlinePass, window.innerWidth, window.innerHeight);
         // Resize đổi aspect/kích thước (không bump revision, không đổi camera pos/quat/fov)
         // → on-demand render sẽ bỏ qua nếu cảnh đang tĩnh; ép vẽ lại 1 frame.
         renderScheduler.requestRender();
@@ -136,12 +139,25 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
 
     let running = true;
     let lastTime = performance.now();
+    // P3 (perf): khi ở Plan 2D, không cần chạy full pipeline (physics/orbit/render 3D)
+    // mỗi frame. Chuyển sang "pump theo revision": chỉ world.update khi ECS đổi → vẫn
+    // emit snapshot cho Konva, vẫn giữ 3D sync, nhưng idle gần như 0 (chỉ 1 phép so int).
+    let active2D = false;
+    let lastProcessedRevision = world.revision;
     function loop() {
         if (!running) return;
         const now = performance.now();
         const dt = (now - lastTime) / 1000;
         lastTime = now;
-        world.update(dt);
+        if (!active2D) {
+            world.update(dt);
+        } else if (world.revision !== lastProcessedRevision) {
+            // Có mutation từ 2D (hoặc async load xong) → chạy pipeline 1 lần.
+            world.update(0);
+            // Đọc revision SAU update: hứng cả các bump phát sinh trong update (dựng
+            // mesh tường, tạo entity phòng…) để frame sau không chạy lại vô ích.
+            lastProcessedRevision = world.revision;
+        }
         requestAnimationFrame(loop);
     }
     loop();
@@ -151,6 +167,8 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
         dispatch,
         dispatchAsync,
         clampNodeMove: (_nodeId, newX, newZ) => ({ x: newX, z: newZ }),
+        wouldFurnitureCollide: (entityId, worldX, worldZ) =>
+            collisionSystem.wouldCollideFurniture(world, entityId, worldX, worldZ),
         getNextIds: () => ({
             nodeId: nodeRegistry.newNodeId(),
             wallId: uuidv4(),
@@ -171,6 +189,12 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
         },
 
         ...txApi,
+
+        setActive2D: (active) => {
+            active2D = active;
+            // Vào 2D: đồng bộ mốc revision để pump idle tới khi có mutation thật.
+            if (active) lastProcessedRevision = world.revision;
+        },
 
         beginPlacement: (modelId) => placementSystem.begin(modelId),
         cancelPlacement: () => placementSystem.cancel(),

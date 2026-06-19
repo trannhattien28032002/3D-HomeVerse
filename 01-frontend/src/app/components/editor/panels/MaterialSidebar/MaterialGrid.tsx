@@ -11,7 +11,7 @@
  */
 import { useMemo, useState } from "react";
 import { materialsForSlot, categoriesOf, categoryLabel, type MaterialItem } from "./materialCatalog";
-import { T } from "src/app/constants/designTokens";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 
 type Props = {
     allowedCategories: string[];
@@ -41,7 +41,7 @@ export function MaterialGrid({ allowedCategories, selectedId, onPick }: Props) {
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, overflow: "visible" }}>
             {categories.length > 1 && (
-                <div className="hide-scrollbar" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingBottom: 2 }}>
                     <Chip label="Tất cả" active={effectiveCat === ALL} onClick={() => setActiveCat(ALL)} />
                     {categories.map((c) => (
                         <Chip key={c} label={categoryLabel(c)} active={effectiveCat === c} onClick={() => setActiveCat(c)} />
@@ -77,15 +77,15 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
                 whiteSpace: "nowrap",
                 cursor: "pointer",
                 boxShadow: active
-                    ? "0 0 0 3px rgba(248,180,0,0.22), 0 2px 8px rgba(248,180,0,0.18)"
+                    ? `0 0 0 3px ${alpha(RGB.primaryContainer, 0.22)}, 0 2px 8px ${alpha(RGB.primaryContainer, 0.18)}`
                     : "none",
                 transition: "background 0.2s, border-color 0.2s, box-shadow 0.2s",
                 flexShrink: 0,
             }}
             onMouseEnter={(e) => {
                 if (!active) {
-                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(248,180,0,0.16)";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "#f8b400";
+                    (e.currentTarget as HTMLButtonElement).style.background = alpha(RGB.primaryContainer, 0.16);
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = T.primaryContainer;
                 }
             }}
             onMouseLeave={(e) => {
@@ -108,7 +108,7 @@ function MaterialTile({ item, selected, onPick }: { item: MaterialItem; selected
     // Ring vẽ bằng box-shadow INSET (không đổi border-width → lưới không "nhảy" 1px;
     // inset → không bị overflowX:hidden của panel cắt mất viền chọn).
     const ring = hovered
-        ? "inset 0 0 0 2px #f8b400, 0 6px 16px rgba(124,88,0,0.16)"
+        ? `inset 0 0 0 2px ${T.primaryContainer}, 0 6px 16px ${alpha(RGB.primary, 0.16)}`
         : selected
             ? `inset 0 0 0 2px ${T.primary}`
             : "none";
@@ -127,7 +127,7 @@ function MaterialTile({ item, selected, onPick }: { item: MaterialItem; selected
                 width: "100%",
                 boxSizing: "border-box",
                 minWidth: 0,
-                background: selected ? "rgba(248,180,0,0.14)" : "rgba(255,255,255,0.5)",
+                background: selected ? alpha(RGB.primaryContainer, 0.14) : "rgba(255,255,255,0.5)",
                 border: "1px solid rgba(213,196,172,0.6)",
                 borderRadius: 12,
                 cursor: "pointer",

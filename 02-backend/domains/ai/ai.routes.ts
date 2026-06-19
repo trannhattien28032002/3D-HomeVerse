@@ -1,36 +1,25 @@
 /**
  * ai.routes — POST /ai/chat (WP1b).
  *
- * ⚠️ AUTH TẠM THỜI (dev-only): route này CHƯA gắn requireAuth vì FE hiện chưa có
- * cơ chế lấy Supabase token. Để KHÔNG biến thành open-relay đốt quota Gemini ở
- * production, route TỪ CHỐI khi NODE_ENV === 'production'. Khi FE có auth (WP1b+),
- * thay guard này bằng requireAuth.
+ * Auth: route gắn requireAuth (Track A / RQ-0 đã xong — FE đã lấy được Supabase
+ * token và gắn Authorization: Bearer vào mọi request). Kèm aiLimiter (20 req/phút
+ * mỗi user) để chống đốt quota Gemini/Anthropic. Limiter phải chạy SAU requireAuth
+ * để req.user (key) đã có sẵn.
  */
 import { Router, Request, Response, NextFunction } from 'express';
-import { env } from '../../configs/env';
+import { requireAuth } from '../../middleware/auth';
+import { aiLimiter } from '../../middleware/rateLimiter';
 import { validate } from '../../middleware/validate';
-import { AppError } from '../../shared/errors/AppError';
 import { ChatBodySchema } from './ai.schema';
 import * as service from './ai.service';
 
 export const aiRouter = Router();
 
-// Cổng chặn production cho route chưa-auth.
-function devOnly(_req: Request, _res: Response, next: NextFunction): void {
-  if (env.NODE_ENV === 'production') {
-    throw new AppError(
-      'AI chat chưa khả dụng ở production (chưa gắn auth).',
-      503,
-      'AI_DISABLED_IN_PROD'
-    );
-  }
-  next();
-}
-
 // POST /ai/chat — một turn Anthropic Messages API.
 aiRouter.post(
   '/chat',
-  devOnly,
+  requireAuth,
+  aiLimiter,
   validate(ChatBodySchema, 'body'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

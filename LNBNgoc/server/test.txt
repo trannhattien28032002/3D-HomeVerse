@@ -1,0 +1,101 @@
+// JavaScript
+
+time: String,
+actual:[],
+ predict:[{
+                        time_ts:String,
+                        type: Number,
+                    value: Number,
+}],
+
+
+const ctx = document.getElementById('myChart').getContext('2d');
+
+// Tạo biểu đồ với dữ liệu cho 2 cột và 1 đường
+const myChart = new Chart(ctx, {
+  type: 'bar', // Loại biểu đồ cột
+  data: {
+    labels: ['A', 'B', 'C', 'D', 'E'], // Các nhãn trên trục x
+    datasets: [
+      {
+        label: 'Cột 1', // Nhãn cho cột 1
+        data: dataForColumn1, // Dữ liệu cột 1
+        backgroundColor: 'rgba(255, 99, 132, 0.2)', // Màu nền cho cột 1
+        borderColor: 'rgba(255, 99, 132, 1)', // Màu viền cho cột 1
+        borderWidth: 1, // Độ rộng viền cho cột 1
+      },
+      {
+        label: 'Cột 2', // Nhãn cho cột 2
+        data: dataForColumn2, // Dữ liệu cột 2
+        backgroundColor: 'rgba(54, 162, 235, 0.2)', // Màu nền cho cột 2
+        borderColor: 'rgba(54, 162, 235, 1)', // Màu viền cho cột 2
+        borderWidth: 1, // Độ rộng viền cho cột 2
+      },
+      {
+        label: 'Đường', // Nhãn cho đường
+        data: dataForLine, // Dữ liệu đường
+        type: 'line', // Loại biểu đồ đường
+        fill: false, // Không tô màu dưới đường
+        borderColor: 'rgba(75, 192, 192, 1)', // Màu viền cho đường
+        borderWidth: 2, // Độ rộng viền cho đường
+        yAxisID: 'y-axis-1', // Để đường sử dụng trục y bên phải
+      },
+    ],
+  },
+  options: {
+    scales: {
+      yAxes: [
+        {
+          id: 'y-axis-0', // ID của trục y bên trái (dùng cho cột)
+          type: 'linear', // Loại trục tuyến tính
+          position: 'left', // Đặt trục bên trái
+        },
+        {
+          id: 'y-axis-1', // ID của trục y bên phải (dùng cho đường)
+          type: 'linear', // Loại trục tuyến tính
+          position: 'right', // Đặt trục bên phải
+        },
+      ],
+      xAxes: [
+        {
+          display: true, // Hiển thị trục x
+        },
+      ],
+    },
+  },
+});
+
+
+{
+	dataMainMsm:[
+		{
+			hours: "12:00"
+			valule_temp: 1,
+			valule_rain: 1,
+			valule_actual: 1,
+		}
+	]
+	dataMainGsm:[
+		{
+			hours: "12:00"
+			valule_temp: 1,
+			valule_rain: 1,
+			valule_actual: 1,
+		}
+	]
+}
+
+
+CODE_200 và MSG_200: Mã HTTP 200 OK - Thành công. Đây là mã trạng thái chung được sử dụng khi yêu cầu HTTP hoặc hành động được thực hiện thành công.
+
+CODE_500 và MSG_500: Mã HTTP 500 Internal Server Error - Lỗi máy chủ. Đây là mã trạng thái chung được sử dụng khi có lỗi xảy ra ở phía máy chủ, khiến yêu cầu không thể được xử lý.
+
+CODE_401 và MSG_401: Mã HTTP 401 Unauthorized - Không được ủy quyền. Đây là mã trạng thái được sử dụng khi yêu cầu cần xác thực hoặc thông tin đăng nhập không hợp lệ.
+
+CODE_404 và MSG_404: Mã HTTP 404 Not Found - Không tìm thấy. Đây là mã trạng thái được sử dụng khi không tìm thấy tài nguyên hoặc địa chỉ URL không hợp lệ.
+
+CODE_403 và MSG_403: Mã HTTP 403 Forbidden - Bị từ chối truy cập. Đây là mã trạng thái được sử dụng khi yêu cầu bị từ chối do không có quyền truy cập vào tài nguyên.
+
+CODE_400 và MSG_400: Mã HTTP 400 Bad Request - Yêu cầu không hợp lệ. Đây là mã trạng thái được sử dụng khi yêu cầu không đúng định dạng hoặc không hợp lệ.
+
+CODE_DEFAULT và MSG_DEFAULT: Mã trạng thái mặc định và thông điệp mặc định. Đây có thể là một giá trị số (0) hoặc giá trị khác không. Nếu không có mã trạng thái hoặc thông điệp được xác định, giá trị này có thể được sử dụng để đại diện cho một trạng thái mặc định nào đó.

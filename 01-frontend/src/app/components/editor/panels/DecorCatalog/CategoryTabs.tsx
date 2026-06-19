@@ -7,6 +7,7 @@
  * ALL_CATEGORIES chip hiển thị tên thô; các chip khác dùng labelize() để viết hoa đúng.
  */
 import { labelize, ALL_CATEGORIES } from "./catalogData";
+import { T, RGB, alpha } from "src/app/constants/designTokens";
 
 type Props = {
   chips: string[];
@@ -17,11 +18,10 @@ type Props = {
 export function CategoryTabs({ chips, activeFilter, onSelect }: Props) {
   return (
     <div
-      className="hide-scrollbar"
       style={{
         display: "flex",
+        flexWrap: "wrap",
         gap: 8,
-        overflowX: "auto",
         paddingBottom: 4,
       }}
     >
@@ -34,7 +34,7 @@ export function CategoryTabs({ chips, activeFilter, onSelect }: Props) {
             style={{
               padding: "7px 18px",
               borderRadius: 9999,
-              background: isActive ? "#f8b400" : "#fdf9f0",
+              background: isActive ? T.primaryContainer : "#fdf9f0",
               color: isActive ? "#674900" : "#504532",
               border: isActive
                 ? "1px solid transparent"
@@ -46,7 +46,7 @@ export function CategoryTabs({ chips, activeFilter, onSelect }: Props) {
               whiteSpace: "nowrap",
               cursor: "pointer",
               boxShadow: isActive
-                ? "0 0 12px rgba(248,180,0,0.30)"
+                ? `0 0 12px ${alpha(RGB.primaryContainer, 0.30)}`
                 : "none",
               transition: "all 0.18s",
               flexShrink: 0,
@@ -54,9 +54,9 @@ export function CategoryTabs({ chips, activeFilter, onSelect }: Props) {
             onMouseEnter={(e) => {
               if (!isActive) {
                 (e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(248,180,0,0.18)";
+                  alpha(RGB.primaryContainer, 0.18);
                 (e.currentTarget as HTMLButtonElement).style.borderColor =
-                  "#f8b400";
+                  T.primaryContainer;
               }
             }}
             onMouseLeave={(e) => {

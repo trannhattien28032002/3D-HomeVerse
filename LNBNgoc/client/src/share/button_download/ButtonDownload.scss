@@ -1,0 +1,26 @@
+
+.btn-download {
+    position: fixed;
+    bottom: 35px;
+    right: 10px;
+    margin: 10px;
+    padding: 5px 12px 5px 12px;
+    background-color: #337ab7;
+    color: #fff;
+    border: none;
+    border-radius: 11px;
+    cursor: pointer;
+    font-size:18px;
+    font-weight: 600;
+    font-family: sans-serif;
+
+    &:hover {
+        background-color: #1e4a9f;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+

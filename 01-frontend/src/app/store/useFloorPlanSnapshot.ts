@@ -24,7 +24,7 @@
  * Output: nodes/walls/caps/rooms/dimensions/angleDimensions trong px
  */
 import { useState, useEffect, useMemo } from "react";
-import { useEngineOrNull } from "src/app/engine/EngineContext";
+import { useEngineOrNull } from "src/app/engineBinding/EngineContext";
 import type { ECSSnapshot, NodeSnapshot, WallSnapshot, NodeCapSnapshot, RoomSnapshot, DimensionSnapshot, AngleDimensionSnapshot, FurnitureSnapshot } from "src/engine/events/EngineEvents";
 import { PX_PER_WORLD, threeRotYToKonvaDeg } from "src/shared/math/coords";
 import type { Vec2 } from "src/shared/types/primitives";
@@ -32,10 +32,10 @@ import type { Vec2 } from "src/shared/types/primitives";
 // PX_PER_WORLD imported from shared/math/coords — single source for world↔canvas scale.
 
 // ─── Re-export 2D pixel-space types từ module trung lập (R4) ──────────────────
-// Các type đã được tách ra src/app/plan2d/types.ts để 14 importer không
+// Các type đã được tách ra src/app/features/plan2d/types.ts để 14 importer không
 // phụ thuộc vào hook store. Re-export để giữ backward compat cho caller cũ.
-export type { Node2D, Wall2D, Cap2D, Room2D, Dimension2D, AngleDimension2D, Furniture2D } from "src/app/plan2d/types";
-import type { Node2D, Wall2D, Cap2D, Room2D, Dimension2D, AngleDimension2D, Furniture2D } from "src/app/plan2d/types";
+export type { Node2D, Wall2D, Cap2D, Room2D, Dimension2D, AngleDimension2D, Furniture2D } from "src/app/features/plan2d/types";
+import type { Node2D, Wall2D, Cap2D, Room2D, Dimension2D, AngleDimension2D, Furniture2D } from "src/app/features/plan2d/types";
 
 // ─── Conversion helpers ────────────────────────────────────────────────────────
 // Tất cả hàm này là pure — chuyển đổi world-space → pixel-space

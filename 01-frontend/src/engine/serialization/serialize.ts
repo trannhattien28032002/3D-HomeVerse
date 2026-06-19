@@ -95,7 +95,9 @@ export function serializeScene(engine: EngineInstance): SceneDocument {
         const tag = engine.world.getComponent(e, FurnitureTag)!;
         const wo = engine.world.getComponent(e, WallOpening)!;
         const materials = readMaterials(engine, e);
-        wallItems.push({ modelId: tag.modelId, hostWallId: wo.hostWallId, t: wo.t, side: 1, ...(materials && { materials }) });
+        // wo.side lật model 180° (cửa/cửa sổ xoay mặt). Trước đây hardcode 1 → mất
+        // hướng xoay khi nạp lại. Lưu đúng wo.side để giữ rotation qua save/reload.
+        wallItems.push({ modelId: tag.modelId, hostWallId: wo.hostWallId, t: wo.t, side: wo.side, ...(materials && { materials }) });
     }
 
     // ── Sàn (floor materials theo roomKey) ──────────────────────────────────────

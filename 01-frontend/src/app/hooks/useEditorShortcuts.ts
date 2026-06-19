@@ -4,8 +4,8 @@
  * Bảng phím tắt:
  *   Ctrl+S   → save scene
  *   Ctrl+O   → mở file scene
- *   Ctrl+C   → copy đồ 3D đang chọn (đặt sàn)
- *   Ctrl+V   → paste bản sao đồ 3D đã copy (lệch chéo, undo được)
+ *   Ctrl+C   → copy đồ đặt sàn đang chọn (2D: cả cụm multi-select · 3D: object đơn)
+ *   Ctrl+V   → paste bản sao cả cụm đã copy (giữ layout tương đối, lệch chéo, undo được)
  *   V        → tool Select
  *   B        → tool Draw wall
  *   F        → mở/đóng Decor Catalog
@@ -18,6 +18,7 @@
  * mà không cần re-register event listener khi props thay đổi.
  */
 import { useEffect, useRef } from "react";
+import { isTypingTarget } from "src/shared/dom/isTypingTarget";
 import type { EngineInstance, FurnitureClipboard } from "src/engine/engineTypes";
 import type { Mode } from "src/app/constants/navigation";
 import type { WallToolId } from "src/app/components/editor/tools/toolRegistry";
@@ -34,64 +35,73 @@ type Params = {
     toggleDecorCatalog: () => void;
     onSave: () => void;
     onLoad: () => void;
-    /** entityId của object đang chọn (kind "object"), hoặc null. Dùng cho Ctrl+C. */
+    /** entityId object đang chọn ở 3D (kind "object"), hoặc null. Nguồn copy khi mode==="3d". */
     selectedObjectId: string | null;
+    /** Tập furniture đang chọn ở 2D (multi-select). Nguồn copy khi mode==="2d". */
+    selectedFurnitureIds: Set<string>;
 };
-
-function isTypingTarget(target: EventTarget | null): boolean {
-    const el = target as HTMLElement | null;
-    if (!el) return false;
-    return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
-}
 
 export function useEditorShortcuts(params: Params): void {
     const paramsRef = useRef(params);
     paramsRef.current = params;
 
-    // Clipboard copy/paste đồ 3D — giữ ngoài React state để không gây re-render.
-    const clipboardRef = useRef<FurnitureClipboard | null>(null);
+    // Clipboard copy/paste đồ đặt sàn — mảng để hỗ trợ multi-select; giữ ngoài React
+    // state để không gây re-render. Rỗng = chưa copy gì.
+    const clipboardRef = useRef<FurnitureClipboard[]>([]);
     // Số lần paste tính từ lần copy gần nhất — mỗi bản dán lệch chéo xa dần (cascade).
     const pasteCountRef = useRef(0);
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            const { engine, mode, setMode, setTool2D, isPlacing, toggleDecorCatalog, onSave, onLoad, selectedObjectId } = paramsRef.current;
+            const { engine, mode, setMode, setTool2D, isPlacing, toggleDecorCatalog, onSave, onLoad, selectedObjectId, selectedFurnitureIds } = paramsRef.current;
 
             if (e.ctrlKey || e.metaKey) {
                 const key = e.key.toLowerCase();
                 if (key === "s") { e.preventDefault(); onSave(); return; }
                 if (key === "o") { e.preventDefault(); onLoad(); return; }
 
-                // Ctrl+C — copy đồ 3D đặt sàn đang chọn. Bỏ qua khi đang gõ trong ô nhập
-                // (để trình duyệt copy text như thường), hoặc không có object hợp lệ.
+                // Ctrl+C — copy đồ đặt sàn đang chọn. Bỏ qua khi đang gõ trong ô nhập
+                // (để trình duyệt copy text như thường). Nguồn id: 2D đọc multi-select set,
+                // 3D đọc object đơn (selectedFurnitureIds không được 3D populate — chốt Phase 3).
                 if (key === "c") {
-                    if (isTypingTarget(e.target) || !engine || !selectedObjectId) return;
-                    const data = engine.api.getFurnitureClipboard(selectedObjectId);
-                    if (!data) return; // không phải đồ đặt sàn (vd cửa/kệ/tường/sàn)
+                    if (isTypingTarget(e.target) || !engine) return;
+                    const sourceIds = mode === "2d"
+                        ? [...selectedFurnitureIds]
+                        : (selectedObjectId ? [selectedObjectId] : []);
+                    if (sourceIds.length === 0) return;
+                    // getFurnitureClipboard trả null cho thứ không phải đồ đặt sàn (cửa/kệ/
+                    // tường/sàn) → lọc bỏ, đồng nhất quy ước copy đơn cũ.
+                    const clips = sourceIds
+                        .map(id => engine.api.getFurnitureClipboard(id))
+                        .filter((c): c is FurnitureClipboard => c !== null);
+                    if (clips.length === 0) return;
                     e.preventDefault();
-                    clipboardRef.current = data;
+                    clipboardRef.current = clips;
                     pasteCountRef.current = 0;
                     return;
                 }
 
-                // Ctrl+V — paste bản sao đồ đã copy, lệch chéo dần, gói trong 1 entry undo.
+                // Ctrl+V — paste cả cụm đã copy, GIỮ layout tương đối (mọi vật lệch cùng
+                // một delta cascade), gói trong 1 entry undo.
                 if (key === "v") {
-                    if (isTypingTarget(e.target) || !engine || !clipboardRef.current) return;
+                    if (isTypingTarget(e.target) || !engine || clipboardRef.current.length === 0) return;
                     e.preventDefault();
-                    const clip = clipboardRef.current;
+                    const clips = clipboardRef.current;
                     const n = (pasteCountRef.current += 1);
                     const d = PASTE_OFFSET_M * n;
-                    void engine.api.asyncTransaction("paste furniture", () =>
-                        engine.api.dispatchAsync({
-                            type: "PLACE_FURNITURE",
-                            modelId: clip.modelId,
-                            x: clip.x + d,
-                            z: clip.z + d,
-                            rotY: clip.rotY,
-                            y: clip.y,
-                            materials: clip.materials,
-                        }),
-                    );
+                    void engine.api.asyncTransaction("paste selection", async () => {
+                        for (const clip of clips) {
+                            await engine.api.dispatchAsync({
+                                type: "PLACE_FURNITURE",
+                                modelId: clip.modelId,
+                                x: clip.x + d,
+                                z: clip.z + d,
+                                rotY: clip.rotY,
+                                y: clip.y,
+                                materials: clip.materials,
+                            });
+                        }
+                    });
                     return;
                 }
                 return;

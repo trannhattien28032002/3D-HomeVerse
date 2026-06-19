@@ -17,6 +17,7 @@ import { WallItemGhost } from "src/engine/systems/placement/WallItemGhost";
 import type { World } from "src/engine/ecs/World";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
+import { countFurniture, MAX_FURNITURE_ENTITIES } from "src/engine/utils/furnitureLimit";
 
 /**
  * FurniturePlacementSystem — chế độ đặt nội thất bằng ghost xem-trước trong 3D.
@@ -111,6 +112,14 @@ export class FurniturePlacementSystem {
 
     /** Vào chế độ đặt cho model cho trước. Huỷ phiên đặt đang chạy (nếu có) trước. */
     begin(modelId: string): void {
+        // Chặn sớm cho UX: đã chạm trần thì không vào chế độ đặt (khỏi nạp GLB/ghost phí).
+        // Vẫn còn chốt cứng ở command handler cho đường AI agent. (furnitureLimit.ts)
+        const count = countFurniture(this.world);
+        if (count >= MAX_FURNITURE_ENTITIES) {
+            this.events.emit("entityLimitReached", { count, limit: MAX_FURNITURE_ENTITIES });
+            return;
+        }
+
         if (this.active) this.cleanup();
 
         this.active = true;

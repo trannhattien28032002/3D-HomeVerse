@@ -1,0 +1,252 @@
+    // const valueLabe = () => {
+    //     if (dataType === 2) {
+    //         if (dataMainMsm.length === 0 || dataMainMsm.length === 24) {
+    //             setValueTime(setLabel.map((item) => item.datetime));
+    //             setValueRain(setLabel.map((item) => item.value_rain));
+    //             setValueActual(setLabel.map((item) => item.value_actual));
+    //             setValueTemp(setLabel.map((item) => item.value_temp));
+    //             setValueLeftMax(10);
+    //             setValueLeftMin(chartSettingMsm[0].left_min_y);
+    //             setValueRightMax(10);
+    //             setValueRightMin(-10);
+    //         } else {
+    //             setValueRain(dataMainMsm.map((item) => item.value_rain));
+    //             setValueActual(dataMainMsm.map((item) => item.value_actual));
+    //             setValueTemp(dataMainMsm.map((item) => item.value_temp));
+    //             setValueTime(dataMainMsm.map((item) => getHM(item.datetime)));
+    //             setValueLeftMax(chartSettingMsm[0].left_max_y);
+    //             setValueLeftMin(chartSettingMsm[0].left_min_y);
+    //             setValueRightMax(chartSettingMsm[0].right_max_y);
+    //             setValueRightMin(chartSettingMsm[0].right_min_y - 1);
+    //         }
+    //     } else {
+    //         if (dataType === 1) {
+    //             if (dataMainGsm.length === 0 || dataMainGsm.length === 24) {
+    //                 setValueTime(setLabel.map((item) => item.datetime));
+    //                 setValueRain(setLabel.map((item) => item.value_rain));
+    //                 setValueActual(setLabel.map((item) => item.value_actual));
+    //                 setValueTemp(setLabel.map((item) => item.value_temp));
+    //                 setValueLeftMax(10);
+    //                 setValueLeftMin(chartSettingMsm[0].left_min_y);
+    //                 setValueRightMax(10);
+    //                 setValueRightMin(-10);
+    //             } else {
+    //                 setValueRain(dataMainGsm.map((item) => item.value_rain));
+    //                 setValueActual(dataMainGsm.map((item) => item.value_actual));
+    //                 setValueTemp(dataMainGsm.map((item) => item.value_temp));
+    //                 setValueTime(dataMainGsm.map((item) => getHM(item.datetime)));
+    //                 setValueLeftMax(chartSettingGsm[0].left_max_y);
+    //                 setValueLeftMin(chartSettingGsm[0].left_min_y);
+    //                 setValueRightMax(chartSettingGsm[0].right_max_y);
+    //                 setValueRightMin(chartSettingGsm[0].right_min_y - 1);
+    //             }
+    //         }
+    //     }
+    // };
+
+    // const plugins = {
+    //     id: "customCanvasBackgroundColor",
+    //     beforeDraw: (chart: any, args: any, options: { color: string }) => {
+    //         const { ctx } = chart;
+    //         ctx.save();
+    //         ctx.globalCompositeOperation = "destination-over";
+    //         ctx.fillStyle = options.color || "#ffffff";
+    //         ctx.fillRect(chart.chartArea.left, chart.chartArea.top, chart.chartArea.width, chart.chartArea.height);
+    //         ctx.restore();
+    //     },
+    // };
+
+    // const createChart = () => {
+    //     if (refChart.current) {
+    //         refChart.current.destroy();
+    //         refChart.current = null;
+    //     }
+    //     if (canvasCallback.current === null) {
+    //         return;
+    //     } else {
+    //         const ctx = canvasCallback.current?.getContext("2d");
+    //         if (!ctx) {
+    //             return;
+    //         } else {
+    //             refChart.current = new ChartLib(ctx, {
+    //                 type: "bar",
+    //                 data: {
+    //                     datasets: [],
+    //                     labels: valueTime,
+    //                 },
+    //                 options: {
+    //                     layout: {
+    //                         padding: {
+    //                             left: 0,
+    //                         },
+    //                     },
+    //                     responsive: true,
+    //                     plugins: {
+    //                         legend: {
+    //                             position: "bottom",
+    //                             align: "end",
+    //                             labels: {
+    //                                 usePointStyle: true,
+    //                                 font: {
+    //                                     size: 18,
+    //                                 },
+    //                                 textAlign: "left",
+    //                                 padding: 30,
+    //                             },
+    //                         },
+    //                     },
+    //                     elements: {
+    //                         point: {
+    //                             radius: 0,
+    //                         },
+    //                     },
+    //                     scales: {
+    //                         x: {
+    //                             offset: true,
+    //                             beginAtZero: true,
+    //                             display: true,
+    //                             position: "bottom",
+    //                             border: {
+    //                                 width: 3,
+    //                             },
+    //                             grid: {
+    //                                 drawOnChartArea: true,
+    //                                 display: true,
+    //                                 drawTicks: false,
+    //                                 color: "#969696",
+    //                             },
+    //                             ticks: {
+    //                                 minRotation: 0,
+    //                                 maxRotation: 0,
+    //                                 autoSkip: false,
+    //                                 callback: function (value: any, ticks: any) {
+    //                                     const labelValues: any = this.getLabelForValue(value);
+    //                                     const hourArr = labelValues.split(":")[0];
+    //                                     if (+hourArr % 3 === 0) {
+    //                                         return labelValues;
+    //                                     } else {
+    //                                         return "";
+    //                                     }
+    //                                 },
+    //                                 maxTicksLimit: settingTime,
+    //                                 align: "end",
+    //                             },
+    //                         },
+    //                         y: {
+    //                             beginAtZero: false,
+    //                             suggestedMin: valueLeftMin,
+    //                             suggestedMax: valueLeftMax,
+    //                             grid: {
+    //                                 drawOnChartArea: true,
+    //                                 display: true,
+    //                                 drawTicks: false,
+    //                                 color: "#969696",
+    //                             },
+    //                             type: "linear",
+    //                             display: true,
+    //                             position: "left",
+    //                             min: valueLeftMin,
+    //                             max: valueLeftMax,
+    //                             ticks: {
+    //                                 backdropColor: "rgb(255, 99, 132)",
+    //                                 autoSkip: false,
+    //                                 callback: function (value) {
+    //                                     return formatNumber(value);
+    //                                 },
+    //                             },
+    //                         },
+    //                         y1: {
+    //                             beginAtZero: false,
+    //                             display: true,
+    //                             type: "linear",
+    //                             position: "right",
+    //                             min: valueRightMin,
+    //                             max: valueRightMax,
+    //                             ticks: {
+    //                                 backdropColor: "rgb(255, 99, 132)",
+    //                                 autoSkip: false,
+    //                                 callback: function (value) {
+    //                                     return formatNumberTemp(value);
+    //                                 },
+    //                             },
+    //                             grid: {
+    //                                 drawOnChartArea: false,
+    //                                 display: true,
+    //                                 drawTicks: false,
+    //                             },
+    //                         },
+    //                     },
+    //                 },
+    //                 plugins: [plugins],
+    //             });
+    //             refChart.current.data.datasets.push(
+    //                 {
+    //                     label: "降雨量 (予測)",
+    //                     data: valueActual,
+    //                     borderColor: "#5b9bd5",
+    //                     backgroundColor: "#5b9bd5",
+    //                     order: 1,
+    //                     barPercentage: 1,
+    //                     categoryPercentage: 1,
+    //                     parsing: {
+    //                         yAxisKey: "1",
+    //                     },
+    //                     yAxisID: "y",
+    //                     pointStyle: "rect",
+    //                 },
+    //                 {
+    //                     label: "降雨量 (実績)",
+    //                     data: valueRain,
+    //                     borderColor: "#c5e0b4",
+    //                     backgroundColor: "#c5e0b4",
+    //                     order: 2,
+    //                     barPercentage: 1,
+    //                     categoryPercentage: 1,
+    //                     parsing: {
+    //                         yAxisKey: "1",
+    //                     },
+    //                     yAxisID: "y",
+    //                     pointStyle: "rect",
+    //                 },
+
+    //                 {
+    //                     label: "気温 (予測)",
+    //                     data: valueTemp,
+    //                     borderColor: "#ffc000",
+    //                     backgroundColor: "#ffc000",
+    //                     type: "line",
+    //                     order: 3,
+    //                     pointStyle: "line",
+    //                 },
+    //                 {
+    //                     label: "                                                                                                                                                     ",
+    //                     data: [0],
+    //                     borderColor: "transparent",
+    //                     backgroundColor: "transparent",
+    //                     order: 4,
+    //                     barPercentage: 1,
+    //                     categoryPercentage: 1,
+    //                     parsing: {
+    //                         yAxisKey: "1",
+    //                     },
+    //                     yAxisID: "y",
+    //                 },
+
+    //                 {
+    //                     label: "",
+    //                     data: [0],
+    //                     borderColor: "transparent",
+    //                     backgroundColor: "transparent",
+    //                     order: 5,
+    //                     barPercentage: 1,
+    //                     categoryPercentage: 1,
+    //                     parsing: {
+    //                         yAxisKey: "1",
+    //                     },
+    //                     yAxisID: "y",
+    //                 }
+    //             );
+
+    //             refChart.current.update();
+    //         }
+    //     

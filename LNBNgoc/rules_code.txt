@@ -1,0 +1,51 @@
+Reactjs:
+	- khi code phải chú ý sử dụng đường dẫn tuyệt đối (bao gồm cả scss)
+	- khi khai báo 1 ref cho useRef theo dạng "<element>Ref"
+	- khi import nếu dùng hết các thuộc tính từ một file khác thì import dạng *
+		ví dụ: import * as CommonTypes from "src/redux/reducer/common/CommonTypes";
+	- Khi import se ưu tiên import thư viện (trong thư mục node_modules trước), sau đó mới import các component trên màn hình
+		+ Ví dụ 
+			import React from "react";
+			import { connect } from "react-redux";
+			import PropTypes from "prop-types";
+			import { withLoading } from "../../../hocs/index";
+			import ChartCommon from "../../../helper/chart_1/Chart";
+			import DataSample from "./DataSample";
+			import {
+				addChartLeft,
+				addChartRight,
+			} from "../../../redux/action/main/MainActionCreator";
+			import "./Chart.scss";
+		==> 
+		(1) import React from "react";
+		(2) import { connect } from "react-redux";
+		(3) import PropTypes from "prop-types";
+		--> (1),(2),(3)sẽ được ưu tiên ghi lên trên đầu
+		--> file style sẽ để cuối cùng (trường hợp nào đặt biệt cần thiết khai báo trước mới khai báo lên vị trí khác)
+	- Folder của component sẽ đặt tên theo dạng "snake_case" 
+	- File trong component sẽ đặt tên theo dạng "PascalCase"
+	- Cách đặt tên class, id sẽ đặt cách nhau bằng ký tự -, ví container-modal
+	- Khi class nào liên quan đến xử lý javascript như document.getElementsByClassName thì sẽ đặt tên class hay id có ký tự js- ở trước
+	***Reactjs\src\redux
+	Reducer
+		- một màn hình trong thư mục riêng, trong thư mục phải có
+			+ file reducer
+			+ file type
+		- Khi đặt tên action thì nội dung đầu tiên phải hình dung được hàm đó làm gì, ví dụ
+			reqDataUpdate : request update data
+			resDataUpdate : response update data
+			==> đặt theo dạng camelCase
+		Khi khai báo type cho action phải có "Action" ở đầu và dạng camelCase
+			ví dụ: action reqDataUpdate
+			==> khai báo type ActionReqDataUpdate
+Nodejs:
+- khi khai báo route api phải ra được cấu trúc(tham khảo route đã khai báo)
+	/<screenname_or_task> /api+<name_function>
+	vd: /auth/api-signin
+- khi code api trong controller add try{}catch{} ==> catch sẽ được tính là serverError
+- khi code api tuỳ theo lỗi phải sử dụng status code cho phù hợp (400, 403, 500,...)
+- đặt tên, khai báo biến phải dựa theo kiểu camelCase 
+
+LƯU Ý CHUNG:
+Các thành phần nào sử dụng ở nhiều nơi thì nên gôm lại common
+

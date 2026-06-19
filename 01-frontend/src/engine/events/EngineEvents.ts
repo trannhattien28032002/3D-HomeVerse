@@ -171,6 +171,12 @@ export type EngineEventMap = {
     placementReady: { modelId: string };
     /** Phát khi GLB nạp lỗi trong lúc đặt đồ. */
     placementError: { modelId: string; error: string };
+    /**
+     * Phát khi từ chối đặt thêm đồ vì đã chạm trần số lượng (chống spam).
+     * `count` = số đồ hiện có; `limit` = trần (MAX_FURNITURE_ENTITIES). UI hiển thị
+     * toast cảnh báo. Xem engine/utils/furnitureLimit.ts.
+     */
+    entityLimitReached: { count: number; limit: number };
 };
 
 type Handler<T> = (payload: T) => void;

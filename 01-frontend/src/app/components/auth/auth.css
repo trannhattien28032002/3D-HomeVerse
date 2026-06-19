@@ -1,0 +1,15 @@
+/**
+ * Tiện ích style riêng cho màn hình xác thực (đăng nhập / đăng ký).
+ * Tách khỏi index.css để giữ scope gọn cho cụm component auth.
+ */
+
+/* Blur kiểu "kính mờ" cho các huy hiệu nổi trên ảnh nền */
+.ethereal-blur {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Lớp hạt giấy mờ tạo cảm giác chất liệu cổ điển */
+.paper-grain {
+  background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBKEip2mI4X79JEqY6rSsiZP9JIum06QydajFLqDdX4HGBQgbk6Iqbn5UrF-aM1UYeDwrvAcAWiPx6NYNGdRLEOM93eh6GqetOy2v3nbIeueuk9Yl9fW7cT_072IqNAgDatrYQMpYioG7cPBnW6kkL_Qf6aLYR5cEM7i122vFe_xADUtf0LfUGAoMrOeKhj_2oFNX6Z6SffNofxROuer9A4MxzKhvglzL155GnIF-7qc-gUi3WZ43tMGFIlvfr2P8Uvb359q1fAe1k2);
+}

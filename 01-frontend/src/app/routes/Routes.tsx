@@ -13,9 +13,12 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes as RouterRoutes } from "react-router-dom";
 import HomePage from "src/app/pages/HomePage/HomePage";
 import RouteFallback from "src/app/routes/RouteFallback";
+import { RequireAuth, RedirectIfAuthed } from "src/app/routes/PrivateRoute";
 
 const EditorPage = lazy(() => import("src/app/pages/EditorPage/EditorPage"));
 const ProjectsPage = lazy(() => import("src/app/pages/ProjectPage/ProjectsPage"));
+const LoginPage = lazy(() => import("src/app/pages/LoginPage/LoginPage"));
+const RegisterPage = lazy(() => import("src/app/pages/RegisterPage/RegisterPage"));
 
 export default function AppRoutes() {
   return (
@@ -23,8 +26,38 @@ export default function AppRoutes() {
       <Suspense fallback={<RouteFallback />}>
         <RouterRoutes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/project/:id" element={<EditorPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
+          <Route
+            path="/login"
+            element={
+              <RedirectIfAuthed>
+                <LoginPage />
+              </RedirectIfAuthed>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <RedirectIfAuthed>
+                <RegisterPage />
+              </RedirectIfAuthed>
+            }
+          />
+          <Route
+            path="/project/:id"
+            element={
+              <RequireAuth>
+                <EditorPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <RequireAuth>
+                <ProjectsPage />
+              </RequireAuth>
+            }
+          />
           {/* <Route path="/projects/:id" element={<EditorPage />} /> */}
         </RouterRoutes>
       </Suspense>

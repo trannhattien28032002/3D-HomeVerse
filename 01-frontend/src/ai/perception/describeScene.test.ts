@@ -14,6 +14,7 @@ import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import { EntityRegistry } from "src/engine/registries/EntityRegistry";
 import { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import { createDispatcher } from "src/engine/commands/dispatcher";
+import { EngineEvents } from "src/engine/events/EngineEvents";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Transform } from "src/engine/components/core/Transform";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
@@ -33,6 +34,7 @@ function buildScene() {
     const deps: DispatcherDeps = {
         world,
         scene,
+        events: new EngineEvents(),
         nodeRegistry,
         wallEntityByWallId,
         meshRegistry,

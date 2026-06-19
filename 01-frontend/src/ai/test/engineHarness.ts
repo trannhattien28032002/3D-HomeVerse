@@ -14,12 +14,13 @@ import { MaterialRegistry } from "src/engine/registries/MaterialRegistry";
 import { EntityRegistry } from "src/engine/registries/EntityRegistry";
 import { ModelRegistry } from "src/engine/registries/ModelRegistry";
 import { createDispatcher } from "src/engine/commands/dispatcher";
+import { EngineEvents } from "src/engine/events/EngineEvents";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
-import type { EngineApi } from "src/app/hooks/useEngineApi";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 import type { ScenePerceptionSource } from "src/ai/perception/describeScene";
 
 export type EngineHarness = {
-    api: EngineApi;
+    api: EngineApiFacade;
     perception: ScenePerceptionSource;
     world: World;
     nodeRegistry: NodeRegistry;
@@ -39,6 +40,7 @@ export function buildEngineHarness(): EngineHarness {
     const deps: DispatcherDeps = {
         world,
         scene,
+        events: new EngineEvents(),
         nodeRegistry,
         wallEntityByWallId,
         meshRegistry,
@@ -53,7 +55,7 @@ export function buildEngineHarness(): EngineHarness {
 
     const { dispatch, dispatchAsync } = createDispatcher(deps);
 
-    const api: EngineApi = {
+    const api: EngineApiFacade = {
         dispatch,
         dispatchAsync,
         withTransaction: (_label, fn) => fn(),

@@ -5,6 +5,8 @@
  * "Coming soon"). Panel trượt lên khi mở (animation bottom + opacity). Component
  * thuần trình bày — chưa nối logic chọn loại tường vào tool vẽ.
  */
+import { T, RGB, alpha } from "src/app/constants/designTokens";
+
 type Props = { activeNav: string };
 
 const WALL_TYPES = [
@@ -45,9 +47,9 @@ export default function BuildPanel({ activeNav }: Props) {
             background: "rgba(253,249,240,0.92)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(248,180,0,0.3)",
+            border: `1px solid ${alpha(RGB.primaryContainer, 0.3)}`,
             borderRadius: 20,
-            boxShadow: "0 4px 24px rgba(124,88,0,0.16)",
+            boxShadow: `0 4px 24px ${alpha(RGB.primary, 0.16)}`,
             whiteSpace: "nowrap",
         }}>
             <span style={{
@@ -64,11 +66,11 @@ export default function BuildPanel({ activeNav }: Props) {
                 display: "flex", flexDirection: "column",
                 alignItems: "center", gap: 4,
                 padding: "6px 14px",
-                background: "#f8b400",
+                background: T.primaryContainer,
                 color: "#1c1c17",
                 border: "none", borderRadius: 12,
                 cursor: "pointer",
-                boxShadow: "0 0 10px rgba(248,180,0,0.38)",
+                boxShadow: `0 0 10px ${alpha(RGB.primaryContainer, 0.38)}`,
                 fontFamily: "'Nunito Sans', sans-serif",
             }}>
                 <svg width="28" height="16" viewBox="0 0 28 16" fill="none">

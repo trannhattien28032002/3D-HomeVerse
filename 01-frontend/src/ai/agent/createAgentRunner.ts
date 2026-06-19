@@ -4,7 +4,7 @@
  * Wiring: describeScene (mắt) + ToolRegistry (placeFurniture) + BackendTransport
  * (kênh 5a) + runAgent (vòng lặp + 1 transaction/undo). UI chỉ cần gọi run(text).
  */
-import type { EngineApi } from "src/app/hooks/useEngineApi";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 import type { ScenePerceptionSource } from "src/ai/perception/describeScene";
 import type { AgentRunResult } from "src/ai/agent/agentTypes";
 import { describeScene } from "src/ai/perception/describeScene";
@@ -18,6 +18,7 @@ import { runAgent } from "src/ai/agent/AgentClient";
 import { BackendTransport } from "src/ai/transport/backendTransport";
 import { buildSystemPrompt } from "src/ai/agent/systemPrompt";
 import { listCategories } from "src/ai/catalog/catalogSummary";
+import { authedFetch } from "src/data/api/authedFetch";
 
 const DEFAULT_BASE_URL =
     (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:3000";
@@ -27,7 +28,7 @@ export type AgentRunner = {
 };
 
 export function createAgentRunner(opts: {
-    api: EngineApi;
+    api: EngineApiFacade;
     perception: ScenePerceptionSource;
     baseUrl?: string;
 }): AgentRunner {
@@ -39,7 +40,13 @@ export function createAgentRunner(opts: {
         resizeRoomTool,
     ]);
     const system = buildSystemPrompt(listCategories());
-    const transport = new BackendTransport({ baseUrl: opts.baseUrl ?? DEFAULT_BASE_URL, system });
+    // A6 sẽ flip /ai/chat sang requireAuth — gắn fetchImpl đã có Authorization
+    // header sẵn từ bây giờ để token chảy thông ngay khi backend bật guard.
+    const transport = new BackendTransport({
+        baseUrl: opts.baseUrl ?? DEFAULT_BASE_URL,
+        system,
+        fetchImpl: authedFetch,
+    });
 
     return {
         async run(message: string): Promise<AgentRunResult> {

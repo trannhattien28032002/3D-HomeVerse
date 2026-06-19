@@ -1,0 +1,30 @@
+chia task làm việc
+- client
+Hiếu: 
+
++ hiển thị menu các thuỷ điện;
++ hiển thị tên thuỷ điện đã chọn
++ hiển thị các nội dung cố định theo màn hình khách hàng;
+
+Tiến 
++ tạo table và hiển thị nổi dung từ data
++ chức năng tải file MGM hoặc GSM ( tuỳ theo dữ liệu đang hiển thị)
+
+Đức
+- server + client
++ chức năng logout ( xoá token lưu trên cookie, trả dữ liệu về xoá session)
++ chức năng login ( kiểm tra dữ liệu, tạo và lưu token trên database, xét challengers và lưu sessions );
++ chức năng logout ( xoá token , xoá sessions );
++ update sessions ( ngươi dung tao tác các chức năng update verified_at = giờ hiện tại + 2h)
++ tạo challengers để xét login ( nếu failed quá 10 lần sét thời gian login )
++ lấy dữ liệu của các dam ( thuỷ điện );
++ lấy dữ liệu lượng table actual ;
++ Lấy dữ liệu dữ liệu từ table G_dam;
++ Lấy dữ liệu dữ liệu từ table M_dam;
++ chức năng lịch và hiển thị tời gian theo lịch + button hôm nay ( thây đổi thời gian trên giao diện là bây giờ, lưu ý button này chỉ sửa dụng được khi thây đổi thời gian ) 
++ chức năng login ( điều kiện người dùng phải nhập đầy đủ thông tin mới được bấm login, lưu token lên cookie)
++ tạo chart hiển thị theo nội dung từ data( chart.js )
++ chức năng thây đổi MGM và GSM ;
++ chức năng tải file MGM hoặc GSM ( tuỳ theo dữ liệu đang hiển thị)(hỗ trợ tiến)
++ tạo chức năng update password Xử lý 現在のパスワード server : 0% --> 80%
+       + set dữ liệu chức năng khi hiển thị sau khi đăng nhập ( chọn ダム đầu tiền , ngày hiện tại, dữ liệu MGM, và hiển thị chatJS ): 0% --> 8

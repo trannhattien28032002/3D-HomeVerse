@@ -1,3 +1,5 @@
+import { RGB, alpha } from "src/app/constants/designTokens";
+
 /** Gợi ý nổi hiển thị trong lúc đang đặt nội thất (click đặt · chuột phải/Esc huỷ). */
 export default function PlacementHint() {
     return (
@@ -16,8 +18,8 @@ export default function PlacementHint() {
                 background: "rgba(241,238,229,0.92)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(248,180,0,0.40)",
-                boxShadow: "0 4px 20px rgba(124,88,0,0.18)",
+                border: `1px solid ${alpha(RGB.primaryContainer, 0.40)}`,
+                boxShadow: `0 4px 20px ${alpha(RGB.primary, 0.18)}`,
                 fontFamily: "'Nunito Sans', sans-serif",
                 fontSize: 13,
                 fontWeight: 600,

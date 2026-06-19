@@ -1,0 +1,41 @@
+.custom-button1 {
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border:none;
+    width: 75px;
+    height: 35px;
+    font-family: 'Meiryo', sans-serif;
+}
+
+.custom-button2 {
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border:none;
+    width: 75px;
+    height: 35px;
+    font-family: 'Meiryo', sans-serif;
+}
+
+.comboButton {
+    display: flex;
+}
+
+.combo-button1{
+    img{
+        position:absolute;
+         top: -10px;
+         right: -10px; 
+         width:25px; 
+         height: 25px;
+    }
+}
+
+.combo-button2{
+    img{
+        position:absolute;
+         top: -10px;
+         left: -10px; 
+         width:25px; 
+         height: 25px;
+    }
+}

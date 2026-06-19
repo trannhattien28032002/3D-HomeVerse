@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from "vitest";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
-import type { EngineApi } from "src/app/hooks/useEngineApi";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 import type { LlmTransport, LlmTurn } from "src/ai/agent/agentTypes";
 import type { SceneSummary } from "src/ai/perception/describeScene";
 import { ToolRegistry } from "src/ai/agent/toolRegistry";
@@ -18,7 +18,7 @@ import { runAgent } from "src/ai/agent/AgentClient";
 const REAL_MODEL = "bed-single-01"; // id có thật trong objects.json
 
 // ── Mock EngineApi ──────────────────────────────────────────────────────────────
-type MockApi = EngineApi & {
+type MockApi = EngineApiFacade & {
     dispatched: EngineCommand[];
     txLabels: string[];
     txDepthMax: number;

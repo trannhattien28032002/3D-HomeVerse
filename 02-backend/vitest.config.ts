@@ -7,5 +7,8 @@ export default defineConfig({
   test: {
     testTimeout: 30000,
     hookTimeout: 30000,
+    // Đảm bảo middleware auth nhận diện chế độ test (chấp nhận token HS256 ký cục bộ
+    // trong fixtures) — production vẫn verify ES256/JWKS bất đối xứng.
+    env: { NODE_ENV: 'test' },
   },
 });

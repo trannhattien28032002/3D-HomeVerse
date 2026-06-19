@@ -1,0 +1,22 @@
+@charset "UTF-8";
+@import "src/AppVariables.scss";
+* {
+    box-sizing: border-box;
+    outline: none;
+    &:before {
+        box-sizing: border-box;
+    }
+    &:after {
+        box-sizing: border-box;
+    }
+}
+html {
+    font-family: sans-serif;
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    height: 100%;
+}
+body {
+    height: 100%;
+}

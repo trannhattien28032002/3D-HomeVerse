@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import './HomePage.css';
+import { Link } from 'react-router-dom';
 
 export default function HomePage() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -45,7 +46,7 @@ export default function HomePage() {
             p.style.left = `${Math.random() * 100}vw`;
             p.style.top = `${Math.random() * 100 + 100}vh`;
             p.style.animation = `drift ${Math.random() * 10 + 15}s linear forwards`;
-            
+
             container.appendChild(p);
             setTimeout(() => {
                 if (container.contains(p)) {
@@ -78,8 +79,8 @@ export default function HomePage() {
     };
 
     return (
-        <div 
-            ref={containerRef} 
+        <div
+            ref={containerRef}
             onScroll={handleScroll}
             className="bg-background text-on-background font-body-md h-screen overflow-y-auto overflow-x-hidden selection:bg-primary-container/30 scroll-smooth"
         >
@@ -97,9 +98,12 @@ export default function HomePage() {
                         <a className="text-on-surface-variant hover:text-primary transition-colors font-label-lg" href="#gallery">Gallery</a>
                         <a className="text-on-surface-variant hover:text-primary transition-colors font-label-lg" href="#blueprints">Blueprints</a>
                         <a className="text-on-surface-variant hover:text-primary transition-colors font-label-lg" href="#community">Community</a>
-                        <button className="bg-primary text-on-primary font-label-lg px-6 py-2.5 rounded-full hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all">
+                        <Link
+                            to="/projects"
+                            className="bg-primary text-on-primary font-label-lg px-6 py-2.5 rounded-full hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all"
+                        >
                             Start Building
-                        </button>
+                        </Link>
                     </div>
                     <button className="md:hidden text-primary">
                         <span className="material-symbols-outlined">menu</span>
@@ -126,9 +130,9 @@ export default function HomePage() {
                                 Escape into a peaceful sanctuary where every timber, teacup, and blossom is placed by your hand. A digital diorama for the soul.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                <button className="bg-primary text-on-primary font-label-lg px-10 py-4 rounded-full shadow-xl shadow-primary/20 hover:-translate-y-1 transition-all">
+                                <Link to="/projects" className="bg-primary text-on-primary font-label-lg px-10 py-4 rounded-full shadow-xl shadow-primary/20 hover:-translate-y-1 transition-all">
                                     Start Your Project
-                                </button>
+                                </Link>
                                 <button className="bg-surface-container text-primary border border-outline/20 font-label-lg px-10 py-4 rounded-full hover:bg-surface-variant transition-all">
                                     Tour the Realm
                                 </button>

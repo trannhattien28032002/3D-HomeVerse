@@ -8,6 +8,7 @@ import { World } from "src/engine/ecs/World";
 import type { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import type { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
+import { perfEnabled, perfMark } from "src/engine/rendering/perfProbe";
 
 /**
  * RenderSystem — đồng bộ Transform của ECS xuống mesh Three.js rồi render scene.
@@ -119,7 +120,25 @@ export class RenderSystem extends System {
         // OutlinePass tốn fill-rate kể cả khi rỗng → tắt hẳn khi không chọn gì.
         this.outlinePass.enabled = this.outlinePass.selectedObjects.length > 0;
 
+        const probing = perfEnabled();
+        if (probing) {
+            // autoReset=false + reset thủ công để info GOM draw call qua TẤT CẢ pass của
+            // composer (mỗi pass gọi renderer.render sẽ tự reset nếu để autoReset mặc định).
+            this.renderer.info.autoReset = false;
+            this.renderer.info.reset();
+        }
+        const _t0 = probing ? performance.now() : 0;
         this.composer.render(deltaTime);
+        if (probing) {
+            const on = this.outlinePass.enabled;
+            // GPU async: cần readPixels để buộc đồng bộ thì mới đo đúng GPU time, nhưng
+            // CPU-side composer.render (submit draw calls + JS của các pass) đã đủ để so
+            // sánh tương đối giữa OutlinePass bật vs tắt.
+            perfMark(on ? "composer.render (outline ON)" : "composer.render (outline OFF)", performance.now() - _t0);
+            perfMark(on ? "draw calls (outline ON)" : "draw calls (outline OFF)", this.renderer.info.render.calls);
+            perfMark("triangles (K)", this.renderer.info.render.triangles / 1000);
+            this.renderer.info.autoReset = true;
+        }
 
         // Gizmo overlay: vẽ chồng lên kết quả composer (giữ màu, không xoá), trên cùng.
         if (this.overlayScene.children.length > 0) {

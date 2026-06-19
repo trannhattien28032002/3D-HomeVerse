@@ -1,0 +1,47 @@
+.table-container {
+    max-height: 550px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.forecast-table {
+    font-family: 'Meiryo', sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    border-collapse: collapse;
+    td {
+        border: 1px solid #ddd;
+        padding: 2px;
+        font-size: 15px;
+        width: 5%;
+        height: 20px;
+    }
+    th {
+        border: 1px solid #ddd;
+        font-weight: 500;
+        text-align: center;
+        font-size: 14px;
+        background-color: #181e36;
+        color: white;
+        width: 60px;
+        height: 20px;
+    }
+    tr {
+        &:nth-child(even) {
+            background-color: #F9F9F9;
+            height: 20px;
+        }
+        &:nth-child(odd) {
+            background-color: #FFF;
+            height: 20px;
+        }
+        &:hover {
+            background-color: #BBBBBF;
+            height: 20px;
+        }
+        .tr-right {
+            text-align: right; 
+            padding-right: 10px;
+        }
+    }
+}

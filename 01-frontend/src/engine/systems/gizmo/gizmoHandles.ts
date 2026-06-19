@@ -17,6 +17,7 @@ import { RoomGeometry } from "src/engine/components/room/RoomGeometry";
 import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
 import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollisionSystem";
 import { snapAngleRad } from "src/shared/constants/placement";
+import { quatToYaw, setYawQuaternion } from "src/shared/math/yaw";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import type { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
 import { findMountWall, findWallEntity } from "src/engine/adapters/wallRefs";
@@ -41,6 +42,35 @@ export type WallPickMesh = THREE.Object3D & { __wallId?: string };
 /** Mesh sàn phòng có gắn ngược roomKey để truy ngược từ raycast (chọn đổi material sàn). */
 export type RoomPickMesh = THREE.Object3D & { __roomKey?: string };
 
+// ── Thẻ truy-ngược trên Object3D ─────────────────────────────────────────────
+// Gom mọi `as MeshWithEntity/WallPickMesh/RoomPickMesh` về một bộ helper: gắn
+// (tag*) khi build pick-target, đọc (read*) khi xử lý kết quả raycast.
+
+/** Gắn entityId vào Object3D để raycast truy ngược. */
+export function tagEntity(obj: THREE.Object3D, entityId: string): void {
+    (obj as MeshWithEntity).__entity = entityId;
+}
+/** Đọc entityId đã gắn (null nếu object không có thẻ / là null). */
+export function readEntity(obj: THREE.Object3D | null | undefined): string | null {
+    return (obj as MeshWithEntity | null | undefined)?.__entity ?? null;
+}
+/** Gắn wallId vào mesh tường để raycast truy ngược. */
+export function tagWallId(obj: THREE.Object3D, wallId: string): void {
+    (obj as WallPickMesh).__wallId = wallId;
+}
+/** Đọc wallId đã gắn (null nếu không có). */
+export function readWallId(obj: THREE.Object3D | null | undefined): string | null {
+    return (obj as WallPickMesh | null | undefined)?.__wallId ?? null;
+}
+/** Gắn roomKey vào mesh sàn để raycast truy ngược. */
+export function tagRoomKey(obj: THREE.Object3D, roomKey: string): void {
+    (obj as RoomPickMesh).__roomKey = roomKey;
+}
+/** Đọc roomKey đã gắn (null nếu không có). */
+export function readRoomKey(obj: THREE.Object3D | null | undefined): string | null {
+    return (obj as RoomPickMesh | null | undefined)?.__roomKey ?? null;
+}
+
 /**
  * Đổ vào `into` mọi mesh tường có WallTag, gắn `__wallId` để truy ngược.
  * Dùng cho raycast chọn tường (chỉ để đổi material — KHÔNG attach gizmo).
@@ -51,7 +81,7 @@ export function collectWallPickTargets(world: World, into: THREE.Object3D[]): vo
         const meshComp = world.getComponent(e, Mesh);
         const tag = world.getComponent(e, WallTag);
         if (!meshComp || !tag) continue;
-        (meshComp.mesh as WallPickMesh).__wallId = tag.wallId;
+        tagWallId(meshComp.mesh, tag.wallId);
         into.push(meshComp.mesh);
     }
 }
@@ -69,7 +99,7 @@ export function collectRoomPickTargets(world: World, meshRegistry: MeshRegistry,
         if (!geo) continue;
         const mesh = meshRegistry.get(`room-${e}`);
         if (!mesh) continue;
-        (mesh as RoomPickMesh).__roomKey = geo.key;
+        tagRoomKey(mesh, geo.key);
         into.push(mesh);
     }
 }
@@ -83,7 +113,7 @@ export function collectPickTargets(world: World, into: THREE.Object3D[]): void {
         if (world.hasComponent(e, WallNodes)) continue;
         const meshComp = world.getComponent(e, Mesh);
         if (!meshComp) continue;
-        (meshComp.mesh as MeshWithEntity).__entity = e;
+        tagEntity(meshComp.mesh, e);
         into.push(meshComp.mesh);
     }
 
@@ -94,7 +124,7 @@ export function collectPickTargets(world: World, into: THREE.Object3D[]): void {
         if (!modelComp) continue;
         modelComp.root.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
-                (child as MeshWithEntity).__entity = e;
+                tagEntity(child, e);
                 into.push(child as THREE.Mesh);
             }
         });
@@ -106,15 +136,15 @@ export function collectPickTargets(world: World, into: THREE.Object3D[]): void {
  * Trả về null khi object trúng không gắn entity nào.
  */
 export function resolveHitEntity(
-    hitObject: MeshWithEntity,
+    hitObject: THREE.Object3D,
     world: World,
 ): { entityId: string; attachTarget: THREE.Object3D } | null {
-    const entityId = hitObject.__entity ?? null;
+    const entityId = readEntity(hitObject);
     if (entityId == null) return null;
 
     const modelComp = world.getComponent(entityId, Model3D);
     if (modelComp) {
-        (modelComp.root as MeshWithEntity).__entity = entityId;
+        tagEntity(modelComp.root, entityId);
         return { entityId, attachTarget: modelComp.root };
     }
     return { entityId, attachTarget: hitObject };
@@ -172,12 +202,12 @@ export function resolvePick(
         return { kind: "none" };
     }
     if (roomDist < furnitureDist && roomDist < wallDist) {
-        return { kind: "floor", roomKey: (roomHits[0].object as RoomPickMesh).__roomKey ?? null };
+        return { kind: "floor", roomKey: readRoomKey(roomHits[0].object) };
     }
     if (wallDist < furnitureDist) {
-        return { kind: "wall", wallId: (wallHits[0].object as WallPickMesh).__wallId ?? null };
+        return { kind: "wall", wallId: readWallId(wallHits[0].object) };
     }
-    const resolved = resolveHitEntity(furnitureHits[0].object as MeshWithEntity, world);
+    const resolved = resolveHitEntity(furnitureHits[0].object, world);
     if (!resolved) return { kind: "none" };
     return { kind: "furniture", entityId: resolved.entityId, attachTarget: resolved.attachTarget };
 }
@@ -206,8 +236,7 @@ export function applyRotateCheck(
     // Furniture chỉ xoay quanh Y: snap về bội số ROT_STEP_DEG, dựng lại quaternion
     // yaw-thuần (loại bỏ pitch/roll). Hàng rào cuối sau setRotationSnap.
     const yaw = snapAngleRad(rawYaw);
-    const halfYaw = yaw / 2;
-    object.quaternion.set(0, Math.sin(halfYaw), 0, Math.cos(halfYaw));
+    setYawQuaternion(object, yaw);
     const q = object.quaternion;
 
     if (!collider) {
@@ -297,8 +326,7 @@ export function slideWallItem(
     const safePose = wallItemPose(wall, wo ? wo.t : wm!.t, curSide, resolveWallItemDims(model.modelId));
     model.root.position.x = safePose.x;
     model.root.position.z = safePose.z;
-    const halfSafe = safePose.rotY / 2;
-    model.root.quaternion.set(0, Math.sin(halfSafe), 0, Math.cos(halfSafe));
+    setYawQuaternion(model.root, safePose.rotY);
 
     // Vertical: CHỈ kệ (mount) được kéo lên/xuống dọc chiều cao tường (cửa giữ cao độ theo sill,
     // gizmo đã khoá trục Y). Gizmo (attach = root) đã đổi root.position.y theo thao tác kéo; ở
@@ -408,6 +436,24 @@ export function flipWallItemByGizmo(
 /** Đường gióng wall-snap (sát sàn) để vẽ. */
 type AlignGuide = { x1: number; z1: number; x2: number; z2: number };
 
+/**
+ * Floor clamp (proactive): trả về center-Y đã clamp sao cho ĐÁY vật
+ * (`centerY - halfHeightFull`) không tụt xuống dưới mặt sàn `floorY`.
+ *
+ * Vì sao cần: sàn là entity `Grounded` bị CỐ Ý loại khỏi physics sweep
+ * (xem CannonCollisionSystem.update) để đồ nằm sát sàn không bị tính "va chạm vĩnh
+ * viễn". Hệ quả là va chạm KHÔNG chặn trục Y → đây là chốt chặn tường minh, rẻ (1
+ * phép `max`) và chạy proactive (clamp TRƯỚC khi ghi Transform → không có frame nào
+ * vật nằm dưới sàn, không giật).
+ *
+ * `halfHeightFull` = NỬA chiều cao thật của AABB (ColliderAABB.height vốn là
+ * half-extent). Chỉ đúng khi vật chỉ xoay quanh Y (yaw) — đúng với nội thất hiện tại;
+ * nếu sau này cho nghiêng X/Z thì đáy thật phải chiếu nửa-extent qua quaternion.
+ */
+export function clampCenterAboveFloor(centerY: number, halfHeightFull: number, floorY = 0): number {
+    return Math.max(centerY, floorY + halfHeightFull);
+}
+
 /** Ngữ cảnh kéo furniture-thường (translate), gom các phụ thuộc từ GizmoSystem. */
 export interface FurnitureTranslateCtx {
     world: World;
@@ -434,7 +480,7 @@ export function handleFurnitureTranslate(ctx: FurnitureTranslateCtx): void {
     const q = object.quaternion;
     const halfH = (world.hasComponent(entity, Model3D) && collider) ? collider.height : 0;
 
-    const yaw = 2 * Math.atan2(q.y, q.w);
+    const yaw = quatToYaw(q.x, q.y, q.z, q.w);
     const aligned = resolveAlignment({
         cx: object.position.x,
         cz: object.position.z,
@@ -447,9 +493,17 @@ export function handleFurnitureTranslate(ctx: FurnitureTranslateCtx): void {
     ctx.updateGuide(aligned.guides);
 
     const ix = aligned.x;
-    const iy = object.position.y;
     const iz = aligned.z;
-    const adjustedY = iy + halfH; // tâm-AABB cho va chạm/transform
+
+    // Floor clamp (hướng A): clamp theo CENTER để bất biến với pivot — đáy = center -
+    // collider.height (half-extent). collider null (mesh-primitive hiếm) → halfFull 0.
+    // Clamp xong đồng bộ ngược về object.position.y (đáy-mesh cho Model3D vì
+    // halfH=collider.height; tâm cho mesh vì halfH=0) để gizmo + ghost không trôi xuống
+    // dưới sàn ở các frame kế.
+    const halfFull = collider ? collider.height : 0;
+    const adjustedY = clampCenterAboveFloor(object.position.y + halfH, halfFull); // tâm-AABB cho va chạm/transform
+    object.position.y = adjustedY - halfH;
+    const iy = object.position.y;
 
     if (!collisionSystem.wouldCollide(world, entity, ix, adjustedY, iz)) {
         // Vị trí mong muốn trống — vật "teleport" tới con trỏ.

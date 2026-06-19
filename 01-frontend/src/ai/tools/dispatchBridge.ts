@@ -11,7 +11,7 @@
  * (PLACE_FURNITURE/PLACE_WALL_ITEM) — xem dispatcher.ts.
  */
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
-import type { EngineApi } from "src/app/hooks/useEngineApi";
+import type { EngineApiFacade } from "src/engine/engineTypes";
 import { getCatalogItem, getPlacement } from "src/engine/catalog/FurnitureCatalog";
 
 /** Lỗi do tool sinh dữ liệu không hợp lệ (modelId bịa, tham số sai kiểu...). */
@@ -50,7 +50,7 @@ export function assertConstraint(modelId: string, expected: "floor" | "wall"): v
  * Chạy danh sách EngineCommand tuần tự qua engine. Caller (AgentClient) chịu
  * trách nhiệm mở/đóng transaction bao quanh.
  */
-export async function dispatchCommands(api: EngineApi, commands: EngineCommand[]): Promise<void> {
+export async function dispatchCommands(api: EngineApiFacade, commands: EngineCommand[]): Promise<void> {
     for (const cmd of commands) {
         await api.dispatchAsync(cmd);
     }

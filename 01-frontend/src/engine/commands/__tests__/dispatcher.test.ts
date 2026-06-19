@@ -30,6 +30,7 @@ import { WallPolygon } from "src/engine/components/wall/WallPolygon";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
+import { EngineEvents } from "src/engine/events/EngineEvents";
 
 // ── Headless deps builder ────────────────────────────────────────────────────
 // Minimal deps that don't require a running renderer/physics engine.
@@ -49,6 +50,7 @@ function buildDeps(): { deps: DispatcherDeps; world: World; nodeRegistry: NodeRe
     const deps: DispatcherDeps = {
         world,
         scene,
+        events: new EngineEvents(),
         nodeRegistry,
         wallEntityByWallId,
         meshRegistry,

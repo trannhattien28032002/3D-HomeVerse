@@ -15,6 +15,7 @@
  * Bất biến: AI chỉ đọc summary này; mọi thay đổi vẫn đi qua dispatcher.
  */
 import type { EngineInstance } from "src/engine/engineTypes";
+import type { Vec2XZ, BBoxXZ } from "src/shared/types/primitives";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Transform } from "src/engine/components/core/Transform";
 import { WallNodes } from "src/engine/components/wall/WallNodes";
@@ -26,9 +27,8 @@ import { RoomDetection } from "src/engine/graph/RoomDetection";
 import { getCatalogItem } from "src/engine/catalog/FurnitureCatalog";
 
 // ── Output shape ───────────────────────────────────────────────────────────────
-
-export type Vec2 = { x: number; z: number };
-export type BBox = { minX: number; minZ: number; maxX: number; maxZ: number };
+// Toạ độ sàn dùng Vec2XZ/BBoxXZ (trục XZ) từ shared/types — KHÔNG tự định nghĩa
+// Vec2 local nữa (tránh xung đột với Vec2 màn hình {x,y}).
 
 export type RoomSummary = {
     /** Khóa phòng bền = sorted nodeIds join "," (khớp RoomGeometry.key). */
@@ -36,17 +36,17 @@ export type RoomSummary = {
     /** Diện tích m². */
     area: number;
     /** Tâm phòng (polygon centroid) — điểm tham chiếu "giữa phòng". */
-    centroid: Vec2;
+    centroid: Vec2XZ;
     /** Hộp bao trục XZ. */
-    bbox: BBox;
+    bbox: BBoxXZ;
     /** wallId các tường bao quanh, theo thứ tự perimeter. */
     wallIds: string[];
 };
 
 export type WallSummary = {
     wallId: string;
-    from: Vec2;
-    to: Vec2;
+    from: Vec2XZ;
+    to: Vec2XZ;
     /** Chiều dài tim tường (m). */
     length: number;
     thickness: number;
@@ -110,7 +110,7 @@ function pairKey(a: string, b: string): string {
  * Polygon centroid (công thức area-weighted). Đúng cho cả phòng lõm. Fallback về
  * trung bình đỉnh khi diện tích ~ 0 (đa giác suy biến).
  */
-function polygonCentroid(points: Vec2[]): Vec2 {
+function polygonCentroid(points: Vec2XZ[]): Vec2XZ {
     let twiceArea = 0;
     let cx = 0;
     let cz = 0;
@@ -134,7 +134,7 @@ function polygonCentroid(points: Vec2[]): Vec2 {
     return { x: cx / f, z: cz / f };
 }
 
-function bboxOf(points: Vec2[]): BBox {
+function bboxOf(points: Vec2XZ[]): BBoxXZ {
     let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
     for (const p of points) {
         if (p.x < minX) minX = p.x;

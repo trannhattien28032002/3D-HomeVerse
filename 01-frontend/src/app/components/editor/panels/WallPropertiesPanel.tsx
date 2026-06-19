@@ -38,7 +38,7 @@ export default function WallPropertiesPanel({ wallIds, initialThickness, initial
         : `${wallIds.size} walls selected`;
 
     return (
-        <aside className="fixed right-10 top-1/2 -translate-y-1/2 z-40 w-72 bg-surface-container/90 backdrop-blur-2xl border border-primary-container/30 shadow-[0_8px_32px_rgba(124,88,0,0.15)] rounded-2xl p-6 flex flex-col gap-6">
+        <aside className="fixed right-10 top-1/2 -translate-y-1/2 z-40 w-72 bg-surface-container/90 backdrop-blur-2xl border border-primary-container/30 shadow-[0_8px_32px_rgba(var(--rgb-primary),0.15)] rounded-2xl p-6 flex flex-col gap-6">
             <div className="border-b border-primary-container/20 pb-3">
                 <h2 className="font-headline-sm text-headline-sm text-primary leading-none">Wall Properties</h2>
                 <span className="block mt-1 text-body-sm text-on-surface-variant/70">{countLabel}</span>

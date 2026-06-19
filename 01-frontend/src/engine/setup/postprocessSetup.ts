@@ -22,6 +22,21 @@ export type PostprocessBundle = {
     outlinePass: OutlinePass;
 };
 
+/**
+ * Hệ số hạ resolution nội bộ của OutlinePass (depth/mask/edge/blur target).
+ * 0.5 → ¼ số pixel ở các pass đó; viền mềm hơn chút nhưng tiết kiệm GPU fill-rate.
+ * Phải gọi lại `setOutlineResolution` sau mỗi `composer.setSize` vì setSize reset full-res.
+ */
+export const OUTLINE_RES_SCALE = 0.5;
+
+/** Áp resolution đã scale cho OutlinePass (dùng cả lúc tạo lẫn lúc resize). */
+export function setOutlineResolution(outlinePass: OutlinePass, width: number, height: number): void {
+    outlinePass.setSize(
+        Math.max(1, Math.round(width * OUTLINE_RES_SCALE)),
+        Math.max(1, Math.round(height * OUTLINE_RES_SCALE)),
+    );
+}
+
 export function createPostprocessing(
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,
@@ -49,6 +64,10 @@ export function createPostprocessing(
     composer.addPass(outlinePass);
 
     composer.addPass(new OutputPass());
+
+    // Hạ resolution các pass của OutlinePass NGAY sau khi add (composer.addPass không
+    // đụng tới kích thước pass) — tiết kiệm fill-rate depth/mask/blur.
+    setOutlineResolution(outlinePass, size.x, size.y);
 
     return { composer, outlinePass };
 }

@@ -15,7 +15,7 @@
  * không bị tính va chạm — để vẫn đặt được vật sát tường / vật khác.
  */
 
-import type { Furniture2D, Wall2D } from "src/app/plan2d/types";
+import type { Furniture2D, Wall2D } from "src/app/features/plan2d/types";
 import { obbCorners, polygonsIntersect, type Poly } from "src/shared/math/geometry";
 import { COLLISION_GAP_PX } from "src/shared/constants/placement";
 
