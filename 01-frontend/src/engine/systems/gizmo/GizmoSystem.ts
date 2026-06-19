@@ -18,8 +18,6 @@ import { World } from "src/engine/ecs/World";
 import { createGuideLine, setGuideLine, disposeGuideLine } from "src/engine/rendering/guideLine";
 
 import { Transform } from "src/engine/components/core/Transform";
-import { DynamicBody } from "src/engine/components/physics/DynamicBody";
-import { StaticBody } from "src/engine/components/physics/StaticBody";
 import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 
 import { TransformControls } from "three/addons/controls/TransformControls.js";
@@ -30,11 +28,7 @@ import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollis
 import { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
 import { PointerRotateTracker } from "src/engine/systems/gizmo/pointerRotate";
 import { ROT_STEP_RAD } from "src/shared/constants/placement";
-import { quatToYaw } from "src/shared/math/yaw";
 import { isTypingTarget } from "src/shared/dom/isTypingTarget";
-import { type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
-import { collectWallSegments } from "src/engine/adapters/wallSegments";
-import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
 import type { NodeRegistry } from "src/engine/graph/NodeRegistry";
 import {
     readEntity,
@@ -42,19 +36,13 @@ import {
     isWallItem,
     handleFurnitureTranslate,
 } from "src/engine/systems/gizmo/gizmoHandles";
-import { GizmoHeld } from "src/engine/components/interaction/GizmoHeld";
 import { GizmoPicking } from "src/engine/systems/gizmo/GizmoPicking";
 import { WallItemGizmoAdapter } from "src/engine/systems/gizmo/WallItemGizmoAdapter";
+import { GizmoDragLifecycle } from "src/engine/systems/gizmo/GizmoDragLifecycle";
 import type { GizmoContext, GizmoGuide } from "src/engine/systems/gizmo/gizmoContext";
 import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
 import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
 
-
-/**
- * Số frame trễ giữa lúc thả gizmo và lúc gỡ DynamicBody / phục hồi static.
- * Để vật lý settle 1–2 frame sau drag trước khi đổi loại body (tránh giật).
- */
-const RELEASE_FRAMES = 2;
 
 export class GizmoSystem extends System {
     private camera: THREE.Camera;
@@ -65,17 +53,14 @@ export class GizmoSystem extends System {
     private rendererDomElement: HTMLCanvasElement;
     /** LW-03: rect canvas cache — PointerRotateTracker đọc mỗi frame khi rotate. */
     private rectCache: CachedClientRect;
-    /** OrbitControls của scene — tắt khi đang kéo gizmo để không xoay camera. */
-    private orbitControls: OrbitControls;
 
     private world!: World;
-    private draggingEntity: string | null = null;
-    private draggingEntityWasStatic: boolean = false;
-    private releaseFramesLeft: number = 0;
 
     /** Picking (input→event): chuột trái chọn/attach, chuột phải bỏ chọn (Phase 5.4). */
     private picking!: GizmoPicking;
-    /** Mặt cắt chia sẻ cho các collaborator (picking/...). */
+    /** Vòng đời kéo (body-swap + release-frames + drag-context) — Phase 5.4. */
+    private lifecycle!: GizmoDragLifecycle;
+    /** Mặt cắt chia sẻ cho các collaborator (picking/wallAdapter/lifecycle). */
     private ctx!: GizmoContext;
     /** Registry mesh — tra mesh sàn `room-${entity}` (sàn không có component Mesh). */
     private meshRegistry: MeshRegistry;
@@ -89,10 +74,6 @@ export class GizmoSystem extends System {
 
     /** Đường gióng wall-snap (world-space) hiển thị khi mép vật áp tường. */
     private guideLine: THREE.Line;
-    /** Segments tường gom 1 lần khi bắt đầu kéo (tường tĩnh trong lúc kéo). */
-    private dragWallSegments: WallSegment[] = [];
-    /** Footprint đồ lân cận gom 1 lần khi bắt đầu kéo (cho neighbor-align). */
-    private dragFurnitureBoxes: FurnitureBox[] = [];
 
     private onBeginTransaction: ((label: string) => void) | null = null;
     private onCommitTransaction: (() => void) | null = null;
@@ -138,7 +119,6 @@ export class GizmoSystem extends System {
         this.rendererDomElement = renderer.domElement;
         this.rectCache = new CachedClientRect(this.rendererDomElement);
         this.pointerRotate = new PointerRotateTracker(camera, this.rectCache);
-        this.orbitControls = orbitControls;
         this.nodeRegistry = nodeRegistry;
         this.meshRegistry = meshRegistry;
 
@@ -164,8 +144,9 @@ export class GizmoSystem extends System {
         this.ctx = this.createContext();
         this.picking = new GizmoPicking(this.ctx);
         this.wallAdapter = new WallItemGizmoAdapter(this.ctx, scene);
+        this.lifecycle = new GizmoDragLifecycle(this.ctx, orbitControls);
 
-        this.controls.addEventListener("dragging-changed", this.onDraggingChanged);
+        this.controls.addEventListener("dragging-changed", this.lifecycle.onDraggingChanged);
         this.controls.addEventListener("objectChange", this.onObjectChange);
         // On-demand render: gizmo phát "change" khi hover đổi trục, lúc kéo, và mỗi
         // updateMatrixWorld → cần vẽ lại frame đó (các thay đổi này không bump revision).
@@ -223,104 +204,6 @@ export class GizmoSystem extends System {
     }
 
     /**
-     * TransformControls bắt đầu / kết thúc kéo.
-     *  - Bắt đầu: tắt orbit, mở transaction, chuyển StaticBody→DynamicBody (trừ wall-item),
-     *    bật drag-ghost + gom segments tường/đồ lân cận cho snap.
-     *  - Kết thúc: dọn ghost/guide, đóng transaction, hẹn trả lại StaticBody sau vài frame.
-     */
-    private onDraggingChanged = (event: { value?: unknown }) => {
-        const isDragging = Boolean(event.value);
-        this.orbitControls.enabled = !isDragging;
-
-        const object = this.controls.object;
-        const entity = readEntity(object);
-
-        if (isDragging) {
-            if (entity == null) return;
-
-            const label = this.currentMode === "rotate"
-                ? "rotate furniture 3D"
-                : "move furniture 3D";
-            this.onBeginTransaction?.(label);
-
-            this.draggingEntity = entity;
-
-            // Wall-item (cửa/kệ): không có collider (Physics AABB) → không swap body,
-            // và không cần gom wall segments cho alignment (vì bám thẳng trên tường).
-            if (isWallItem(this.world, entity)) {
-                this.draggingEntityWasStatic = false;
-                this.releaseFramesLeft = 0;
-                // Đánh dấu để WallMountSystem không ghi đè quaternion trong lúc kéo.
-                this.world.addComponent(entity, new GizmoHeld());
-                if (this.currentMode === "translate") {
-                    this.dragGhostController?.begin(this.world, entity);
-                }
-                this.events?.emit("draggingChanged", { entityId: entity, dragging: true });
-                return;
-            }
-
-            this.draggingEntityWasStatic = this.world.hasComponent(entity, StaticBody);
-            this.releaseFramesLeft = 0;
-
-            if (this.draggingEntityWasStatic) {
-                this.world.removeComponent(entity, StaticBody);
-            }
-            if (!this.world.hasComponent(entity, DynamicBody)) {
-                this.world.addComponent(entity, new DynamicBody());
-            }
-
-            // Chế độ xoay không dùng ghost — vật xoay tại chỗ.
-            if (this.currentMode === "translate") {
-                this.dragGhostController?.begin(this.world, entity);
-                // Gom tường + đồ lân cận 1 lần (tĩnh trong lúc kéo) cho snap.
-                this.dragWallSegments = collectWallSegments(this.world, this.nodeRegistry);
-                this.dragFurnitureBoxes = collectFurnitureBoxes(this.world, entity);
-            } else {
-                // Rotate "vô-lăng": chốt yaw gốc + góc con trỏ gốc làm mốc cộng dồn.
-                const tr = this.world.getComponent(entity, Transform);
-                const startYaw = tr ? quatToYaw(tr.qx, tr.qy, tr.qz, tr.qw) : 0;
-                this.pointerRotate.begin(object, startYaw);
-            }
-            this.events?.emit("draggingChanged", { entityId: entity, dragging: true });
-            return;
-        }
-
-        if (this.draggingEntity == null) return;
-
-        // Wall-item: không tạo ghost/body → commit + emit + dọn marker, không cần release frames.
-        if (isWallItem(this.world, this.draggingEntity)) {
-            const e = this.draggingEntity;
-            // Xoá marker để WallMountSystem tiếp tục cập nhật entity.
-            if (this.world.hasComponent(e, GizmoHeld)) {
-                this.world.removeComponent(e, GizmoHeld);
-            }
-            // Sau rotate: snap quaternion về wall-derived rotY theo side đã flip.
-            if (this.currentMode === "rotate") {
-                this.wallAdapter.snapWallItemRotation(e);
-            }
-            // Sau translate: dọn ghost (ghost được tạo ở drag-start cho translate).
-            if (this.currentMode === "translate") {
-                this.dragGhostController?.end();
-            }
-            this.wallAdapter.clearOpeningPreview();
-            this.onCommitTransaction?.();
-            this.events?.emit("draggingChanged", { entityId: e, dragging: false });
-            this.draggingEntity = null;
-            return;
-        }
-        // Ghost không hề khởi tạo ở chế độ xoay — chỉ dọn dẹp ở chế độ translate.
-        if (this.currentMode === "translate") {
-            this.dragGhostController?.end();
-        }
-        this.hideGuide();
-        this.dragWallSegments = [];
-        this.dragFurnitureBoxes = [];
-        this.onCommitTransaction?.();
-        this.releaseFramesLeft = RELEASE_FRAMES;
-        this.events?.emit("draggingChanged", { entityId: this.draggingEntity, dragging: false });
-    };
-
-    /**
      * TransformControls di chuyển object đang gắn. Rẽ 2 đường:
      *  - Wall-item: cập nhật topology (t/side) + ghim mesh vào tường + CSG preview.
      *  - Furniture thường: rotate-check, hoặc translate (snap + collision + ghost qua helper).
@@ -364,8 +247,8 @@ export class GizmoSystem extends System {
             collider,
             collisionSystem: this.collisionSystem,
             dragGhost: this.dragGhostController,
-            wallSegments: this.dragWallSegments,
-            neighbors: this.dragFurnitureBoxes,
+            wallSegments: this.lifecycle.dragWallSegments,
+            neighbors: this.lifecycle.dragFurnitureBoxes,
             updateGuide: (guides) => this.updateGuide(guides),
         });
     };
@@ -428,35 +311,7 @@ export class GizmoSystem extends System {
     }
 
     update(world: World): void {
-        this.world = world;
-
-        // Guard: entity bị xoá giữa lúc kéo (ví dụ undo) — dọn ghost + marker.
-        if (this.draggingEntity != null && !world.hasComponent(this.draggingEntity, Transform)) {
-            this.dragGhostController?.end();
-            // GizmoHeld đã gắn nhưng entity biến mất → không thể removeComponent; chỉ clear state.
-            this.draggingEntity = null;
-            this.draggingEntityWasStatic = false;
-            this.releaseFramesLeft = 0;
-        }
-
-        if (this.releaseFramesLeft > 0) {
-            this.releaseFramesLeft--;
-            if (this.releaseFramesLeft === 0 && this.draggingEntity != null) {
-                const e = this.draggingEntity;
-
-                if (this.world.hasComponent(e, DynamicBody)) {
-                    this.world.removeComponent(e, DynamicBody);
-                }
-                if (
-                    this.draggingEntityWasStatic &&
-                    !this.world.hasComponent(e, StaticBody)
-                ) {
-                    this.world.addComponent(e, new StaticBody());
-                }
-
-                this.draggingEntity = null;
-                this.draggingEntityWasStatic = false;
-            }
-        }
+        this.world = world; // ctx.world getter đọc field này → lifecycle/collaborator thấy world mới nhất
+        this.lifecycle.update();
     }
 }
