@@ -50,15 +50,11 @@ import { useEngineSelectionSync } from "./useEngineSelectionSync";
 import { useSceneFileIO } from "./useSceneFileIO";
 import { usePlacementRouting } from "./usePlacementRouting";
 import { useScenePersistence } from "./useScenePersistence";
+import { useEditorLoadingProgress } from "./useEditorLoadingProgress";
 import SaveStatusPill from "src/app/components/editor/overlays/SaveStatusPill";
 import MaterialHintToast from "src/app/components/editor/overlays/MaterialHintToast";
 
 // ── Loader tuning ─────────────────────────────────────────────────────────
-/** Pha A (engine boot) crawl tối đa tới % này; phần còn lại dành cho tải scene. */
-const BOOT_PROGRESS_CEIL = 40;
-/** Pha B (tải scene): map loadProgress 0→1 vào [SCENE_PROGRESS_START, 100]. */
-const SCENE_PROGRESS_START = 45;
-const SCENE_PROGRESS_SPAN = 100 - SCENE_PROGRESS_START;
 /** Thời gian hiển thị gợi ý "chọn vật để đổi màu" khi chưa chọn gì (ms). */
 const MATERIAL_HINT_MS = 2500;
 
@@ -91,22 +87,9 @@ export default function EditorPage() {
     const engineRef = useRef<EngineInstance | null>(null);
     useEffect(() => { engineRef.current = engine; }, [engine]);
 
-    const [progress, setProgress] = useState(0);
     const [engineReady, setEngineReady] = useState(false);
-    const [showLoader, setShowLoader] = useState(true);
     const [showMaterialHint, setShowMaterialHint] = useState(false);
     const materialHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    // ── Loading: Pha A — engine boot (0 → 40%) ───────────────────────────────
-    // Crawl giả CHỈ trong lúc khởi tạo Three.js. Dừng khi engine sẵn sàng; phần
-    // 45→100% do tiến độ tải scene thật (loadProgress) ở dưới điều khiển.
-    useEffect(() => {
-        if (engineReady) return;
-        const id = setInterval(() => {
-            setProgress(p => (p >= BOOT_PROGRESS_CEIL ? p : Math.min(p + Math.random() * 8, BOOT_PROGRESS_CEIL)));
-        }, 200);
-        return () => clearInterval(id);
-    }, [engineReady]);
 
     useEffect(() => {
         syncViewport(window.innerWidth, window.innerHeight);
@@ -149,23 +132,10 @@ export default function EditorPage() {
     // ── Scene persistence backend (P1): load khi engine ready + Ctrl+S lưu + autosave ─
     const { status: sceneStatus, loadProgress, saveState, saveNow, applyScene } = useScenePersistence(projectId, engineRef, engineReady);
 
-    // ── Loading: Pha B — tải scene thật (45 → 100%) ──────────────────────────
-    // Sau khi engine sẵn sàng, deserializeScene tải GLB tuần tự → loadProgress 0→1.
-    // Map vào 45–100%. Math.max giữ thanh không bao giờ lùi.
-    useEffect(() => {
-        if (!engineReady) return;
-        setProgress(p => Math.max(p, SCENE_PROGRESS_START + loadProgress * SCENE_PROGRESS_SPAN));
-    }, [engineReady, loadProgress]);
-
-    // Loader chỉ tắt khi engine xong VÀ scene đã settled (ready/error), hoặc không
-    // có project để tải. Trước đây loader tắt ngay ở engineReady — khiến scene/GLB
-    // tải SAU lưng loading, đồ vật "pop in" khi user đã vào. Giờ chờ tải xong hẳn.
-    const sceneSettled = !projectId || sceneStatus === "ready" || sceneStatus === "error";
-    const loaderDone = engineReady && sceneSettled;
-
-    useEffect(() => {
-        if (loaderDone) setProgress(100);
-    }, [loaderDone]);
+    // ── Loading: thanh tiến độ 2 pha + vòng đời LoadingScreen (R7/5.6: hook riêng) ──
+    const { progress, loaderDone, showLoader, setShowLoader } = useEditorLoadingProgress({
+        projectId, engineReady, loadProgress, sceneStatus,
+    });
 
     // ── Placement routing (R7: delegated to usePlacementRouting) ─────────────
     const onDecorSelect = usePlacementRouting(engine, mode);
