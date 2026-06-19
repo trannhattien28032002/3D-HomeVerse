@@ -30,7 +30,7 @@ import { CannonCollisionSystem } from "src/engine/systems/collision/CannonCollis
 import { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
 import { PointerRotateTracker } from "src/engine/systems/gizmo/pointerRotate";
 import { ROT_STEP_RAD } from "src/shared/constants/placement";
-import { quatToYaw, setYawQuaternion } from "src/shared/math/yaw";
+import { quatToYaw } from "src/shared/math/yaw";
 import { isTypingTarget } from "src/shared/dom/isTypingTarget";
 import { type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import { collectWallSegments } from "src/engine/adapters/wallSegments";
@@ -40,28 +40,12 @@ import {
     readEntity,
     applyRotateCheck,
     isWallItem,
-    slideWallItem,
-    flipWallItemByGizmo,
     handleFurnitureTranslate,
 } from "src/engine/systems/gizmo/gizmoHandles";
 import { GizmoHeld } from "src/engine/components/interaction/GizmoHeld";
 import { GizmoPicking } from "src/engine/systems/gizmo/GizmoPicking";
+import { WallItemGizmoAdapter } from "src/engine/systems/gizmo/WallItemGizmoAdapter";
 import type { GizmoContext, GizmoGuide } from "src/engine/systems/gizmo/gizmoContext";
-import { Model3D } from "src/engine/components/render/Model3D";
-import { getWallItemTopology } from "src/engine/adapters/wallItemTopology";
-import { wallNaturalRotY } from "src/shared/geometry/wallMount";
-import {
-    WallOpeningPreviewController,
-    collectExistingOpenings,
-} from "src/engine/systems/wall/WallOpeningPreviewController";
-import { WallOpening } from "src/engine/components/wall/WallOpening";
-import { Mesh } from "src/engine/components/render/Mesh";
-import { WallPolygon } from "src/engine/components/wall/WallPolygon";
-import { WallSize } from "src/engine/components/wall/WallSize";
-import { WallTag } from "src/engine/components/wall/WallTag";
-import { WallNodes } from "src/engine/components/wall/WallNodes";
-import { Query } from "src/engine/ecs/Query";
-import { findMountWall } from "src/engine/adapters/wallRefs";
 import type { MeshRegistry } from "src/engine/registries/MeshRegistry";
 import type { RenderScheduler } from "src/engine/rendering/RenderScheduler";
 
@@ -119,8 +103,8 @@ export class GizmoSystem extends System {
     /** Toán rotate vô-lăng (tracking con trỏ + cộng dồn góc) — xem pointerRotate.ts. */
     private readonly pointerRotate: PointerRotateTracker;
 
-    /** Preview CSG tường cho door/window khi kéo gizmo (begin-vs-update qua controller). */
-    private readonly openingPreview: WallOpeningPreviewController;
+    /** Ứng xử riêng wall-item (slide/flip/snap-rotation/axes/CSG preview) — Phase 5.4. */
+    private wallAdapter!: WallItemGizmoAdapter;
 
     setCommandCallbacks(
         beginTransaction: (label: string) => void,
@@ -157,7 +141,6 @@ export class GizmoSystem extends System {
         this.orbitControls = orbitControls;
         this.nodeRegistry = nodeRegistry;
         this.meshRegistry = meshRegistry;
-        this.openingPreview = new WallOpeningPreviewController(scene);
 
         this.controls = new TransformControls(camera, renderer.domElement);
         this.controls.setMode("translate");
@@ -176,10 +159,11 @@ export class GizmoSystem extends System {
         // Đường gióng wall-snap dùng chung (xem rendering/guideLine). (L5)
         this.guideLine = createGuideLine(this.scene);
 
-        // Mặt cắt chia sẻ + collaborator picking (Phase 5.4). ctx delegate sang nội bộ
-        // GizmoSystem (hoặc collaborator khác) → không vòng phụ thuộc.
+        // Mặt cắt chia sẻ + collaborator (Phase 5.4). ctx delegate sang nội bộ GizmoSystem
+        // (hoặc collaborator khác) → không vòng phụ thuộc.
         this.ctx = this.createContext();
         this.picking = new GizmoPicking(this.ctx);
+        this.wallAdapter = new WallItemGizmoAdapter(this.ctx, scene);
 
         this.controls.addEventListener("dragging-changed", this.onDraggingChanged);
         this.controls.addEventListener("objectChange", this.onObjectChange);
@@ -230,9 +214,9 @@ export class GizmoSystem extends System {
             requestRender: () => this.requestRender(),
             updateGuide: (guides) => this.updateGuide(guides),
             hideGuide: () => this.hideGuide(),
-            applyGizmoAxes: (entity) => this.applyGizmoAxes(entity),
-            snapWallItemRotation: (entity) => this.snapWallItemRotation(entity),
-            clearOpeningPreview: () => this.openingPreview.clear(),
+            applyGizmoAxes: (entity) => this.wallAdapter.applyGizmoAxes(entity),
+            snapWallItemRotation: (entity) => this.wallAdapter.snapWallItemRotation(entity),
+            clearOpeningPreview: () => this.wallAdapter.clearOpeningPreview(),
             beginTransaction: (label) => this.onBeginTransaction?.(label),
             commitTransaction: () => this.onCommitTransaction?.(),
         };
@@ -312,13 +296,13 @@ export class GizmoSystem extends System {
             }
             // Sau rotate: snap quaternion về wall-derived rotY theo side đã flip.
             if (this.currentMode === "rotate") {
-                this.snapWallItemRotation(e);
+                this.wallAdapter.snapWallItemRotation(e);
             }
             // Sau translate: dọn ghost (ghost được tạo ở drag-start cho translate).
             if (this.currentMode === "translate") {
                 this.dragGhostController?.end();
             }
-            this.openingPreview.clear();
+            this.wallAdapter.clearOpeningPreview();
             this.onCommitTransaction?.();
             this.events?.emit("draggingChanged", { entityId: e, dragging: false });
             this.draggingEntity = null;
@@ -351,28 +335,10 @@ export class GizmoSystem extends System {
         const transform = this.world.getComponent(entity, Transform);
         if (!transform) return;
 
-        // Wall-item (cửa/kệ): cập nhật topology (t/side) + ghim mesh vào tường, KHÔNG đi
-        // đường furniture (alignment/collision/ghost). WallMountSystem xác nhận Transform và
-        // WallOpeningSystem re-cut lỗ ở frame kế (hash t đổi). Hướng do tường quyết định → rotate no-op.
+        // Wall-item (cửa/kệ): cập nhật topology (t/side) + ghim mesh vào tường + CSG preview,
+        // KHÔNG đi đường furniture (alignment/collision/ghost). Toàn bộ ở WallItemGizmoAdapter.
         if (isWallItem(this.world, entity)) {
-            if (this.currentMode === "rotate") {
-                flipWallItemByGizmo(this.world, this.nodeRegistry, entity, object);
-                return;
-            }
-            const result = slideWallItem(this.world, this.nodeRegistry, entity, object.position.x, object.position.z);
-            if (result.success) {
-                this.world.markDirty();
-                if (result.isOverlapping && result.intendedPose) {
-                    this.dragGhostController?.update(result.intendedPose, true);
-                } else {
-                    this.dragGhostController?.hide();
-                }
-                // CSG preview cho door/window khi kéo gizmo.
-                const wo = this.world.getComponent(entity, WallOpening);
-                if (wo) {
-                    this.updateOpeningPreview(wo.hostWallId, wo.t, wo.width, wo.height, wo.sill, entity);
-                }
-            }
+            this.wallAdapter.handleObjectChange(entity, object);
             return;
         }
 
@@ -434,63 +400,19 @@ export class GizmoSystem extends System {
         this.guideLine.visible = false;
     }
 
-    /**
-     * Snap quaternion của wall-item về wall-derived rotY theo side hiện tại.
-     * Gọi khi kết thúc drag rotate để xác nhận chiều quay cuối cùng.
-     */
-    private snapWallItemRotation(entity: string): void {
-        const topo = getWallItemTopology(this.world, entity);
-        if (!topo) return;
-        const wall = findMountWall(this.world, this.nodeRegistry, topo.hostWallId);
-        if (!wall) return;
-        const side = topo.side;
-        const wallRotY0 = wallNaturalRotY(wall);
-        const rotY = side === 1 ? wallRotY0 : wallRotY0 + Math.PI;
-        const model = this.world.getComponent(entity, Model3D);
-        if (!model) return;
-        setYawQuaternion(model.root, rotY);
-        this.world.markDirty();
-    }
-
     setGizmoMode(mode: "translate" | "rotate"): void {
         if (this.controls.dragging) return;
         this.currentMode = mode;
         this.controls.setMode(mode);
         // Trục gizmo phụ thuộc cả mode → áp lại cho entity đang gắn (nếu có).
         const entity = readEntity(this.controls.object);
-        if (entity != null) this.applyGizmoAxes(entity);
+        if (entity != null) this.wallAdapter.applyGizmoAxes(entity);
         this.events?.emit("gizmoModeChanged", { mode });
         this.requestRender();
     }
 
-    /**
-     * Bật/tắt trục gizmo theo loại entity + mode hiện tại:
-     *   - Furniture thường: đủ X/Y/Z.
-     *   - Wall-item + rotate: CHỈ trục Y (lật đối xứng cửa / đổi mặt kệ) — cấm nghiêng X/Z.
-     *   - Wall-item + translate: trượt dọc tường (X/Z, sẽ chiếu về tim tường); kệ (mount)
-     *     thêm Y để kéo lên/xuống đổi cao độ, cửa/cửa sổ khoá Y (cao độ theo sill).
-     */
-    private applyGizmoAxes(entity: string): void {
-        if (!isWallItem(this.world, entity)) {
-            this.controls.showX = true;
-            this.controls.showY = true;
-            this.controls.showZ = true;
-            return;
-        }
-        if (this.currentMode === "rotate") {
-            this.controls.showX = false;
-            this.controls.showY = true;
-            this.controls.showZ = false;
-            return;
-        }
-        const isOpening = this.world.hasComponent(entity, WallOpening);
-        this.controls.showX = true;
-        this.controls.showZ = true;
-        this.controls.showY = !isOpening; // kệ cho kéo lên/xuống; cửa giữ cao độ
-    }
-
     dispose() {
-        this.openingPreview.clear();
+        this.wallAdapter.clearOpeningPreview();
         this.dragGhostController?.end();
         this.controls.removeEventListener("change", this.requestRender);
         this.rendererDomElement.removeEventListener("mousedown", this.picking.onMouseDown);
@@ -503,45 +425,6 @@ export class GizmoSystem extends System {
         this.overlayScene.remove(this.controls.getHelper());
         this.controls.dispose();
         disposeGuideLine(this.scene, this.guideLine);
-    }
-
-    /**
-     * Cập nhật preview CSG tường khi kéo gizmo door/window.
-     * Resolve mesh/poly/size + wall theo hostWallId rồi uỷ cho controller quyết định
-     * begin-vs-update.
-     */
-    private updateOpeningPreview(
-        hostWallId: string,
-        t: number,
-        cutWidth: number,
-        cutHeight: number,
-        sill: number,
-        excludeEntity: string,
-    ): void {
-        let wallEntity: string | undefined;
-        for (const e of Query.entitiesWith(this.world, WallTag, WallNodes)) {
-            const tag = this.world.getComponent(e, WallTag);
-            if (tag?.wallId === hostWallId) { wallEntity = e; break; }
-        }
-        if (!wallEntity) return;
-
-        const meshComp = this.world.getComponent(wallEntity, Mesh);
-        const poly = this.world.getComponent(wallEntity, WallPolygon);
-        const size = this.world.getComponent(wallEntity, WallSize);
-        if (!meshComp || !poly || !size) return;
-
-        const wall = findMountWall(this.world, this.nodeRegistry, hostWallId);
-        if (!wall) return;
-
-        this.openingPreview.update({
-            wallId: hostWallId,
-            wallMesh: meshComp.mesh,
-            poly: poly.points,
-            wallHeight: size.height,
-            wall,
-            existingOpenings: collectExistingOpenings(this.world, hostWallId, excludeEntity),
-            ghostOpening: { t, width: cutWidth, height: cutHeight, sill },
-        });
     }
 
     update(world: World): void {
