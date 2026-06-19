@@ -151,7 +151,15 @@ Cấu trúc hiện tại đã khá sạch (nhiều logic đã ở `gizmoHandles.
 
 ---
 
-### 5.5 — Chẻ `useFurnitureDrag.ts` (440 LOC)
+### 5.5 — Chẻ `useFurnitureDrag.ts` (440 LOC) — ✅ XONG (2026-06-19)
+
+> **DONE:** `useFurnitureDrag` 437→261 LOC, giờ là **composer**: giữ shared refs (guideRef/collideRef) +
+> shared helpers (showCollide/renderGuide) + single-drag (applyFurnitureDrag) + single-rotate, và rẽ nhánh
+> 4 handler theo thứ tự **wall-item → group → single** (giữ nguyên). 3 hook con mới (mỗi cái sở hữu state
+> gesture riêng): `useWallItemDrag` (113), `useGroupDrag` (135), `useGroupRotate` (93). Toán thuần group đã
+> tách trước ở `furnitureGroupDrag.ts` (+ unit). tsc sạch + 196/196 test xanh, golden 3 kernel KHÔNG đổi
+> kỳ vọng. ⚠️ Bảo toàn **nguyên** một no-op tiền-tồn: `applyGroupFollow` trong group-end gọi sau khi
+> `groupDragRef` đã null (xem §5) — không sửa trong PR refactor.
 
 Hook này đã gom đúng chỗ (R7) nhưng trộn **4 gesture**. Tách theo gesture, mỗi cái 1 hook con nhận chung refs:
 

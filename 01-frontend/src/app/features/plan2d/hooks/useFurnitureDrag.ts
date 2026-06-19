@@ -1,20 +1,21 @@
 /**
- * useFurnitureDrag — hook tách biệt toàn bộ drag logic khỏi FurnitureLayer (R7).
+ * useFurnitureDrag — COMPOSER drag/rotate cho FurnitureLayer (R7 → chẻ ở Phase 5.5).
  *
- * Chứa:
- *   - projectWallItem: chiếu cửa/kệ lên tường gần nhất (bám tường, tô đỏ khi chồng)
- *   - applyFurnitureDrag: snap (edge + wall) + hard-collision cho furniture thường
- *   - renderGuide: vẽ đường gióng wall-snap imperative lên Konva
- *   - showCollide: hiện/ẩn ô đỏ báo chồng lấn imperative
- *   - onDragStart / onDragMove / onDragEnd handlers (logic) — component chỉ spread vào Konva
+ * Hook này giờ chỉ giữ:
+ *   - Refs Konva dùng chung: guideRef (đường gióng), collideRef (ô đỏ báo chồng).
+ *   - Imperative helpers dùng chung: showCollide, renderGuide.
+ *   - SINGLE-DRAG furniture-thường: applyFurnitureDrag (snap + hard-collision) + lastSafePos.
+ *   - SINGLE-ROTATE: nhánh đơn của onTransformEnd.
+ *   - 4 handler orchestrator rẽ nhánh theo gesture, ĐÚNG THỨ TỰ: wall-item → group → single.
  *
- * Tất cả ref/state imperative (guideRef, collideRef, pendingWallMoveRef, v.v.) nằm trong
- * hook này — FurnitureLayer chỉ render.
+ * 3 gesture còn lại tách sang hook con (mỗi cái sở hữu state riêng):
+ *   - useWallItemDrag  (kéo cửa/kệ)         — pendingWallMoveRef, dragFromWallRef
+ *   - useGroupDrag     (kéo nhóm)           — groupDragRef
+ *   - useGroupRotate   (xoay nhóm)          — groupTransformCommittedRef
  *
  * Invariants:
- *   - Không import React component nào.
- *   - Chỉ phụ thuộc vào Konva types, plan2d types, shared geometry, và engine utils.
- *   - Unit-test được bằng cách mock các ref và kiểm tra kết quả dispatch.
+ *   - Không import React component nào; chỉ phụ thuộc Konva/plan2d/shared/engine utils.
+ *   - Thứ tự rẽ nhánh trong onDragMove/End/onTransformEnd PHẢI giữ nguyên (feel-sensitive).
  */
 import { useRef } from "react";
 import type { MutableRefObject } from "react";
@@ -25,12 +26,10 @@ import { konvaDegToThreeRotY, threeRotYToKonvaDeg } from "src/shared/math/coords
 import { snapAngleRad } from "src/shared/constants/placement";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import { obbCorners, collidesWithWalls } from "src/app/components/editor/tools/collision2D";
-import { groupHitsWall, memberPoseHitsWall } from "src/app/features/plan2d/hooks/furnitureGroupDrag";
 import { buildFurnitureBoxes2D } from "src/app/features/plan2d/wallSegments2D";
-import { projectToNearestWall, buildOpeningOccupancy } from "src/app/features/plan2d/wallItemDrag2D";
-import { buildOccupiedRanges, occupiedOverlaps } from "src/engine/utils/wallOccupancy";
-import { occupancyLane } from "src/shared/geometry/wallMount";
-import { resolveWallItemDims } from "src/engine/catalog/wallItem";
+import { useWallItemDrag } from "src/app/features/plan2d/hooks/useWallItemDrag";
+import { useGroupDrag } from "src/app/features/plan2d/hooks/useGroupDrag";
+import { useGroupRotate } from "src/app/features/plan2d/hooks/useGroupRotate";
 import type { PlanTransform } from "src/app/features/plan2d/PlanTransform";
 import type { Furniture2D, Wall2D, Node2D } from "src/app/features/plan2d/types";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
@@ -80,43 +79,19 @@ export function useFurnitureDrag({
     wouldFurnitureCollide,
     selectedFurnitureIds, furnitureNodeRefs, withTransaction,
 }: Params): FurnitureDragHandlers {
-    // ── Imperative Konva refs ────────────────────────────────────────────────
+    // ── Imperative Konva refs (dùng chung) ────────────────────────────────────
     const guideRef   = useRef<Konva.Line | null>(null);
     const collideRef = useRef<Konva.Rect | null>(null);
 
-    // ── Gesture state refs ───────────────────────────────────────────────────
-    /** Lệnh move-wall-item dự kiến (null = đang chồng lấn → không commit). */
-    const pendingWallMoveRef = useRef<{ entityId: string; hostWallId: string; t: number; side: number } | null>(null);
+    // ── Single-drag state refs ─────────────────────────────────────────────────
     /** Vị trí px hợp lệ gần nhất của furniture-thường đang kéo (để "dừng" vật khi đụng). */
     const lastSafePosRef = useRef<{ x: number; y: number } | null>(null);
     /** Neighbor boxes (đồ KHÁC) — bất biến trong 1 gesture nên gom 1 lần ở onDragStart. */
     const neighborBoxesRef = useRef<FurnitureBox[] | null>(null);
     /** Vị trí world-space TRƯỚC khi kéo (cho command-inverse undo, R3). */
     const dragFromPosRef = useRef<{ x: number; z: number } | null>(null);
-    /** Wall-move trước khi kéo cửa (cho command-inverse undo, R3). */
-    const dragFromWallRef = useRef<{ hostWallId: string; t: number; side: number } | null>(null);
-    /**
-     * Trạng thái kéo NHÓM (multi-select). null = kéo đơn (đường cũ). Phương án B:
-     * cụm RIGID dời theo 1 delta; CHẶN TƯỜNG (mọi thành viên), nhưng CHO chồng đồ.
-     *   - leaderOriginPx: px của leader lúc bắt đầu (để tính raw delta theo con trỏ).
-     *   - members: mọi đồ ĐẶT SÀN trong selection (gồm leader) — px gốc + cỡ + góc, để
-     *     dựng OBB kiểm va chạm tường tại vị trí ứng viên.
-     *   - lastGoodDelta: delta hợp lệ gần nhất (không vật nào đụng tường) — revert về đây
-     *     khi delta ứng viên làm bất kỳ vật chạm tường (discrete clamp, như single-drag).
-     */
-    const groupDragRef = useRef<{
-        leaderOriginPx: { x: number; y: number };
-        members: { id: string; originX: number; originY: number; width: number; depth: number; rotDeg: number }[];
-        lastGoodDelta: { dx: number; dy: number };
-    } | null>(null);
-    /**
-     * Chống commit lặp khi xoay NHÓM: Konva Transformer fire `transformend` cho TỪNG
-     * node được gắn (N lần/gesture). Cờ true sau lần đầu, reset ở microtask kế (sau khi
-     * cụm N event đồng bộ chạy xong) để gesture sau commit lại được.
-     */
-    const groupTransformCommittedRef = useRef(false);
 
-    // ── Imperative helpers ───────────────────────────────────────────────────
+    // ── Imperative helpers (dùng chung wall-item + floor) ──────────────────────
 
     /** Hiện/ẩn ô đỏ báo chồng lấn tại vị trí cửa đang kéo. */
     function showCollide(at: { cx: number; cy: number; rotDeg: number } | null, f: Furniture2D): void {
@@ -151,38 +126,18 @@ export function useFurnitureDrag({
         line.getLayer()?.batchDraw();
     }
 
-    // ── Wall-item drag ───────────────────────────────────────────────────────
+    // ── Gesture hooks con ──────────────────────────────────────────────────────
+    const wallItem = useWallItemDrag({
+        furniture, walls, nodeById, transform, dispatch, recordWallItemMoveUndo, showCollide,
+    });
+    const group = useGroupDrag({
+        furniture, walls, transform, selectedFurnitureIds, furnitureNodeRefs, dispatch, withTransaction,
+    });
+    const groupRotate = useGroupRotate({
+        furniture, walls, transform, selectedFurnitureIds, furnitureNodeRefs, dispatch, withTransaction,
+    });
 
-    /**
-     * Kéo cửa: chiếu node lên tường gần nhất (free-drag → bám tường), GIỮ side hiện tại,
-     * tô đỏ khi chồng opening khác hoặc khi cửa rời khỏi mọi tường.
-     * Đặt node + rotation imperative để không re-render.
-     */
-    function projectWallItem(node: Konva.Group, f: Furniture2D): void {
-        const pos = node.position();
-        const worldX = transform.toWorldX(pos.x);
-        const worldZ = transform.toWorldZ(pos.y);
-        const footprintWidth = (f.cutWidthPx ?? f.width) / transform.scale;
-        const proj = projectToNearestWall(walls, nodeById, worldX, worldZ, transform, footprintWidth, f.wallSide ?? 1, f.hostWallId, resolveWallItemDims(f.modelId));
-        if (!proj) {
-            pendingWallMoveRef.current = null;
-            showCollide({ cx: pos.x, cy: pos.y, rotDeg: node.rotation() }, f);
-            return;
-        }
-
-        node.position({ x: proj.cx, y: proj.cy });
-        node.rotation(proj.rotDeg);
-
-        const occ = buildOpeningOccupancy(furniture, proj.hostWallId, proj.wallLen, f.entityId);
-        const lane = occupancyLane(f.wallBehavior ?? "mount", proj.side);
-        const colliding = occupiedOverlaps(proj.t, proj.halfWidthT, lane, buildOccupiedRanges(occ));
-        pendingWallMoveRef.current = colliding
-            ? null
-            : { entityId: f.entityId, hostWallId: proj.hostWallId, t: proj.t, side: proj.side };
-        showCollide(colliding ? { cx: proj.cx, cy: proj.cy, rotDeg: proj.rotDeg } : null, f);
-    }
-
-    // ── Floor furniture drag ─────────────────────────────────────────────────
+    // ── Single floor-furniture drag ────────────────────────────────────────────
 
     /**
      * Kéo furniture-thường: snap (edge + wall) qua resolveAlignment, rồi check
@@ -231,81 +186,31 @@ export function useFurnitureDrag({
         return { x: transform.toWorldX(safe.x), z: transform.toWorldZ(safe.y) };
     }
 
-    // ── Group drag (multi-select) ─────────────────────────────────────────────
-
-    /**
-     * Cụm RIGID dời theo con trỏ leader, CHẶN TƯỜNG (phương án B). Đọc groupDragRef; no-op
-     * khi kéo đơn. Đặt vị trí imperative cho MỌI thành viên (gồm leader) → giữ layout tương đối.
-     *   - raw delta = leader hiện tại − leaderOrigin.
-     *   - nếu raw delta khiến vật nào chạm tường → giữ lastGoodDelta (cả cụm "dừng" ở tường).
-     *     Ngược lại nhận raw delta và lưu lại. KHÔNG kiểm va chạm đồ (cho chồng tạm).
-     */
-    function applyGroupFollow(leaderNode: Konva.Group): void {
-        const g = groupDragRef.current;
-        if (!g) return;
-        const rawDx = leaderNode.x() - g.leaderOriginPx.x;
-        const rawDy = leaderNode.y() - g.leaderOriginPx.y;
-        const blocked = groupHitsWall(g.members, rawDx, rawDy, walls);
-        const dx = blocked ? g.lastGoodDelta.dx : rawDx;
-        const dy = blocked ? g.lastGoodDelta.dy : rawDy;
-        if (!blocked) g.lastGoodDelta = { dx: rawDx, dy: rawDy };
-        let layer: Konva.Layer | null = null;
-        for (const m of g.members) {
-            const node = furnitureNodeRefs.current.get(m.id);
-            if (!node) continue;
-            node.position({ x: m.originX + dx, y: m.originY + dy });
-            layer = node.getLayer();
-        }
-        layer?.batchDraw();
-    }
-
-    // ── Exported drag handlers ───────────────────────────────────────────────
+    // ── Exported drag handlers (orchestrator rẽ nhánh) ─────────────────────────
 
     function onDragStart(f: Furniture2D): void {
         showCollide(null, f);
         lastSafePosRef.current = { x: f.x, y: f.y };
         if (f.isWallItem) {
-            if (f.hostWallId !== undefined && f.wallT !== undefined && f.wallSide !== undefined) {
-                dragFromWallRef.current = { hostWallId: f.hostWallId, t: f.wallT, side: f.wallSide };
-            } else {
-                dragFromWallRef.current = null;
-            }
-            dragFromPosRef.current = null;
+            wallItem.start(f);
         } else {
             dragFromPosRef.current = { x: transform.toWorldX(f.x), z: transform.toWorldZ(f.y) };
-            dragFromWallRef.current = null;
             neighborBoxesRef.current = buildFurnitureBoxes2D(furniture, transform, f.entityId);
-            // Kéo nhóm: chỉ khi leader nằm trong multi-selection (>1). Gom MỌI đồ ĐẶT SÀN
-            // trong selection (gồm leader, loại wall-item) kèm cỡ + góc để kiểm va chạm tường.
-            if (selectedFurnitureIds.size > 1 && selectedFurnitureIds.has(f.entityId)) {
-                const members: { id: string; originX: number; originY: number; width: number; depth: number; rotDeg: number }[] = [];
-                for (const id of selectedFurnitureIds) {
-                    const node = furnitureNodeRefs.current.get(id);
-                    const target = furniture.find(x => x.entityId === id);
-                    if (!node || !target || target.isWallItem) continue;
-                    members.push({ id, originX: node.x(), originY: node.y(), width: target.width, depth: target.depth, rotDeg: target.rotDeg });
-                }
-                // Cần >1 (leader + ít nhất 1 anh em đặt sàn) mới là group-move.
-                groupDragRef.current = members.length > 1
-                    ? { leaderOriginPx: { x: f.x, y: f.y }, members, lastGoodDelta: { dx: 0, dy: 0 } }
-                    : null;
-            } else {
-                groupDragRef.current = null;
-            }
+            group.tryStart(f);
         }
         dragTransactionOpenRef.current = true;
     }
 
     function onDragMove(e: KonvaEventObject<MouseEvent>, f: Furniture2D): void {
         if (f.isWallItem) {
-            projectWallItem(e.target as Konva.Group, f);
+            wallItem.project(e.target as Konva.Group, f);
             return;
         }
         const node = e.target as Konva.Group;
         // Kéo NHÓM (phương án B): cụm rigid theo con trỏ, CHẶN TƯỜNG (mọi thành viên),
         // CHO chồng đồ. KHÔNG đi applyFurnitureDrag (đó là clamp đơn, sẽ đụng chính sibling).
-        if (groupDragRef.current) {
-            applyGroupFollow(node);
+        if (group.active()) {
+            group.follow(node);
             return;
         }
         applyFurnitureDrag(node, f);
@@ -315,52 +220,15 @@ export function useFurnitureDrag({
         dragTransactionOpenRef.current = false;
         const node = e.target as Konva.Group;
         if (f.isWallItem) {
-            projectWallItem(node, f);
-            showCollide(null, f);
-            const pending = pendingWallMoveRef.current;
-            pendingWallMoveRef.current = null;
-            const fromWall = dragFromWallRef.current;
-            dragFromWallRef.current = null;
-            if (pending) {
-                dispatch({ type: "MOVE_WALL_ITEM", ...pending });
-                if (fromWall) {
-                    recordWallItemMoveUndo(
-                        pending.entityId,
-                        fromWall.hostWallId, fromWall.t, fromWall.side,
-                        pending.hostWallId, pending.t, pending.side,
-                    );
-                }
-            } else {
-                node.position({ x: f.x, y: f.y });
-                node.rotation(f.rotDeg);
-                node.getLayer()?.batchDraw();
-            }
+            wallItem.end(node, f);
             return;
         }
         neighborBoxesRef.current = null;
         showCollide(null, f);
         renderGuide([]);
-        const group = groupDragRef.current;
-        groupDragRef.current = null;
-        if (group) {
-            // Group-move (B): chốt theo lastGoodDelta (delta đã clamp tường). Chạy
-            // applyGroupFollow 1 nhịp cuối để gộp cử động cuối trước khi đọc delta.
-            // force=true: engine bỏ snap+collision → giữ layout tương đối + cho chồng đồ
-            // (UI đã đảm bảo không vật nào qua tường). 1 transaction = 1 undo, KHÔNG record lẻ.
-            applyGroupFollow(node);
+        if (group.active()) {
+            group.end(node);
             dragFromPosRef.current = null;
-            const { dx, dy } = group.lastGoodDelta;
-            withTransaction("move selection 2D", () => {
-                for (const m of group.members) {
-                    dispatch({
-                        type: "MOVE_FURNITURE",
-                        entityId: m.id,
-                        x: transform.toWorldX(m.originX + dx),
-                        z: transform.toWorldZ(m.originY + dy),
-                        force: true,
-                    });
-                }
-            });
             return;
         }
         const { x, z } = applyFurnitureDrag(node, f);
@@ -378,52 +246,8 @@ export function useFurnitureDrag({
         node.scaleY(1);
         if (f.isWallItem) return;
 
-        // ── Xoay NHÓM (multi-select) — phương án B ───────────────────────────
-        // Transformer xoay cả cụm quanh pivot → mỗi node đổi CẢ rotation lẫn position.
-        // Commit MỘT lần cho toàn nhóm (các fire sau no-op nhờ groupTransformCommittedRef).
-        // CHẶN TƯỜNG: nếu BẤT KỲ vật nào sau khi xoay chạm tường → HỦY cả phép xoay (revert
-        // node về snapshot, không dispatch) — nhất quán single-rotate (bị chặn thì giữ góc cũ).
-        // Cho chồng đồ (chỉ kiểm tường). force=true: engine giữ layout + bỏ collision đồ.
-        if (selectedFurnitureIds.size > 1 && selectedFurnitureIds.has(f.entityId)) {
-            if (groupTransformCommittedRef.current) return;
-            groupTransformCommittedRef.current = true;
-            queueMicrotask(() => { groupTransformCommittedRef.current = false; });
-
-            // Gom pose sau xoay (đã snap góc) + kiểm tường cho từng thành viên.
-            const poses: { id: string; rotY: number; px: number; py: number }[] = [];
-            let hitsWall = false;
-            for (const id of selectedFurnitureIds) {
-                const target = furniture.find(x => x.entityId === id);
-                const sib = furnitureNodeRefs.current.get(id);
-                if (!target || !sib || target.isWallItem) continue;
-                const rotY = snapAngleRad(konvaDegToThreeRotY(sib.rotation()));
-                const rotDeg = threeRotYToKonvaDeg(rotY);
-                if (memberPoseHitsWall({ x: sib.x(), y: sib.y(), width: target.width, depth: target.depth, rotDeg }, walls)) { hitsWall = true; break; }
-                poses.push({ id, rotY, px: sib.x(), py: sib.y() });
-            }
-
-            if (hitsWall) {
-                // Hủy: trả mọi node về tư thế trước xoay (từ snapshot furniture).
-                for (const id of selectedFurnitureIds) {
-                    const target = furniture.find(x => x.entityId === id);
-                    const sib = furnitureNodeRefs.current.get(id);
-                    if (!target || !sib) continue;
-                    sib.position({ x: target.x, y: target.y });
-                    sib.rotation(target.rotDeg);
-                    sib.getLayer()?.batchDraw();
-                }
-                return;
-            }
-
-            withTransaction("rotate selection 2D", () => {
-                for (const p of poses) {
-                    furnitureNodeRefs.current.get(p.id)?.rotation(threeRotYToKonvaDeg(p.rotY));
-                    dispatch({ type: "ROTATE_FURNITURE", entityId: p.id, rotY: p.rotY, force: true });
-                    dispatch({ type: "MOVE_FURNITURE", entityId: p.id, x: transform.toWorldX(p.px), z: transform.toWorldZ(p.py), force: true });
-                }
-            });
-            return;
-        }
+        // Xoay NHÓM (multi-select) — phương án B. tryCommit trả true nếu đã xử lý nhóm.
+        if (groupRotate.tryCommit(f)) return;
 
         // ── Xoay ĐƠN (đường cũ) ──────────────────────────────────────────────
         const fromRotY = konvaDegToThreeRotY(f.rotDeg);

@@ -79,6 +79,11 @@ Không đổi luồng, chỉ rút helper và thay call-site 1-1.
 
 ### PHASE 2 — Token hoá & dọn JSX · rủi ro: THẤP
 
+> **STATUS (2026-06-19):** ⛔ **CHƯA LÀM.** Không có commit nào đụng tới. Đây là phần quick-win
+> (rủi ro thấp) duy nhất còn bỏ ngỏ — nên ưu tiên làm tiếp vì dọn được nhiều "ồn" nhất cho dev mới
+> (117 hex màu brand rải 39 file). Thứ tự đề xuất: 2.1 token màu → 2.3 helper `tagObject/readEntity`
+> → 2.2 tách inline-style → 2.4 dead code.
+
 **2.1 Token màu brand** — `#f8b400`/`rgba(248,180,0)`/`rgba(124,88,0)` lặp **117 lần / 39 file**.
 - Đã có `designTokens.ts` (`T.*`) nhưng JSX phần lớn không dùng. Bắt đầu từ `EditorPage`, `MaterialSidebar` (10 chỗ), `AIChatbot` (11 chỗ).
 
@@ -162,6 +167,18 @@ Không đổi luồng, chỉ rút helper và thay call-site 1-1.
 ---
 
 ### PHASE 5 — Gộp duplicate lớn & chẻ god-file · rủi ro: CAO (cần test regression trước)
+
+> **STATUS (2026-06-19):** ✅ **XONG TOÀN BỘ.** Cổng regression đã có (`2f5bdb5` golden tests cho 3 kernel
+> drag) trước khi đụng. 5.1 ✅ (`0deae86` WallItemTopology accessor), 5.2 ✅ (`959f3b3` kernel
+> `resolveWallItemT`+`clampWallItemT` — gộp 3 bản clamp-t về 1), 5.3 ✅ (`e841ebc` seam
+> furniture-translate), 5.4 ✅ (`238387e`+`1683ef8`+`6dcf17f` — chẻ `GizmoSystem` thành GizmoPicking +
+> WallItemGizmoAdapter + GizmoDragLifecycle), 5.6 ✅ (`f67025d` chẻ page/panel lớn, pure-extract).
+> **5.5 ✅** (`2ccbbec` trích toán group-drag thuần + unit; nay chẻ `useFurnitureDrag` 437→261 LOC thành
+> composer + 3 hook con `useWallItemDrag`/`useGroupDrag`/`useGroupRotate`, mỗi cái sở hữu state gesture
+> riêng, composer giữ single-drag + showCollide/renderGuide, rẽ nhánh wall-item→group→single nguyên thứ tự).
+> tsc sạch + 196/196 test xanh (golden không đổi kỳ vọng). Chờ verify browser theo checklist 5.5. **Phát hiện
+> nghi vấn (giữ nguyên, KHÔNG sửa trong PR refactor):** trong group-end, `applyGroupFollow` chạy SAU khi
+> `groupDragRef` đã bị null → là no-op (comment nói "gộp cử động cuối" nhưng thực tế không chạy) — ghi nhận để PR riêng.
 
 > ⚠️ Vùng gizmo/drag là phức tạp nhất. **Viết regression test drag 2D + 3D + wall-item trước khi đụng.**
 
