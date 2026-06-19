@@ -27,7 +27,7 @@ import { findMountWall } from "src/engine/adapters/wallRefs";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
 import { getWallItemTopology, setWallItemTopology } from "src/engine/adapters/wallItemTopology";
-import { wallItemOverlaps, occupancyLane } from "src/shared/geometry/wallMount";
+import { resolveWallItemT, occupancyLane } from "src/shared/geometry/wallMount";
 import { countFurniture, MAX_FURNITURE_ENTITIES } from "src/engine/utils/furnitureLimit";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
@@ -102,14 +102,14 @@ export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDep
     const halfWidth = getFootprint2D(model.modelId).width / 2;
     const minT = halfWidth / wallLen;
     const maxT = 1 - minT;
-    const t = minT < maxT ? Math.max(minT, Math.min(command.t, maxT)) : 0.5;
     const halfWidthT = halfWidth / wallLen;
 
-    // Chồng opening/kệ khác trên cùng tường → từ chối (giữ nguyên, markDirty để 2D snap lại).
-    // Lane: cửa (opening) chiếm cả hai mặt; kệ chỉ chiếm mặt theo command.side.
+    // Policy "reject": clamp biên (tường ngắn → 0.5), nếu còn đè item cùng lane thì TỪ CHỐI
+    // (giữ nguyên, markDirty để 2D snap lại). Lane: cửa chiếm cả 2 mặt; kệ chỉ mặt command.side.
     const lane = occupancyLane(topo.kind, command.side);
     const occupied = collectOccupiedRanges(world, command.hostWallId, wallLen, command.entityId);
-    if (wallItemOverlaps(t, halfWidthT, lane, occupied)) { world.markDirty(); return; }
+    const { t, overlapping } = resolveWallItemT(command.t, halfWidthT, minT, maxT, lane, occupied, "reject");
+    if (overlapping) { world.markDirty(); return; }
 
     setWallItemTopology(world, command.entityId, { hostWallId: command.hostWallId, t, side: command.side });
     world.markDirty();

@@ -22,7 +22,7 @@ import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/share
 import type { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
 import { findMountWall, findWallEntity } from "src/engine/adapters/wallRefs";
 import { getWallItemTopology, setWallItemTopology } from "src/engine/adapters/wallItemTopology";
-import { projectPointToWall, wallItemPose, wallNaturalRotY, occupancyLane, lanesConflict, wallItemOverlaps, type WallItemRange } from "src/shared/geometry/wallMount";
+import { projectPointToWall, wallItemPose, wallNaturalRotY, occupancyLane, resolveWallItemT } from "src/shared/geometry/wallMount";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
 import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
@@ -307,14 +307,12 @@ export function slideWallItem(
     // Lane của item đang kéo: cửa (opening) chiếm cả hai mặt; kệ chiếm mặt theo con trỏ.
     const lane = occupancyLane(isOpening ? "opening" : "mount", isOpening ? topo.side : side);
 
-    // Tìm vị trí an toàn (safeT) bằng cách đẩy ra khỏi vùng overlap CÙNG LANE.
-    const safeT = clampTAgainstOccupied(t, halfWidthT, lane, occupied);
+    // Policy "snap": đẩy item ra khỏi vùng đè cùng lane rồi clamp biên. overlap tính tại t
+    // cuối (không so t vs safeT — tránh false-positive khi chỉ bị đẩy ra mép tường).
     const minT = halfWidth / wallLen;
     const maxT = 1 - minT;
-    const finalSafeT = Math.max(minT, Math.min(safeT, maxT));
-    // Tính overlap thật tại vị trí đã clamp, không so sánh t vs finalSafeT (sẽ false-positive
-    // khi cửa chỉ bị đẩy ra mép tường bởi Math.max/min, không phải do overlap item khác).
-    const isOverlapping = wallItemOverlaps(finalSafeT, halfWidthT, lane, occupied);
+    const { t: finalSafeT, overlapping: isOverlapping } =
+        resolveWallItemT(t, halfWidthT, minT, maxT, lane, occupied, "snap");
 
     // opening: giữ side hiện tại (flip qua gizmo rotate); mount (kệ): đổi cả mặt theo con trỏ.
     const curSide = isOpening ? topo.side : side;
@@ -362,24 +360,6 @@ export function slideWallItem(
     }
 
     return { success: true, isOverlapping, intendedPose };
-}
-
-/**
- * Clamp `t` sao cho khoảng (t - halfT, t + halfT) không cắt qua vùng occupied XUNG ĐỘT LANE.
- * Range khác lane (kệ mặt bên kia) bị bỏ qua → không đẩy item ra vô cớ.
- * Snap qua bên kia dựa vào vị trí tương đối của t so với tâm range — không snap lùi về phía cũ.
- */
-function clampTAgainstOccupied(t: number, halfT: number, lane: number, occupied: WallItemRange[]): number {
-    for (const r of occupied) {
-        if (!lanesConflict(lane, r.lane)) continue; // khác mặt → không cản
-        const ghostMin = t - halfT;
-        const ghostMax = t + halfT;
-        if (ghostMax <= r.tMin || ghostMin >= r.tMax) continue; // không overlap
-        const tMid = (r.tMin + r.tMax) / 2;
-        // Snap qua bên kia tâm range theo hướng con trỏ đang tiến vào.
-        t = t >= tMid ? r.tMax + halfT : r.tMin - halfT;
-    }
-    return t;
 }
 
 /**

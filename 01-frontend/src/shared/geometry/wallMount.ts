@@ -267,3 +267,75 @@ export function wallNaturalRotY(wall: MountWall): number {
     const { nx, nz } = wallBasis(wall);
     return Math.atan2(nx, nz);
 }
+
+// ---------------------------------------------------------------------------
+// Kernel giải `t` cuối khi kéo wall-item (Phase 5.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Clamp `t` về [minT, maxT]; tường ngắn hơn item (minT ≥ maxT) → 0.5 (giữa, best-effort,
+ * cùng quy ước projectPointToWall khi không fit). NGUỒN DUY NHẤT cho clamp-biên wall-item:
+ * 2D `projectToNearestWall` và nhánh "reject" của {@link resolveWallItemT} cùng gọi.
+ */
+export function clampWallItemT(t: number, minT: number, maxT: number): number {
+    return minT < maxT ? clamp(t, minT, maxT) : 0.5;
+}
+
+/**
+ * Clamp `t` sao cho khoảng (t − halfT, t + halfT) không cắt qua vùng occupied XUNG ĐỘT LANE.
+ * Range khác lane (kệ mặt bên kia) bị bỏ qua → không đẩy item ra vô cớ.
+ * Snap qua bên kia dựa vào vị trí tương đối của t so với tâm range — không snap lùi về phía cũ.
+ * Nội bộ nhánh "snap" của {@link resolveWallItemT} (trước ở gizmoHandles).
+ */
+function clampTAgainstOccupied(t: number, halfT: number, lane: number, occupied: WallItemRange[]): number {
+    for (const r of occupied) {
+        if (!lanesConflict(lane, r.lane)) continue; // khác mặt → không cản
+        const ghostMin = t - halfT;
+        const ghostMax = t + halfT;
+        if (ghostMax <= r.tMin || ghostMin >= r.tMax) continue; // không overlap
+        const tMid = (r.tMin + r.tMax) / 2;
+        // Snap qua bên kia tâm range theo hướng con trỏ đang tiến vào.
+        t = t >= tMid ? r.tMax + halfT : r.tMin - halfT;
+    }
+    return t;
+}
+
+/** Chính sách khi `t` mong muốn đè item khác cùng lane. */
+export type OverlapPolicy = "snap" | "reject";
+
+export interface WallItemTResult {
+    /** `t` cuối (đã clamp biên + theo policy). */
+    t: number;
+    /** Có còn đè item cùng lane tại `t` cuối không. */
+    overlapping: boolean;
+}
+
+/**
+ * Giải `t` cuối cho 1 tường + item từ `t` mong muốn — NGUỒN CHÂN LÝ chung cho cả 2 đường
+ * (gizmo 3D, command). KHÔNG đọc World / KHÔNG đụng THREE → thuần số, test được.
+ *
+ *  - "snap"  : đẩy ra khỏi range cùng-lane (clampTAgainstOccupied) rồi clamp biên
+ *              [minT,maxT]; `overlapping` tính tại `t` cuối (gizmo 3D — không bao giờ từ chối).
+ *  - "reject": chỉ clamp biên ({@link clampWallItemT}, có fallback 0.5 khi tường ngắn);
+ *              `overlapping` để caller tự quyết giữ/commit (command — giữ nguyên nếu đè).
+ *
+ * Lưu ý policy KHÁC NHAU CÓ CHỦ ĐÍCH (xem PHASE5 §5.2): snap không có fallback 0.5 vì
+ * caller (slideWallItem) đã chặn bằng `fits=false` trước khi tới đây.
+ */
+export function resolveWallItemT(
+    t: number,
+    halfWidthT: number,
+    minT: number,
+    maxT: number,
+    lane: number,
+    occupied: WallItemRange[],
+    policy: OverlapPolicy,
+): WallItemTResult {
+    if (policy === "snap") {
+        const snapped = clampTAgainstOccupied(t, halfWidthT, lane, occupied);
+        const finalT = clamp(snapped, minT, maxT);
+        return { t: finalT, overlapping: wallItemOverlaps(finalT, halfWidthT, lane, occupied) };
+    }
+    const finalT = clampWallItemT(t, minT, maxT);
+    return { t: finalT, overlapping: wallItemOverlaps(finalT, halfWidthT, lane, occupied) };
+}
