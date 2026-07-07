@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateProject, type ProjectMeta } from "src/app/hooks/useCreateProject";
 
+// To-do: Nên làm 1 file gom các constants
 const MAX_NAME_LENGTH = 200;
 
 type Props = {
@@ -58,6 +59,7 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
     }, [file]);
 
     // Đóng bằng phím Escape (trừ khi đang submitting).
+    // To-do: Lặp code
     useEffect(() => {
         if (!open) return;
         const onKey = (e: KeyboardEvent) => {
@@ -90,7 +92,7 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
         setError(null);
 
         const result = await createWithThumbnail(trimmedName, file);
-        if (!result.ok) {
+        if (result.ok === false) {
             setError(result.message);
             setStatus("error");
             return;

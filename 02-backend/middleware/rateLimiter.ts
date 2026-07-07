@@ -1,14 +1,5 @@
 import rateLimit from 'express-rate-limit';
 
-// Standard limiter: 100 req/min per IP. Applied globally or per-router.
-export const standardLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' } },
-});
-
 // Autosave limiter: 120 req/min (allows 2 req/sec sustained).
 // Applied to POST /projects/:id/autosave.
 export const autosaveLimiter = rateLimit({

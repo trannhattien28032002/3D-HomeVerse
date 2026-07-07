@@ -1,7 +1,4 @@
-import type { ShareContext } from './shareContext';
-
-// Augment Express's Request interface to carry the authenticated user payload
-// and optional share context for token-based shared access.
+// Augment Express's Request interface to carry the authenticated user payload.
 declare global {
   namespace Express {
     interface Request {
@@ -10,7 +7,6 @@ declare global {
         email: string;
         plan: string;
       };
-      shareContext?: ShareContext;
     }
   }
 }

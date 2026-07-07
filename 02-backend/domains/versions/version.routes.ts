@@ -13,7 +13,7 @@ versionsRouter.get(
   requireAuth,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const data = await service.listVersions(req.user!.id, String(req.params.id), req.shareContext);
+      const data = await service.listVersions(req.user!.id, String(req.params.id));
       res.json({ data });
     } catch (err) {
       next(err);
@@ -45,8 +45,7 @@ versionsRouter.get(
       const version = await service.getVersion(
         req.user!.id,
         String(req.params.id),
-        String(req.params.vid),
-        req.shareContext
+        String(req.params.vid)
       );
       res.json(version);
     } catch (err) {

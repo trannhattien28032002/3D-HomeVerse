@@ -10,7 +10,7 @@
  *   - Parse lỗi theo format backend { error: { code, message } } → ném ApiError
  *     (Error con, có .code + .status) để UI bắt theo status/code.
  */
-import { supabase } from "src/data/auth/supabaseClient";
+import { getAccessToken } from "src/data/api/authHeader";
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
@@ -36,12 +36,6 @@ export type ApiFetchOptions = Omit<RequestInit, "body"> & {
  */
 export function apiErrorMessage(err: unknown, fallback: string): string {
     return err instanceof ApiError ? err.message : fallback;
-}
-
-/** Lấy access_token của session hiện tại (null nếu chưa đăng nhập). */
-async function getAccessToken(): Promise<string | null> {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
 }
 
 export async function apiFetch<T>(path: string, opts: ApiFetchOptions = {}): Promise<T> {

@@ -21,7 +21,8 @@ import { quatToYaw, setYawQuaternion } from "src/shared/math/yaw";
 import { resolveAlignment, type WallSegment, type FurnitureBox } from "src/shared/geometry/alignment";
 import type { DragGhostController } from "src/engine/systems/gizmo/DragGhostController";
 import { findMountWall, findWallEntity } from "src/engine/adapters/wallRefs";
-import { projectPointToWall, wallItemPose, wallNaturalRotY, occupancyLane, lanesConflict, wallItemOverlaps, type WallItemRange } from "src/shared/geometry/wallMount";
+import { getWallItemTopology, setWallItemTopology } from "src/engine/adapters/wallItemTopology";
+import { projectPointToWall, wallItemPose, wallNaturalRotY, occupancyLane, resolveWallItemT } from "src/shared/geometry/wallMount";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { resolveWallItemDims } from "src/engine/catalog/wallItem";
 import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
@@ -283,11 +284,11 @@ export function slideWallItem(
     x: number,
     z: number,
 ): { success: boolean; isOverlapping: boolean; intendedPose?: { x: number; y: number; z: number; qx: number; qy: number; qz: number; qw: number } } {
-    // `entity` là tham số (không lọc qua Query) → KHÔNG dùng `!`, guard thật. (M6)
-    const wo = world.getComponent(entity, WallOpening);
-    const wm = world.getComponent(entity, WallMounted);
-    const hostWallId = wo ? wo.hostWallId : wm?.hostWallId;
-    if (hostWallId === undefined) return { success: false, isOverlapping: false };
+    // `entity` là tham số (không lọc qua Query) → đọc topology qua accessor (opening/mount
+    // chung một đường, không non-null `!` ở nhánh mount). (M6 + Phase 5.1)
+    const topo = getWallItemTopology(world, entity);
+    if (!topo) return { success: false, isOverlapping: false };
+    const hostWallId = topo.hostWallId;
     const wall = findMountWall(world, nodeReg, hostWallId);
     if (!wall) return { success: false, isOverlapping: false };
 
@@ -302,28 +303,23 @@ export function slideWallItem(
     const halfWidthT = halfWidth / wallLen;
     const occupied = collectOccupiedRanges(world, hostWallId, wallLen, entity);
 
+    const isOpening = topo.kind === "opening";
     // Lane của item đang kéo: cửa (opening) chiếm cả hai mặt; kệ chiếm mặt theo con trỏ.
-    const lane = occupancyLane(wo ? "opening" : "mount", wo ? wo.side : side);
+    const lane = occupancyLane(isOpening ? "opening" : "mount", isOpening ? topo.side : side);
 
-    // Tìm vị trí an toàn (safeT) bằng cách đẩy ra khỏi vùng overlap CÙNG LANE.
-    const safeT = clampTAgainstOccupied(t, halfWidthT, lane, occupied);
+    // Policy "snap": đẩy item ra khỏi vùng đè cùng lane rồi clamp biên. overlap tính tại t
+    // cuối (không so t vs safeT — tránh false-positive khi chỉ bị đẩy ra mép tường).
     const minT = halfWidth / wallLen;
     const maxT = 1 - minT;
-    const finalSafeT = Math.max(minT, Math.min(safeT, maxT));
-    // Tính overlap thật tại vị trí đã clamp, không so sánh t vs finalSafeT (sẽ false-positive
-    // khi cửa chỉ bị đẩy ra mép tường bởi Math.max/min, không phải do overlap item khác).
-    const isOverlapping = wallItemOverlaps(finalSafeT, halfWidthT, lane, occupied);
+    const { t: finalSafeT, overlapping: isOverlapping } =
+        resolveWallItemT(t, halfWidthT, minT, maxT, lane, occupied, "snap");
 
-    if (wo) {
-        wo.t = finalSafeT;                   // opening: giữ side hiện tại (flip qua gizmo rotate)
-    } else {
-        wm!.t = finalSafeT;                  // mount (kệ): đổi cả mặt theo con trỏ
-        wm!.side = side;
-    }
+    // opening: giữ side hiện tại (flip qua gizmo rotate); mount (kệ): đổi cả mặt theo con trỏ.
+    const curSide = isOpening ? topo.side : side;
+    setWallItemTopology(world, entity, isOpening ? { t: finalSafeT } : { t: finalSafeT, side });
 
     // Ghim root thật vào tường theo finalSafeT
-    const curSide = wo ? wo.side : wm!.side;
-    const safePose = wallItemPose(wall, wo ? wo.t : wm!.t, curSide, resolveWallItemDims(model.modelId));
+    const safePose = wallItemPose(wall, finalSafeT, curSide, resolveWallItemDims(model.modelId));
     model.root.position.x = safePose.x;
     model.root.position.z = safePose.z;
     setYawQuaternion(model.root, safePose.rotY);
@@ -332,6 +328,7 @@ export function slideWallItem(
     // gizmo đã khoá trục Y). Gizmo (attach = root) đã đổi root.position.y theo thao tác kéo; ở
     // đây CLAMP đáy model trong [sàn, đỉnh tường] rồi đồng bộ mountHeight + Transform.y để bền
     // vững sau khi thả (WallMountSystem không động tới Y → giá trị này được giữ nguyên).
+    const wm = world.getComponent(entity, WallMounted);
     if (wm) {
         const wallEnt = findWallEntity(world, hostWallId);
         const wallHeight = (wallEnt && world.getComponent(wallEnt, WallSize)?.height) || Infinity;
@@ -366,24 +363,6 @@ export function slideWallItem(
 }
 
 /**
- * Clamp `t` sao cho khoảng (t - halfT, t + halfT) không cắt qua vùng occupied XUNG ĐỘT LANE.
- * Range khác lane (kệ mặt bên kia) bị bỏ qua → không đẩy item ra vô cớ.
- * Snap qua bên kia dựa vào vị trí tương đối của t so với tâm range — không snap lùi về phía cũ.
- */
-function clampTAgainstOccupied(t: number, halfT: number, lane: number, occupied: WallItemRange[]): number {
-    for (const r of occupied) {
-        if (!lanesConflict(lane, r.lane)) continue; // khác mặt → không cản
-        const ghostMin = t - halfT;
-        const ghostMax = t + halfT;
-        if (ghostMax <= r.tMin || ghostMin >= r.tMax) continue; // không overlap
-        const tMid = (r.tMin + r.tMax) / 2;
-        // Snap qua bên kia tâm range theo hướng con trỏ đang tiến vào.
-        t = t >= tMid ? r.tMax + halfT : r.tMin - halfT;
-    }
-    return t;
-}
-
-/**
  * Flip wall item 180° qua gizmo rotate: so sánh yaw mà gizmo đặt với hướng
  * tường tự nhiên (side=+1). Nếu delta > 90° → flip side.
  * Snap quaternion của object về đúng wall-derived rotY (không cho xoay tự do).
@@ -394,10 +373,9 @@ export function flipWallItemByGizmo(
     entity: string,
     object: THREE.Object3D,
 ): void {
-    const wo = world.getComponent(entity, WallOpening);
-    const wm = world.getComponent(entity, WallMounted);
-    const hostWallId = wo ? wo.hostWallId : wm!.hostWallId;
-    const wall = findMountWall(world, nodeReg, hostWallId);
+    const topo = getWallItemTopology(world, entity);
+    if (!topo) return;
+    const wall = findMountWall(world, nodeReg, topo.hostWallId);
     if (!wall) return;
 
     // Yaw mà gizmo rotate đặt lên object — dùng công thức Euler Y đúng để tránh sai lệch
@@ -419,8 +397,7 @@ export function flipWallItemByGizmo(
     // |delta| < 90° → side +1; ngược lại → side -1 (flip 180°).
     const newSide = Math.abs(delta) < Math.PI / 2 ? 1 : -1;
 
-    if (wo) wo.side = newSide;
-    else wm!.side = newSide;
+    setWallItemTopology(world, entity, { side: newSide });
 
     // Không snap quaternion ở đây — gizmo cần giữ tự do xoay để delta tích lũy.
     // WallMountSystem đang bị skip (GizmoHeld) nên sẽ không reset; snap về wall-derived
@@ -480,6 +457,12 @@ export function handleFurnitureTranslate(ctx: FurnitureTranslateCtx): void {
     const q = object.quaternion;
     const halfH = (world.hasComponent(entity, Model3D) && collider) ? collider.height : 0;
 
+    // ⭐ SEAM CHUNG furniture-translate (Phase 5.3): `resolveAlignment` (edge-snap +
+    // wall-snap, OBB-aware) là NGUỒN SNAP có thẩm quyền dùng CHUNG với đường 2D
+    // (useFurnitureDrag.applyFurnitureDrag). Trả {x,z} world (mét). Phần SAU seam KHÁC
+    // backend có chủ đích → KHÔNG gộp (xem PHASE5 §5.3): ở đây dùng Cannon sweep
+    // (wouldCollide/clampMovement, có trục Y) + clampCenterAboveFloor + dragGhost; 2D
+    // dùng SAT miter-poly (không Y) + wouldFurnitureCollide + lastSafePos.
     const yaw = quatToYaw(q.x, q.y, q.z, q.w);
     const aligned = resolveAlignment({
         cx: object.position.x,
@@ -492,6 +475,8 @@ export function handleFurnitureTranslate(ctx: FurnitureTranslateCtx): void {
     });
     ctx.updateGuide(aligned.guides);
 
+    // ix/iz = vị trí mong muốn (world, mét) sau snap. (2D gọi giá trị tương ứng `r.x/r.z`
+    // rồi đổi sang px `intendedX/intendedY` — cùng seam, khác đơn vị.)
     const ix = aligned.x;
     const iz = aligned.z;
 

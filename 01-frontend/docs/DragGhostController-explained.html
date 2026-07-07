@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DragGhostController — Giải thích cơ chế "bóng ma" xem trước</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #1a1d27;
+    --panel-2: #232735;
+    --line: #2e3344;
+    --text: #e6e8ee;
+    --muted: #9aa3b2;
+    --accent: #6ea8fe;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --purple: #a78bfa;
+    --code-bg: #0b0d13;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 120px; }
+  h1 {
+    font-size: 2rem; margin: 0 0 6px;
+    background: linear-gradient(90deg, #6ea8fe, #a78bfa);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); margin: 0 0 36px; font-size: 1.02rem; }
+  h2 {
+    font-size: 1.35rem; margin: 48px 0 16px;
+    border-left: 4px solid var(--accent); padding-left: 12px;
+  }
+  h3 { font-size: 1.05rem; color: var(--accent); margin: 28px 0 8px; }
+  p { margin: 10px 0; }
+  code {
+    background: var(--code-bg); padding: 2px 7px; border-radius: 5px;
+    font-family: "Cascadia Code", "Consolas", monospace; font-size: 0.88em;
+    color: #c5cae6; border: 1px solid var(--line);
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 24px; margin: 20px 0;
+  }
+  .tldr {
+    background: linear-gradient(135deg, #1c2333, #1a1d27);
+    border: 1px solid #34406a; border-radius: 14px; padding: 22px 26px;
+  }
+  .tldr strong { color: var(--accent); }
+
+  /* ---- Vòng đời: các state card ---- */
+  .lifecycle { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 24px 0; }
+  .state {
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px 14px; text-align: center; position: relative;
+  }
+  .state .badge {
+    display: inline-block; font-family: monospace; font-size: 0.8rem;
+    padding: 3px 10px; border-radius: 20px; margin-bottom: 10px; font-weight: 600;
+  }
+  .state.begin .badge { background: #1e3a5f; color: #93c5fd; }
+  .state.update .badge { background: #14432a; color: #86efac; }
+  .state.hide  .badge { background: #3f3a14; color: #fde047; }
+  .state.end   .badge { background: #3f1d1d; color: #fca5a5; }
+  .state .desc { font-size: 0.86rem; color: var(--muted); }
+  .state .arrow {
+    position: absolute; right: -11px; top: 50%; transform: translateY(-50%);
+    color: var(--line); font-size: 1.4rem; z-index: 2;
+  }
+  @media (max-width: 760px) {
+    .lifecycle { grid-template-columns: 1fr 1fr; }
+    .state .arrow { display: none; }
+  }
+
+  /* ---- Demo trực quan ---- */
+  .demo {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 0; overflow: hidden; margin: 20px 0;
+  }
+  .demo-stage {
+    height: 280px; position: relative;
+    background:
+      linear-gradient(transparent 95%, rgba(110,168,254,.08) 95%),
+      linear-gradient(90deg, transparent 95%, rgba(110,168,254,.08) 95%);
+    background-size: 28px 28px;
+  }
+  .real-obj, .ghost-obj {
+    position: absolute; width: 80px; height: 60px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 600; transition: all .25s ease;
+  }
+  .real-obj {
+    left: 60px; top: 110px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 6px 18px rgba(37,99,235,.4); color: #fff;
+  }
+  .ghost-obj {
+    background: rgba(110,168,254,.18); border: 2px dashed #6ea8fe;
+    color: #bcd4ff; backdrop-filter: blur(1px);
+    animation: floatGhost 3s ease-in-out infinite;
+  }
+  .ghost-obj.colliding {
+    background: rgba(248,113,113,.22); border-color: #f87171; color: #fecaca;
+  }
+  @keyframes floatGhost {
+    0%,100% { transform: translate(0,0); }
+    50% { transform: translate(140px, -36px); }
+  }
+  .demo-caption {
+    padding: 12px 16px; font-size: 0.85rem; color: var(--muted);
+    border-top: 1px solid var(--line); display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  .legend { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  .swatch.real { background: #2563eb; }
+  .swatch.ghost { background: rgba(110,168,254,.25); border: 2px dashed #6ea8fe; }
+  .swatch.col { background: rgba(248,113,113,.3); border: 2px dashed #f87171; }
+
+  /* ---- Sequence / flow ---- */
+  .flow { margin: 22px 0; }
+  .flow-row {
+    display: grid; grid-template-columns: 130px 1fr; gap: 16px;
+    padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start;
+  }
+  .flow-row:last-child { border-bottom: none; }
+  .flow-key {
+    font-family: monospace; font-weight: 600; font-size: 0.9rem;
+    padding: 5px 10px; border-radius: 7px; text-align: center; height: fit-content;
+  }
+  .k-begin { background: #1e3a5f; color: #93c5fd; }
+  .k-update { background: #14432a; color: #86efac; }
+  .k-hide { background: #3f3a14; color: #fde047; }
+  .k-end { background: #3f1d1d; color: #fca5a5; }
+
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; font-size: 0.85rem;
+    font-family: "Cascadia Code", "Consolas", monospace; line-height: 1.55;
+  }
+  pre .cm { color: #6b7280; }
+  pre .kw { color: #c084fc; }
+  pre .fn { color: #60a5fa; }
+  pre .str { color: #86efac; }
+
+  .note {
+    border-left: 3px solid var(--amber); background: rgba(251,191,36,.07);
+    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 0.92rem;
+  }
+  .note.green { border-color: var(--green); background: rgba(74,222,128,.07); }
+  .note.purple { border-color: var(--purple); background: rgba(167,139,250,.07); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--accent); font-size: 0.82rem; text-transform: uppercase; letter-spacing: .04em; }
+  td code { font-size: 0.85em; }
+  .footer { margin-top: 60px; color: var(--muted); font-size: 0.82rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>DragGhostController</h1>
+  <p class="sub">Cơ chế "bóng ma" (ghost) xem trước khi kéo nội thất bằng Gizmo · <code>src/engine/systems/gizmo/DragGhostController.ts</code></p>
+
+  <div class="tldr">
+    <p style="margin-top:0"><strong>TL;DR — Ý tưởng trong 1 câu</strong></p>
+    <p style="margin-bottom:0">Khi bạn dùng Gizmo kéo một món đồ, vật thật <em>chưa</em> di chuyển ngay. Thay vào đó engine tạo ra một <strong>bản sao trong suốt</strong> (ghost) chạy theo con trỏ để bạn <em>xem trước</em> chỗ đặt. Ghost <strong>đỏ</strong> = đang va chạm (không đặt được), <strong>xanh mờ</strong> = chỗ trống (đặt được). Thả chuột xong → ghost biến mất, vật thật mới nhảy tới vị trí cuối.</p>
+  </div>
+
+  <h2>1. Minh họa: ghost làm gì?</h2>
+  <div class="demo">
+    <div class="demo-stage">
+      <div class="real-obj">Vật THẬT<br>(đứng yên)</div>
+      <div class="ghost-obj" style="left:60px; top:110px;">Ghost<br>(xem trước)</div>
+    </div>
+    <div class="demo-caption">
+      <span class="legend"><span class="swatch real"></span> Vật thật — không nhúc nhích khi đang kéo</span>
+      <span class="legend"><span class="swatch ghost"></span> Ghost — bay theo con trỏ</span>
+      <span class="legend"><span class="swatch col"></span> Ghost đỏ — va chạm</span>
+    </div>
+  </div>
+  <p>Cái khối xanh đậm là <strong>vật thật</strong>, đứng yên. Khối nét đứt mờ bay qua bay lại là <strong>ghost</strong> — đúng hình dạng vật thật nhưng trong suốt. Controller này <em>chỉ</em> lo chuyện: tạo ghost, đặt vị trí ghost, đổi màu ghost, và xoá ghost.</p>
+
+  <h2>2. Vòng đời 1 phiên kéo</h2>
+  <p>Mỗi lần bạn nhấn–giữ–thả Gizmo là một "phiên kéo". Controller đi qua 4 mốc:</p>
+
+  <div class="lifecycle">
+    <div class="state begin">
+      <span class="badge">begin()</span>
+      <span class="arrow">→</span>
+      <div class="desc">Nhấn chuột. Clone hình vật thật → bôi vật liệu trong suốt → thêm vào scene (tạm ẩn).</div>
+    </div>
+    <div class="state update">
+      <span class="badge">update()</span>
+      <span class="arrow">→</span>
+      <div class="desc">Kéo chuột. Mỗi lần Gizmo báo "đổi pose" thì dời ghost tới đó + tô đỏ nếu va chạm.</div>
+    </div>
+    <div class="state hide">
+      <span class="badge">hide()</span>
+      <span class="arrow">→</span>
+      <div class="desc">Con trỏ ra vùng trống/không hợp lệ. Ẩn ghost nhưng KHÔNG xoá — còn dùng lại.</div>
+    </div>
+    <div class="state end">
+      <span class="badge">end()</span>
+      <div class="desc">Thả chuột. Gỡ ghost khỏi scene + dispose vật liệu đã clone. Vật thật chốt vị trí.</div>
+    </div>
+  </div>
+
+  <div class="note purple">
+    <strong>Vì sao tách vật thật và ghost?</strong> Để khi đang kéo, dữ liệu/ECS của vật thật không bị "bẩn" bởi hàng trăm vị trí trung gian. Chỉ khi thả mới commit 1 vị trí cuối → undo/redo sạch, vật lý va chạm tính trên ghost chứ không phá vật thật.
+  </div>
+
+  <h2>3. Bóc từng phương thức</h2>
+
+  <div class="flow">
+    <div class="flow-row">
+      <span class="flow-key k-begin">begin()</span>
+      <div>
+        <strong>Tạo ghost.</strong> Lấy root hiển thị của entity — ưu tiên <code>Model3D.root</code> (model GLB), nếu không có thì <code>Mesh.mesh</code> (hình học thô). Gọi <code>sourceRoot.clone(true)</code> để sao <em>sâu</em> toàn bộ cây con. Rồi <code>GhostMaterialSet.apply()</code> thay toàn bộ material thành bản trong suốt. Ghost được <code>add</code> vào scene nhưng để <code>visible = false</code> — chờ <code>update()</code> đầu tiên mới hiện, tránh chớp 1 frame ở vị trí cũ.
+        <div class="note" style="margin-bottom:0">Dòng đầu tiên là <code>this.end()</code> — dọn sạch ghost còn sót từ phiên trước trước khi tạo mới. Tự bảo vệ khỏi rò rỉ.</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <span class="flow-key k-update">update()</span>
+      <div>
+        <strong>Dời + tô màu.</strong> Nhận <code>intended</code> (pose mong muốn: x,y,z và tuỳ chọn quaternion) + <code>isColliding</code>. Set <code>position</code>, set <code>quaternion</code> nếu có, bật <code>visible = true</code>.
+        <div class="note green" style="margin-bottom:0"><strong>Tối ưu khéo:</strong> việc đổi màu (phải duyệt mọi material trong cây) <em>chỉ</em> chạy khi trạng thái <strong>lật</strong> (<code>isColliding !== lastColliding</code>). Kéo qua vùng trống liên tục thì không tốn công duyệt lại mỗi frame.</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <span class="flow-key k-hide">hide()</span>
+      <div>
+        <strong>Ẩn tạm.</strong> Khi con trỏ ra chỗ không thả được, chỉ <code>visible = false</code> — ghost vẫn nằm trong scene để lần sau hiện lại tức thì (không phải clone lại). Đồng thời reset tint về "không va chạm" và <code>lastColliding = null</code>, để lần hiện sau không dính màu đỏ cũ.
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <span class="flow-key k-end">end()</span>
+      <div>
+        <strong>Dọn dẹp.</strong> <code>scene.remove()</code> ghost, rồi <code>GhostMaterialSet.disposeClonedMaterials()</code> giải phóng các material đã clone (tránh rò GPU memory). Reset mọi tham chiếu về <code>null</code>. <code>dispose()</code> chỉ là alias gọi <code>end()</code> khi huỷ controller.
+      </div>
+    </div>
+  </div>
+
+  <h2>4. Trạng thái nội bộ (3 biến)</h2>
+  <table>
+    <tr><th>Biến</th><th>Kiểu</th><th>Vai trò</th></tr>
+    <tr><td><code>ghostRoot</code></td><td>Object3D | null</td><td>Bản clone đang nằm trong scene. <code>null</code> = không có phiên kéo nào.</td></tr>
+    <tr><td><code>materials</code></td><td>GhostMaterialSet | null</td><td>Bộ vật liệu ghost — controller ủy thác chuyện trong suốt + tint cho lớp này.</td></tr>
+    <tr><td><code>lastColliding</code></td><td>boolean | null</td><td>Nhớ trạng thái va chạm lần trước để chỉ đổi màu khi <em>thay đổi</em>. <code>null</code> = chưa biết.</td></tr>
+  </table>
+
+  <h2>5. Mã rút gọn — đọc 1 lượt là hiểu</h2>
+  <pre><span class="cm">// Nhấn chuột xuống Gizmo</span>
+<span class="fn">begin</span>(world, entityId) {
+  <span class="kw">this</span>.<span class="fn">end</span>();                          <span class="cm">// dọn ghost cũ (nếu còn)</span>
+  <span class="kw">const</span> src = model.root ?? mesh.mesh;    <span class="cm">// hình gốc của vật</span>
+  <span class="kw">const</span> ghost = src.<span class="fn">clone</span>(<span class="kw">true</span>);        <span class="cm">// sao sâu</span>
+  <span class="kw">this</span>.materials = GhostMaterialSet.<span class="fn">apply</span>(ghost); <span class="cm">// → trong suốt</span>
+  ghost.visible = <span class="kw">false</span>;                 <span class="cm">// chờ update() đầu tiên</span>
+  scene.<span class="fn">add</span>(ghost);
+}
+
+<span class="cm">// Kéo chuột — gọi liên tục mỗi objectChange</span>
+<span class="fn">update</span>(intended, isColliding) {
+  ghost.position.<span class="fn">set</span>(intended.x, intended.y, intended.z);
+  <span class="kw">if</span> (intended.qx !== undefined) ghost.quaternion.<span class="fn">set</span>(...);
+  ghost.visible = <span class="kw">true</span>;
+  <span class="kw">if</span> (isColliding !== lastColliding) {     <span class="cm">// CHỈ khi lật trạng thái</span>
+    lastColliding = isColliding;
+    materials.<span class="fn">setColliding</span>(isColliding);     <span class="cm">// đỏ ↔ xanh</span>
+  }
+}
+
+<span class="fn">hide</span>()  { ghost.visible = <span class="kw">false</span>; materials.<span class="fn">setColliding</span>(<span class="kw">false</span>); } <span class="cm">// ẩn, giữ lại</span>
+<span class="fn">end</span>()   { scene.<span class="fn">remove</span>(ghost); GhostMaterialSet.<span class="fn">disposeClonedMaterials</span>(ghost); } <span class="cm">// xoá hẳn</span></pre>
+
+  <h2>6. Nó ráp vào đâu trong hệ thống?</h2>
+  <div class="card">
+    <p style="margin-top:0">Controller này là một <strong>mảnh nhỏ</strong> được tách ra từ GizmoSystem (theo Phase 5.4 trong lịch sử refactor). Nó <em>không</em> tự biết khi nào va chạm, không tự tính pose — những thứ đó do GizmoSystem / drag lifecycle ở trên quyết định rồi <strong>gọi xuống</strong>:</p>
+    <pre style="margin-bottom:0"><span class="cm">// phía GizmoSystem (gọi controller)</span>
+onDragStart   → ghostCtrl.<span class="fn">begin</span>(world, id)
+onObjectChange→ ghostCtrl.<span class="fn">update</span>(pose, collides)
+onPointerEmpty→ ghostCtrl.<span class="fn">hide</span>()
+onDragEnd     → ghostCtrl.<span class="fn">end</span>()  <span class="cm">+ commit vị trí thật vào ECS</span></pre>
+    <p class="note green" style="margin-bottom:0"><strong>Nguyên tắc thiết kế:</strong> controller chỉ lo <em>pose + vòng đời</em>. Chuyện "trông như ghost thế nào" (độ trong, màu đỏ va chạm) ủy thác hết cho <code>GhostMaterialSet</code> — cùng bộ vật liệu mà <code>FurniturePlacementSystem</code> dùng khi <em>đặt mới</em> đồ, nên ghost lúc kéo và lúc đặt trông nhất quán.</p>
+  </div>
+
+  <div class="footer">
+    Tạo để giải thích <code>DragGhostController.ts</code> · mở file này bằng trình duyệt bất kỳ.
+  </div>
+
+</div>
+</body>
+</html>

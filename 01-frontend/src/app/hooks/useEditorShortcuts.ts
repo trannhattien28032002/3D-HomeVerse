@@ -2,8 +2,9 @@
  * Hook đăng ký phím tắt toàn cục cho editor.
  *
  * Bảng phím tắt:
- *   Ctrl+S   → save scene
- *   Ctrl+O   → mở file scene
+ *   Ctrl+S       → lưu scene lên máy chủ (onSave)
+ *   Ctrl+Shift+S → xuất file .homeverseplan xuống máy (onExport)
+ *   Ctrl+O       → mở file scene
  *   Ctrl+C   → copy đồ đặt sàn đang chọn (2D: cả cụm multi-select · 3D: object đơn)
  *   Ctrl+V   → paste bản sao cả cụm đã copy (giữ layout tương đối, lệch chéo, undo được)
  *   V        → tool Select
@@ -34,6 +35,8 @@ type Params = {
     isPlacing: boolean;
     toggleDecorCatalog: () => void;
     onSave: () => void;
+    /** Xuất file .homeverseplan xuống máy (Ctrl+Shift+S). */
+    onExport: () => void;
     onLoad: () => void;
     /** entityId object đang chọn ở 3D (kind "object"), hoặc null. Nguồn copy khi mode==="3d". */
     selectedObjectId: string | null;
@@ -53,11 +56,12 @@ export function useEditorShortcuts(params: Params): void {
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            const { engine, mode, setMode, setTool2D, isPlacing, toggleDecorCatalog, onSave, onLoad, selectedObjectId, selectedFurnitureIds } = paramsRef.current;
+            const { engine, mode, setMode, setTool2D, isPlacing, toggleDecorCatalog, onSave, onExport, onLoad, selectedObjectId, selectedFurnitureIds } = paramsRef.current;
 
             if (e.ctrlKey || e.metaKey) {
                 const key = e.key.toLowerCase();
-                if (key === "s") { e.preventDefault(); onSave(); return; }
+                // Ctrl+Shift+S xuất file xuống máy; Ctrl+S lưu lên máy chủ.
+                if (key === "s") { e.preventDefault(); (e.shiftKey ? onExport : onSave)(); return; }
                 if (key === "o") { e.preventDefault(); onLoad(); return; }
 
                 // Ctrl+C — copy đồ đặt sàn đang chọn. Bỏ qua khi đang gõ trong ô nhập

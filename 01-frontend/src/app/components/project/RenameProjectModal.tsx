@@ -3,6 +3,7 @@
  */
 import { useEffect, useState } from "react";
 
+// To-do: Nên làm 1 file gom các constants
 const MAX_NAME_LENGTH = 200;
 
 type Props = {
@@ -21,6 +22,7 @@ export default function RenameProjectModal({ open, initialName, busy = false, on
         if (open) setName(initialName);
     }, [open, initialName]);
 
+    // To-do: Lặp code
     useEffect(() => {
         if (!open) return;
         const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) onCancel(); };

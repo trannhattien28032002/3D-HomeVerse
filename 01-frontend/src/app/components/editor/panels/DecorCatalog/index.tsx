@@ -6,15 +6,16 @@
  *   onClose  — gọi khi người dùng đóng (nút X, click nền mờ, hoặc phím Esc)
  *   onSelect — gọi kèm id của vật khi một mục trong catalog được click
  *
- * Nguồn dữ liệu: src/data/catalog/objects.json (CATALOG_ENTRIES)
+ * Nguồn dữ liệu: catalogStore (nạp từ backend lúc bootstrap) qua getCatalogEntries()
  * Lọc:          từ khóa tìm kiếm (theo tên, không phân biệt hoa thường) + chip danh mục
  * Bàn phím:     Esc để đóng, điều hướng bằng Tab qua các mục (mặc định của trình duyệt)
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { AnimationEvent as ReactAnimationEvent } from "react";
 import { T, RGB, alpha } from "src/app/constants/designTokens";
 
-import { CATALOG_ENTRIES, FILTER_CHIPS, ALL_CATEGORIES, filterCatalog } from "./catalogData";
+import { catalogVersion } from "src/shared/catalog/catalogStore";
+import { getCatalogEntries, getFilterChips, ALL_CATEGORIES, filterCatalog } from "./catalogData";
 import { CategoryTabs } from "./CategoryTabs";
 import { CatalogGrid } from "./CatalogGrid";
 
@@ -75,7 +76,13 @@ export default function DecorCatalog({ isOpen, onClose, onSelect }: Props) {
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [handleKeyDown]);
 
-  const filtered = filterCatalog(CATALOG_ENTRIES, search, activeFilter);
+  // Rẻ hiện tại (~107 entry) nhưng dễ chạy lại mỗi keystroke/re-render khi modal mở
+  // — memoize để tránh tính lại filter khi search/activeFilter/catalog không đổi.
+  // catalogVersion() làm dep để rebuild đúng khi catalog hydrate lại (hiếm khi đổi).
+  const filtered = useMemo(
+    () => filterCatalog(getCatalogEntries(), search, activeFilter),
+    [search, activeFilter, catalogVersion()],
+  );
 
   if (!mounted) return null;
 
@@ -249,7 +256,7 @@ export default function DecorCatalog({ isOpen, onClose, onSelect }: Props) {
           </div>
 
           <CategoryTabs
-            chips={FILTER_CHIPS}
+            chips={getFilterChips()}
             activeFilter={activeFilter}
             onSelect={setActiveFilter}
           />

@@ -22,7 +22,7 @@ import { Transform } from "src/engine/components/core/Transform";
 import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { WallOpening } from "src/engine/components/wall/WallOpening";
 import { Query } from "src/engine/ecs/Query";
-import type { SceneDocument, SceneNodeRecord, SceneWallRecord, SceneFurnitureRecord, SceneWallItemRecord } from "src/engine/serialization/SceneDocument";
+import type { SceneDocument, SceneNodeRecord, SceneWallRecord, SceneFurnitureRecord, SceneWallItemRecord } from "src/shared/types/SceneDocument";
 
 /**
  * Đọc material đã chọn từ Model3D.materialOverrides → record { slotId: materialId }.
@@ -108,5 +108,13 @@ export function serializeScene(engine: EngineInstance): SceneDocument {
         for (const [key, materialId] of engine.floorMaterials) floors[key] = materialId;
     }
 
-    return { version: 1, nodes, walls, furniture, wallItems, ...(floors && { floors }) };
+    // ── Loại phòng theo roomKey ─────────────────────────────────────────────────
+    // Registry roomKey→roomType là chủ; chỉ lưu khi có ít nhất 1 entry.
+    let roomTypes: Record<string, string> | undefined;
+    if (engine.roomTypes.size > 0) {
+        roomTypes = {};
+        for (const [key, roomType] of engine.roomTypes) roomTypes[key] = roomType;
+    }
+
+    return { version: 1, nodes, walls, furniture, wallItems, ...(floors && { floors }), ...(roomTypes && { roomTypes }) };
 }

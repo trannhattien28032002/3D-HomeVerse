@@ -7,13 +7,6 @@
  * đổi provider chỉ sửa ai.service, FE không đổi. Bất biến: GEMINI_API_KEY chỉ ở server.
  */
 
-/** Một tool schema (JSON Schema cho tham số). */
-export type ToolSchema = {
-  name: string;
-  description: string;
-  input_schema: Record<string, unknown>;
-};
-
 /** Một lần model đòi gọi tool. */
 export type AgentToolCall = { id: string; name: string; input: unknown };
 
@@ -25,14 +18,6 @@ export type NeutralTurn =
       role: 'tool';
       results: { id: string; name: string; content: string; isError?: boolean }[];
     };
-
-/** Body của POST /ai/chat. */
-export type ChatRequest = {
-  system?: string;
-  tools?: ToolSchema[];
-  turns: NeutralTurn[];
-  maxTokens?: number;
-};
 
 /** Response chuẩn hoá của POST /ai/chat. */
 export type ChatResponse = {

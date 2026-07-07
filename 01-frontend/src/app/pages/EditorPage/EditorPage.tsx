@@ -50,15 +50,14 @@ import { useEngineSelectionSync } from "./useEngineSelectionSync";
 import { useSceneFileIO } from "./useSceneFileIO";
 import { usePlacementRouting } from "./usePlacementRouting";
 import { useScenePersistence } from "./useScenePersistence";
+import { useCatalogBootstrap } from "./useCatalogBootstrap";
+import { useEditorLoadingProgress } from "./useEditorLoadingProgress";
 import SaveStatusPill from "src/app/components/editor/overlays/SaveStatusPill";
 import MaterialHintToast from "src/app/components/editor/overlays/MaterialHintToast";
+import EditorTour from "src/app/components/editor/overlays/EditorTour";
+import ShortcutsModal from "src/app/components/editor/overlays/ShortcutsModal";
 
 // ── Loader tuning ─────────────────────────────────────────────────────────
-/** Pha A (engine boot) crawl tối đa tới % này; phần còn lại dành cho tải scene. */
-const BOOT_PROGRESS_CEIL = 40;
-/** Pha B (tải scene): map loadProgress 0→1 vào [SCENE_PROGRESS_START, 100]. */
-const SCENE_PROGRESS_START = 45;
-const SCENE_PROGRESS_SPAN = 100 - SCENE_PROGRESS_START;
 /** Thời gian hiển thị gợi ý "chọn vật để đổi màu" khi chưa chọn gì (ms). */
 const MATERIAL_HINT_MS = 2500;
 
@@ -91,22 +90,18 @@ export default function EditorPage() {
     const engineRef = useRef<EngineInstance | null>(null);
     useEffect(() => { engineRef.current = engine; }, [engine]);
 
-    const [progress, setProgress] = useState(0);
     const [engineReady, setEngineReady] = useState(false);
-    const [showLoader, setShowLoader] = useState(true);
     const [showMaterialHint, setShowMaterialHint] = useState(false);
     const materialHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // ── Loading: Pha A — engine boot (0 → 40%) ───────────────────────────────
-    // Crawl giả CHỈ trong lúc khởi tạo Three.js. Dừng khi engine sẵn sàng; phần
-    // 45→100% do tiến độ tải scene thật (loadProgress) ở dưới điều khiển.
+    // ── VR (kính): theo dõi trạng thái present → ẩn chrome DOM khi đang trong kính ──
+    const isVRPresenting = useUIStore((state) => state.isVRPresenting);
+    const setVRPresenting = useUIStore((state) => state.setVRPresenting);
     useEffect(() => {
-        if (engineReady) return;
-        const id = setInterval(() => {
-            setProgress(p => (p >= BOOT_PROGRESS_CEIL ? p : Math.min(p + Math.random() * 8, BOOT_PROGRESS_CEIL)));
-        }, 200);
-        return () => clearInterval(id);
-    }, [engineReady]);
+        if (!engine) return;
+        const unsub = engine.xr.subscribe(setVRPresenting);
+        return () => { unsub(); setVRPresenting(false); };
+    }, [engine, setVRPresenting]);
 
     useEffect(() => {
         syncViewport(window.innerWidth, window.innerHeight);
@@ -146,26 +141,26 @@ export default function EditorPage() {
     // ── Export/Import file .homeverseplan (R7: delegated to useSceneFileIO) ───
     const { handleSave, handleLoad, fileInputRef, onFileChange } = useSceneFileIO(engineRef);
 
-    // ── Scene persistence backend (P1): load khi engine ready + Ctrl+S lưu + autosave ─
-    const { status: sceneStatus, loadProgress, saveState, saveNow, applyScene } = useScenePersistence(projectId, engineRef, engineReady);
-
-    // ── Loading: Pha B — tải scene thật (45 → 100%) ──────────────────────────
-    // Sau khi engine sẵn sàng, deserializeScene tải GLB tuần tự → loadProgress 0→1.
-    // Map vào 45–100%. Math.max giữ thanh không bao giờ lùi.
+    // ── Catalog bootstrap: nạp objects/materials từ backend trước khi tải scene ──
+    const { catalogReady, error: catalogError } = useCatalogBootstrap();
     useEffect(() => {
-        if (!engineReady) return;
-        setProgress(p => Math.max(p, SCENE_PROGRESS_START + loadProgress * SCENE_PROGRESS_SPAN));
-    }, [engineReady, loadProgress]);
+        if (catalogError) {
+            toast.error("Không tải được thư viện nội thất/vật liệu. Hãy kiểm tra kết nối rồi tải lại trang.");
+        }
+    }, [catalogError]);
 
-    // Loader chỉ tắt khi engine xong VÀ scene đã settled (ready/error), hoặc không
-    // có project để tải. Trước đây loader tắt ngay ở engineReady — khiến scene/GLB
-    // tải SAU lưng loading, đồ vật "pop in" khi user đã vào. Giờ chờ tải xong hẳn.
-    const sceneSettled = !projectId || sceneStatus === "ready" || sceneStatus === "error";
-    const loaderDone = engineReady && sceneSettled;
+    // ── Scene persistence backend (P1): load khi engine + catalog ready + Ctrl+S lưu + autosave ─
+    // Gate trên catalogReady: deserialize scene spawn furniture gọi FurnitureCatalog đồng bộ,
+    // nên catalog NÊN hydrate xong trước (nếu không getAssetPath ném "Unknown modelId").
+    // Nhưng nếu catalog LỖI (catalogError) thì vẫn cho scene load tiếp để loader không kẹt mãi
+    // (scene rỗng vẫn mở được; scene có đồ sẽ báo error gracefully thay vì treo).
+    const catalogSettled = catalogReady || catalogError !== null;
+    const { status: sceneStatus, loadProgress, saveState, saveNow, applyScene } = useScenePersistence(projectId, engineRef, engineReady && catalogSettled);
 
-    useEffect(() => {
-        if (loaderDone) setProgress(100);
-    }, [loaderDone]);
+    // ── Loading: thanh tiến độ 2 pha + vòng đời LoadingScreen (R7/5.6: hook riêng) ──
+    const { progress, loaderDone, showLoader, setShowLoader } = useEditorLoadingProgress({
+        projectId, engineReady, loadProgress, sceneStatus,
+    });
 
     // ── Placement routing (R7: delegated to usePlacementRouting) ─────────────
     const onDecorSelect = usePlacementRouting(engine, mode);
@@ -179,6 +174,7 @@ export default function EditorPage() {
         isPlacing,
         toggleDecorCatalog,
         onSave: () => { void saveNow(); },
+        onExport: handleSave,
         onLoad: handleLoad,
         selectedObjectId: selected?.kind === "object" ? selected.id : null,
         selectedFurnitureIds,
@@ -187,11 +183,13 @@ export default function EditorPage() {
     return (
         <EngineContext.Provider value={engine}>
             <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden", fontFamily: "'Nunito Sans', sans-serif" }}>
-                <TopNavBar mode={mode} />
-                <SaveStatusPill state={saveState} onSave={() => { void saveNow(); }} />
-                <EntityCounter />
+                <div style={{ display: isVRPresenting ? "none" : "contents" }}>
+                    <TopNavBar mode={mode} />
+                    <SaveStatusPill state={saveState} onSave={() => { void saveNow(); }} />
+                    <EntityCounter />
+                </div>
 
-                <div style={{ position: "absolute", top: 56, left: 0, right: 0, bottom: 0 }}>
+                <div id="editor-viewport" style={{ position: "absolute", top: isVRPresenting ? 0 : 56, left: 0, right: 0, bottom: 0 }}>
                     <div style={{ display: mode === "3d" ? "block" : "none", width: "100%", height: "100%" }}>
                         <SceneView3D
                             onEngineCreated={setEngine}
@@ -203,6 +201,7 @@ export default function EditorPage() {
                     </div>
                 </div>
 
+                <div style={{ display: isVRPresenting ? "none" : "contents" }}>
                 {mode === "2d" && <BuildPanel activeNav={activeNav} />}
 
                 <BottomNavBar
@@ -264,6 +263,9 @@ export default function EditorPage() {
                         onFadeOutEnd={() => setShowLoader(false)}
                     />
                 )}
+                <EditorTour projectId={projectId} ready={!showLoader} mode={mode} setMode={setMode} />
+                <ShortcutsModal />
+                </div>
                 {/* Hidden file input — triggered by Ctrl+O */}
                 <input
                     ref={fileInputRef}
@@ -272,6 +274,28 @@ export default function EditorPage() {
                     style={{ display: "none" }}
                     onChange={onFileChange}
                 />
+
+                {/* Nút thoát VR nổi — chrome bị ẩn khi present nên cần lối thoát riêng cho
+                    màn desktop/emulator. Trong kính Quest thật dùng nút Meta trên controller. */}
+                {isVRPresenting && (
+                    <button
+                        onClick={() => { void engine?.xr.exit(); }}
+                        style={{
+                            // Trên cả EditorTour (Joyride portal ra body, zIndex 10000) — nút
+                            // thoát VR là lối thoát tối hậu nên phải luôn nằm trên cùng.
+                            position: "absolute", top: 16, right: 16, zIndex: 10001,
+                            display: "flex", alignItems: "center", gap: 6,
+                            height: 40, padding: "0 16px",
+                            background: "rgba(20,20,28,0.82)", color: "#fff",
+                            border: "1px solid rgba(255,255,255,0.25)", borderRadius: 9999,
+                            fontFamily: "'Nunito Sans', sans-serif", fontSize: 14, fontWeight: 700,
+                            cursor: "pointer", backdropFilter: "blur(8px)",
+                        }}
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+                        Thoát VR
+                    </button>
+                )}
             </div>
         </EngineContext.Provider>
     );

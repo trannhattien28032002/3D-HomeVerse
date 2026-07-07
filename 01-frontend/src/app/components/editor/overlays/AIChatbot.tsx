@@ -75,6 +75,7 @@ export default function AIChatbot({ isOpen, onClose }: Props) {
                     world: engine.world,
                     nodes: engine.nodes,
                     wallEntityByWallId: engine.wallEntityByWallId,
+                    roomTypes: engine.roomTypes,
                 },
             });
             const result = await runner.run(text);

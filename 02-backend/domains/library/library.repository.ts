@@ -16,7 +16,7 @@ interface LibraryCursor {
 
 const OBJ_COLS = `
   id, name, category, model_url, thumbnail_url, topdown_url,
-  bounding_box, collision_box, material_slots, material_bindings,
+  bounding_box, collision_box, placement, material_slots, material_bindings,
   is_premium, is_active, deleted_at, created_at, updated_at
 `;
 

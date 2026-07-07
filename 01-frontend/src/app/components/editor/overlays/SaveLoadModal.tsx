@@ -109,7 +109,7 @@ export default function SaveLoadModal({ isOpen, onClose, onSave, onLoad }: Props
                     margin: 0, fontSize: 11.5, color: T.onSurfaceVariant,
                     textAlign: "center", letterSpacing: "0.01em",
                 }}>
-                    <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>S</kbd> lưu lên máy chủ &nbsp;·&nbsp; <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>O</kbd> mở file từ máy
+                    <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>S</kbd> lưu lên máy chủ &nbsp;·&nbsp; <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>Shift</kbd>+<kbd style={kbdStyle}>S</kbd> xuất file &nbsp;·&nbsp; <kbd style={kbdStyle}>Ctrl</kbd>+<kbd style={kbdStyle}>O</kbd> mở file từ máy
                 </p>
             </div>
         </div>

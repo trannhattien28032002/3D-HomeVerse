@@ -1,6 +1,5 @@
 import { Pool, PoolClient } from 'pg';
 import { typedQuery } from '../../shared/db/queryHelper';
-import { NotFoundError } from '../../shared/errors/NotFoundError';
 import type { Autosave } from './autosave.types';
 import type { SceneData } from '../scenes/scenes.types';
 

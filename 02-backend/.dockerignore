@@ -1,0 +1,22 @@
+node_modules
+dist
+dist-ssr
+npm-debug.log*
+
+.git
+.gitignore
+.claude
+.planning
+.vscode
+.idea
+
+tests
+vitest.config.ts
+
+*.md
+
+# Real secrets — must be injected at runtime, never baked into the image.
+properties.*.env
+!properties.*.env.example
+.env
+!.env.example

@@ -1,0 +1,1273 @@
+{
+  "_status": "draft-for-review",
+  "_note": "style = mined từ scene mẫu (UNUSED → []=hợp mọi style, cần review). traits chấm tay.",
+  "tags": {
+    "bath-01": {
+      "name": "Modern Bath",
+      "category": "bathroom",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "shower-door-01": {
+      "name": "Shower Door",
+      "category": "bathroom",
+      "style": [
+        "indochine",
+        "industrial",
+        "mediterranean",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian"
+      ],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "bed-single-01": {
+      "name": "Bed single",
+      "category": "beds",
+      "style": [],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "inferred"
+    },
+    "door-a": {
+      "name": "Door A",
+      "category": "doors",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "wall-shelf-b": {
+      "name": "Wall Shelf B",
+      "category": "shelves",
+      "style": [
+        "japandi",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "low-profile",
+        "raw-wood"
+      ],
+      "source": "mined"
+    },
+    "sink-01": {
+      "name": "Sink",
+      "category": "bathroom",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "toilet-01": {
+      "name": "Toilet",
+      "category": "bathroom",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "toilet-roll-holder-01": {
+      "name": "Toilet Roll Holder",
+      "category": "bathroom",
+      "style": [],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "inferred"
+    },
+    "toilet-rolls-01": {
+      "name": "Toilet Rolls",
+      "category": "bathroom",
+      "style": [],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "inferred"
+    },
+    "towel-holder-01": {
+      "name": "Towel Holder",
+      "category": "bathroom",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "bed-double-01": {
+      "name": "Bed Double",
+      "category": "beds",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "bunk-bed-01": {
+      "name": "Bunk Bed",
+      "category": "beds",
+      "style": [],
+      "traits": [
+        "utility",
+        "metal-frame"
+      ],
+      "source": "inferred"
+    },
+    "triple-bunk-bed-01": {
+      "name": "Triple Bunk Bed",
+      "category": "beds",
+      "style": [],
+      "traits": [
+        "utility",
+        "metal-frame"
+      ],
+      "source": "inferred"
+    },
+    "carpet-A-01": {
+      "name": "Carpet A",
+      "category": "carpets",
+      "style": [
+        "japandi",
+        "mediterranean",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "woven",
+        "natural"
+      ],
+      "source": "mined"
+    },
+    "carpet-B-01": {
+      "name": "Carpet B",
+      "category": "carpets",
+      "style": [
+        "indochine",
+        "industrial",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical"
+      ],
+      "traits": [
+        "minimal"
+      ],
+      "source": "mined"
+    },
+    "carpet-C-01": {
+      "name": "Carpet C",
+      "category": "carpets",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "woven"
+      ],
+      "source": "mined"
+    },
+    "chair-A-01": {
+      "name": "Chair A",
+      "category": "chairs",
+      "style": [
+        "scandinavian"
+      ],
+      "traits": [
+        "clean-line",
+        "upholstered"
+      ],
+      "source": "mined"
+    },
+    "chair-B-01": {
+      "name": "Chair B",
+      "category": "chairs",
+      "style": [
+        "modern"
+      ],
+      "traits": [
+        "sleek",
+        "minimal"
+      ],
+      "source": "mined"
+    },
+    "chair-C-01": {
+      "name": "Chair C",
+      "category": "chairs",
+      "style": [
+        "indochine",
+        "mediterranean",
+        "modern-farmhouse",
+        "neo-classical"
+      ],
+      "traits": [
+        "classic",
+        "curved"
+      ],
+      "source": "mined"
+    },
+    "chair-D-01": {
+      "name": "Chair D",
+      "category": "chairs",
+      "style": [
+        "japandi",
+        "minimalist",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "low-profile",
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "chair-E-01": {
+      "name": "Chair E",
+      "category": "chairs",
+      "style": [
+        "industrial",
+        "modern"
+      ],
+      "traits": [
+        "metal-frame",
+        "industrial-pipe"
+      ],
+      "source": "mined"
+    },
+    "door-c": {
+      "name": "Door C",
+      "category": "doors",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "door-b": {
+      "name": "Door B",
+      "category": "doors",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "drawer-a": {
+      "name": "Drawer A",
+      "category": "drawers",
+      "style": [
+        "indochine",
+        "industrial",
+        "mediterranean",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical"
+      ],
+      "traits": [
+        "classic"
+      ],
+      "source": "mined"
+    },
+    "drawer-b": {
+      "name": "Drawer B",
+      "category": "drawers",
+      "style": [
+        "japandi",
+        "minimalist",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "clean-line",
+        "minimal"
+      ],
+      "source": "mined"
+    },
+    "console-a": {
+      "name": "Console A",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "console-b": {
+      "name": "Console B",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "console-c": {
+      "name": "Console C",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "console-d": {
+      "name": "Console D",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "keyboard": {
+      "name": "Keyboard",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "laptop": {
+      "name": "Laptop",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "monitor": {
+      "name": "Monitor",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "pc": {
+      "name": "Pc",
+      "category": "electronics",
+      "style": [
+        "industrial"
+      ],
+      "traits": [
+        "tech"
+      ],
+      "source": "mined"
+    },
+    "phone": {
+      "name": "Phone",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "tablet": {
+      "name": "Tablet",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "television-a": {
+      "name": "Television A",
+      "category": "electronics",
+      "style": [],
+      "traits": [
+        "tech"
+      ],
+      "source": "inferred"
+    },
+    "television-b": {
+      "name": "Television B",
+      "category": "electronics",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "scandinavian"
+      ],
+      "traits": [
+        "tech"
+      ],
+      "source": "mined"
+    },
+    "blender": {
+      "name": "Blender",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "cupboard-a": {
+      "name": "Cupboard A",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "cupboard-b": {
+      "name": "Cupboard B",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "cupboard-c": {
+      "name": "Cupboard C",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "cupboard-d": {
+      "name": "Cupboard D",
+      "category": "kitchen",
+      "style": [
+        "japandi",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "raw-wood",
+        "low-profile"
+      ],
+      "source": "mined"
+    },
+    "cupboard-e": {
+      "name": "Cupboard E",
+      "category": "kitchen",
+      "style": [
+        "mediterranean",
+        "scandinavian"
+      ],
+      "traits": [
+        "classic"
+      ],
+      "source": "mined"
+    },
+    "cupboard-f": {
+      "name": "Cupboard F",
+      "category": "kitchen",
+      "style": [
+        "indochine",
+        "industrial",
+        "minimalist",
+        "modern-farmhouse",
+        "neo-classical"
+      ],
+      "traits": [
+        "sleek",
+        "minimal"
+      ],
+      "source": "mined"
+    },
+    "cupboard-sink": {
+      "name": "Cupboard Sink",
+      "category": "kitchen",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "utility"
+      ],
+      "source": "mined"
+    },
+    "dishwasher": {
+      "name": "Dishwasher",
+      "category": "kitchen",
+      "style": [
+        "modern"
+      ],
+      "traits": [
+        "utility"
+      ],
+      "source": "mined"
+    },
+    "fridge-a": {
+      "name": "Fridge A",
+      "category": "kitchen",
+      "style": [
+        "indochine",
+        "mediterranean",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian"
+      ],
+      "traits": [
+        "classic"
+      ],
+      "source": "mined"
+    },
+    "fridge-b": {
+      "name": "Fridge B",
+      "category": "kitchen",
+      "style": [
+        "industrial",
+        "japandi",
+        "minimalist",
+        "modern",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "sleek"
+      ],
+      "source": "mined"
+    },
+    "kettle": {
+      "name": "Kettle",
+      "category": "kitchen",
+      "style": [
+        "scandinavian"
+      ],
+      "traits": [
+        "utility"
+      ],
+      "source": "mined"
+    },
+    "kitchen-roll": {
+      "name": "Kitchen Roll",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "knife-block": {
+      "name": "Knife Block",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "microwave": {
+      "name": "Microwave",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "oven": {
+      "name": "Oven",
+      "category": "kitchen",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "utility"
+      ],
+      "source": "mined"
+    },
+    "toaster": {
+      "name": "Toaster",
+      "category": "kitchen",
+      "style": [
+        "modern"
+      ],
+      "traits": [
+        "utility"
+      ],
+      "source": "mined"
+    },
+    "washing-machine": {
+      "name": "Washing Machine",
+      "category": "kitchen",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "alarm-clock": {
+      "name": "Alarm Clock",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "bin": {
+      "name": "Bin",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "books-a": {
+      "name": "Books A",
+      "category": "miscellaneous",
+      "style": [
+        "japandi"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "books-b": {
+      "name": "Books B",
+      "category": "miscellaneous",
+      "style": [
+        "modern-farmhouse"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "bowl": {
+      "name": "Bowl",
+      "category": "miscellaneous",
+      "style": [
+        "wabi-sabi"
+      ],
+      "traits": [
+        "natural",
+        "rustic"
+      ],
+      "source": "mined"
+    },
+    "broom": {
+      "name": "Broom",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "ceiling-fan": {
+      "name": "Ceiling Fan",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "clock": {
+      "name": "Clock",
+      "category": "miscellaneous",
+      "style": [
+        "indochine",
+        "japandi",
+        "mediterranean",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "curtains": {
+      "name": "Curtains",
+      "category": "miscellaneous",
+      "style": [
+        "indochine",
+        "mediterranean",
+        "neo-classical"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "fan": {
+      "name": "Fan",
+      "category": "miscellaneous",
+      "style": [
+        "indochine"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "glass": {
+      "name": "Glass",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "globe": {
+      "name": "Globe",
+      "category": "miscellaneous",
+      "style": [
+        "indochine",
+        "modern",
+        "neo-classical"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "hoover": {
+      "name": "Hoover",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "ladder": {
+      "name": "Ladder",
+      "category": "miscellaneous",
+      "style": [
+        "industrial"
+      ],
+      "traits": [
+        "raw-wood",
+        "utility"
+      ],
+      "source": "mined"
+    },
+    "light-switch": {
+      "name": "Light Switch",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "mirror-a": {
+      "name": "Mirror A",
+      "category": "miscellaneous",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "mirror-b": {
+      "name": "Mirror B",
+      "category": "miscellaneous",
+      "style": [
+        "indochine",
+        "mediterranean",
+        "neo-classical",
+        "wabi-sabi"
+      ],
+      "traits": [],
+      "source": "mined"
+    },
+    "mug": {
+      "name": "Mug",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "pan": {
+      "name": "Pan",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "plant-a": {
+      "name": "Plant A",
+      "category": "miscellaneous",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "natural"
+      ],
+      "source": "mined"
+    },
+    "plant-b": {
+      "name": "Plant B",
+      "category": "miscellaneous",
+      "style": [
+        "japandi",
+        "mediterranean",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "natural"
+      ],
+      "source": "mined"
+    },
+    "plate": {
+      "name": "Plate",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "pot": {
+      "name": "Pot",
+      "category": "miscellaneous",
+      "style": [
+        "mediterranean",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "natural",
+        "rustic"
+      ],
+      "source": "mined"
+    },
+    "radiator-large": {
+      "name": "Radiator Large",
+      "category": "miscellaneous",
+      "style": [
+        "industrial",
+        "modern",
+        "neo-classical"
+      ],
+      "traits": [
+        "industrial-pipe",
+        "metal-frame"
+      ],
+      "source": "mined"
+    },
+    "radiator-small": {
+      "name": "Radiator Small",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "safe-a": {
+      "name": "Safe A",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "safe-b": {
+      "name": "Safe B",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "socket": {
+      "name": "Socket",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "speaker": {
+      "name": "Speaker",
+      "category": "miscellaneous",
+      "style": [],
+      "traits": [],
+      "source": "inferred"
+    },
+    "vase": {
+      "name": "Vase",
+      "category": "miscellaneous",
+      "style": [
+        "indochine",
+        "japandi",
+        "mediterranean",
+        "modern",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "natural"
+      ],
+      "source": "mined"
+    },
+    "vent": {
+      "name": "Vent",
+      "category": "miscellaneous",
+      "style": [
+        "industrial"
+      ],
+      "traits": [
+        "industrial-pipe",
+        "metal-frame"
+      ],
+      "source": "mined"
+    },
+    "shelf-a": {
+      "name": "Shelf A",
+      "category": "shelves",
+      "style": [],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "inferred"
+    },
+    "shelf-b": {
+      "name": "Shelf B",
+      "category": "shelves",
+      "style": [
+        "industrial",
+        "modern"
+      ],
+      "traits": [
+        "metal-frame",
+        "industrial-pipe"
+      ],
+      "source": "mined"
+    },
+    "shelf-c": {
+      "name": "Shelf C",
+      "category": "shelves",
+      "style": [
+        "japandi",
+        "scandinavian"
+      ],
+      "traits": [
+        "raw-wood",
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "shelf-d": {
+      "name": "Shelf D",
+      "category": "shelves",
+      "style": [
+        "modern-farmhouse"
+      ],
+      "traits": [
+        "rustic",
+        "raw-wood"
+      ],
+      "source": "mined"
+    },
+    "shelf-e": {
+      "name": "Shelf E",
+      "category": "shelves",
+      "style": [
+        "japandi",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "low-profile",
+        "raw-wood"
+      ],
+      "source": "mined"
+    },
+    "wall-shelf-a": {
+      "name": "Wall Shelf A",
+      "category": "shelves",
+      "style": [
+        "industrial",
+        "minimalist",
+        "modern-farmhouse",
+        "scandinavian"
+      ],
+      "traits": [
+        "clean-line",
+        "minimal"
+      ],
+      "source": "mined"
+    },
+    "sofa-a": {
+      "name": "Sofa A",
+      "category": "sofas",
+      "style": [
+        "indochine",
+        "mediterranean",
+        "modern-farmhouse"
+      ],
+      "traits": [
+        "classic",
+        "upholstered"
+      ],
+      "source": "mined"
+    },
+    "sofa-b": {
+      "name": "Sofa B",
+      "category": "sofas",
+      "style": [
+        "scandinavian"
+      ],
+      "traits": [
+        "clean-line",
+        "upholstered"
+      ],
+      "source": "mined"
+    },
+    "sofa-c": {
+      "name": "Sofa C",
+      "category": "sofas",
+      "style": [
+        "japandi",
+        "neo-classical",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "low-profile",
+        "upholstered"
+      ],
+      "source": "mined"
+    },
+    "sofa-d": {
+      "name": "Sofa D",
+      "category": "sofas",
+      "style": [
+        "industrial",
+        "minimalist",
+        "modern",
+        "neo-classical"
+      ],
+      "traits": [
+        "sleek",
+        "minimal"
+      ],
+      "source": "mined"
+    },
+    "desk": {
+      "name": "Desk",
+      "category": "tables",
+      "style": [
+        "japandi"
+      ],
+      "traits": [
+        "clean-line",
+        "minimal"
+      ],
+      "source": "mined"
+    },
+    "rounded-table-a": {
+      "name": "Rounded Table A",
+      "category": "tables",
+      "style": [
+        "mediterranean",
+        "neo-classical"
+      ],
+      "traits": [
+        "classic",
+        "curved"
+      ],
+      "source": "mined"
+    },
+    "rounded-table-b": {
+      "name": "Rounded Table B",
+      "category": "tables",
+      "style": [
+        "mediterranean",
+        "scandinavian"
+      ],
+      "traits": [
+        "clean-line",
+        "curved"
+      ],
+      "source": "mined"
+    },
+    "rounded-table-c": {
+      "name": "Rounded Table C",
+      "category": "tables",
+      "style": [],
+      "traits": [
+        "curved"
+      ],
+      "source": "inferred"
+    },
+    "table-a": {
+      "name": "Table A",
+      "category": "tables",
+      "style": [
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "scandinavian"
+      ],
+      "traits": [
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "table-b": {
+      "name": "Table B",
+      "category": "tables",
+      "style": [
+        "indochine",
+        "modern",
+        "neo-classical"
+      ],
+      "traits": [
+        "classic"
+      ],
+      "source": "mined"
+    },
+    "table-c": {
+      "name": "Table C",
+      "category": "tables",
+      "style": [
+        "indochine",
+        "industrial",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian"
+      ],
+      "traits": [
+        "minimal",
+        "clean-line"
+      ],
+      "source": "mined"
+    },
+    "table-d": {
+      "name": "Table D",
+      "category": "tables",
+      "style": [
+        "japandi",
+        "wabi-sabi"
+      ],
+      "traits": [
+        "low-profile",
+        "raw-wood"
+      ],
+      "source": "mined"
+    },
+    "window-a": {
+      "name": "Window A",
+      "category": "windows",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "window-b": {
+      "name": "Window B",
+      "category": "windows",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    },
+    "window-c": {
+      "name": "Window C",
+      "category": "windows",
+      "style": [],
+      "traits": [
+        "utility"
+      ],
+      "source": "inferred"
+    }
+  }
+}

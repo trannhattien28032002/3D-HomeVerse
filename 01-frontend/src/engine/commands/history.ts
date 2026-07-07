@@ -21,7 +21,7 @@
  * Giới hạn: MAX_HISTORY = 50 entry để tránh tốn memory.
  */
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
-import type { SceneDocument } from "src/engine/serialization/SceneDocument";
+import type { SceneDocument } from "src/shared/types/SceneDocument";
 
 const MAX_HISTORY = 50;
 

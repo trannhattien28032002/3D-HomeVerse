@@ -1,0 +1,557 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "n1",
+      "x": 0,
+      "z": 0
+    },
+    {
+      "id": "n2",
+      "x": 7,
+      "z": 0
+    },
+    {
+      "id": "n3",
+      "x": 7,
+      "z": 6
+    },
+    {
+      "id": "n4",
+      "x": 0,
+      "z": 6
+    },
+    {
+      "id": "n5",
+      "x": 12,
+      "z": 0
+    },
+    {
+      "id": "n6",
+      "x": 12,
+      "z": 6
+    },
+    {
+      "id": "n7",
+      "x": 6,
+      "z": 6
+    },
+    {
+      "id": "n8",
+      "x": 6,
+      "z": 11
+    },
+    {
+      "id": "n9",
+      "x": 0,
+      "z": 11
+    },
+    {
+      "id": "n10",
+      "x": 9,
+      "z": 6
+    },
+    {
+      "id": "n11",
+      "x": 9,
+      "z": 11
+    },
+    {
+      "id": "n12",
+      "x": 12,
+      "z": 11
+    }
+  ],
+  "walls": [
+    {
+      "wallId": "w1",
+      "startNodeId": "n1",
+      "endNodeId": "n2",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w2",
+      "startNodeId": "n2",
+      "endNodeId": "n3",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w3",
+      "startNodeId": "n4",
+      "endNodeId": "n7",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w4",
+      "startNodeId": "n3",
+      "endNodeId": "n7",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w5",
+      "startNodeId": "n1",
+      "endNodeId": "n4",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w6",
+      "startNodeId": "n2",
+      "endNodeId": "n5",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w7",
+      "startNodeId": "n5",
+      "endNodeId": "n6",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w8",
+      "startNodeId": "n10",
+      "endNodeId": "n3",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w9",
+      "startNodeId": "n10",
+      "endNodeId": "n6",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w10",
+      "startNodeId": "n7",
+      "endNodeId": "n8",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w11",
+      "startNodeId": "n8",
+      "endNodeId": "n9",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w12",
+      "startNodeId": "n4",
+      "endNodeId": "n9",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w13",
+      "startNodeId": "n10",
+      "endNodeId": "n11",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w14",
+      "startNodeId": "n11",
+      "endNodeId": "n8",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "PaintedPlaster017",
+        "right": "PaintedPlaster017"
+      }
+    },
+    {
+      "wallId": "w15",
+      "startNodeId": "n12",
+      "endNodeId": "n6",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "Tiles132A",
+        "right": "Tiles132A"
+      }
+    },
+    {
+      "wallId": "w16",
+      "startNodeId": "n11",
+      "endNodeId": "n12",
+      "thickness": 0.12,
+      "height": 2.6,
+      "materialFaces": {
+        "left": "Tiles132A",
+        "right": "Tiles132A"
+      }
+    }
+  ],
+  "furniture": [
+    {
+      "modelId": "sofa-c",
+      "x": 1.2,
+      "z": 3,
+      "rotY": 1.57,
+      "materials": {
+        "component-1": "Fabric083"
+      }
+    },
+    {
+      "modelId": "table-d",
+      "x": 3.5,
+      "z": 3,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "carpet-A-01",
+      "x": 3.5,
+      "z": 3,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric018",
+        "component-2": "Fabric083"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 3.5,
+      "z": 1.1,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric018"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 3.5,
+      "z": 4.9,
+      "rotY": 3.14,
+      "materials": {
+        "component-1": "Fabric018"
+      }
+    },
+    {
+      "modelId": "plant-a",
+      "x": 6.3,
+      "z": 5.3,
+      "rotY": 0
+    },
+    {
+      "modelId": "shelf-e",
+      "x": 6.4,
+      "z": 0.6,
+      "rotY": 3.14,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "vase",
+      "x": 0.7,
+      "z": 5.3,
+      "rotY": 0
+    },
+    {
+      "modelId": "cupboard-d",
+      "x": 7.6,
+      "z": 0.5,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "cupboard-sink",
+      "x": 8.6,
+      "z": 0.5,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "oven",
+      "x": 9.7,
+      "z": 0.5,
+      "rotY": 0
+    },
+    {
+      "modelId": "fridge-b",
+      "x": 11.4,
+      "z": 1,
+      "rotY": 0
+    },
+    {
+      "modelId": "table-a",
+      "x": 9.5,
+      "z": 4,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 8.7,
+      "z": 4,
+      "rotY": 1.57,
+      "materials": {
+        "component-1": "Fabric083"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 10.3,
+      "z": 4,
+      "rotY": 4.71,
+      "materials": {
+        "component-1": "Fabric083"
+      }
+    },
+    {
+      "modelId": "bed-double-01",
+      "x": 3,
+      "z": 8.6,
+      "rotY": 0,
+      "materials": {
+        "brown": "Wood067",
+        "white-002": "Fabric018",
+        "blue-001": "Fabric083"
+      }
+    },
+    {
+      "modelId": "drawer-b",
+      "x": 0.7,
+      "z": 6.7,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "carpet-C-01",
+      "x": 5,
+      "z": 7.2,
+      "rotY": 1.57
+    },
+    {
+      "modelId": "plant-b",
+      "x": 5.3,
+      "z": 10.3,
+      "rotY": 0
+    },
+    {
+      "modelId": "desk",
+      "x": 7.5,
+      "z": 10.2,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Wood067",
+        "component-2": "Wood067"
+      }
+    },
+    {
+      "modelId": "chair-D-01",
+      "x": 7.5,
+      "z": 9,
+      "rotY": 0,
+      "materials": {
+        "component-1": "Fabric083"
+      }
+    },
+    {
+      "modelId": "books-a",
+      "x": 7.8,
+      "z": 10.2,
+      "rotY": 0,
+      "y": 0.92
+    },
+    {
+      "modelId": "shelf-c",
+      "x": 6.5,
+      "z": 6.5,
+      "rotY": 1.57,
+      "materials": {
+        "component-1": "Wood067"
+      }
+    },
+    {
+      "modelId": "bath-01",
+      "x": 10.5,
+      "z": 10.2,
+      "rotY": 0
+    },
+    {
+      "modelId": "sink-01",
+      "x": 9.6,
+      "z": 6.6,
+      "rotY": 1.57
+    },
+    {
+      "modelId": "toilet-01",
+      "x": 11.4,
+      "z": 6.7,
+      "rotY": 4.71
+    }
+  ],
+  "wallItems": [
+    {
+      "modelId": "door-a",
+      "hostWallId": "w1",
+      "t": 0.2,
+      "side": 1
+    },
+    {
+      "modelId": "door-c",
+      "hostWallId": "w2",
+      "t": 0.45,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "w3",
+      "t": 0.3,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "w4",
+      "t": 0.5,
+      "side": 1
+    },
+    {
+      "modelId": "door-a",
+      "hostWallId": "w13",
+      "t": 0.5,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "w1",
+      "t": 0.62,
+      "side": 1
+    },
+    {
+      "modelId": "window-c",
+      "hostWallId": "w5",
+      "t": 0.5,
+      "side": 1
+    },
+    {
+      "modelId": "window-c",
+      "hostWallId": "w7",
+      "t": 0.5,
+      "side": 1
+    },
+    {
+      "modelId": "window-b",
+      "hostWallId": "w11",
+      "t": 0.5,
+      "side": 1
+    },
+    {
+      "modelId": "window-c",
+      "hostWallId": "w15",
+      "t": 0.6,
+      "side": 1
+    },
+    {
+      "modelId": "television-b",
+      "hostWallId": "w5",
+      "t": 0.5,
+      "side": 1
+    },
+    {
+      "modelId": "wall-shelf-b",
+      "hostWallId": "w1",
+      "t": 0.3,
+      "side": 1,
+      "materials": {
+        "shelf": "Wood067"
+      }
+    },
+    {
+      "modelId": "clock",
+      "hostWallId": "w2",
+      "t": 0.8,
+      "side": -1
+    },
+    {
+      "modelId": "mirror-a",
+      "hostWallId": "w13",
+      "t": 0.35,
+      "side": 1
+    },
+    {
+      "modelId": "towel-holder-01",
+      "hostWallId": "w15",
+      "t": 0.3,
+      "side": -1
+    }
+  ],
+  "floors": {
+    "n1,n2,n3,n4,n7": "WoodFloor040",
+    "n10,n2,n3,n5,n6": "Tiles138",
+    "n4,n7,n8,n9": "WoodFloor040",
+    "n10,n11,n3,n7,n8": "WoodFloor039",
+    "n10,n11,n12,n6": "Tiles132A"
+  }
+}

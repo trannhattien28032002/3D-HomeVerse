@@ -14,6 +14,11 @@ import { createRoomTool } from "src/ai/tools/createRoom";
 import { placeFurnitureTool } from "src/ai/tools/placeFurniture";
 import { addOpeningTool } from "src/ai/tools/addOpening";
 import { resizeRoomTool } from "src/ai/tools/resizeRoom";
+import { furnishRoomTool } from "src/ai/tools/furnishRoom";
+import { setSurfaceMaterialTool } from "src/ai/tools/setSurfaceMaterial";
+import { generateHouseTool } from "src/ai/tools/generateHouse";
+import { readSkillTool } from "src/ai/tools/readSkill";
+import { listSkills } from "src/ai/skills";
 import { runAgent } from "src/ai/agent/AgentClient";
 import { BackendTransport } from "src/ai/transport/backendTransport";
 import { buildSystemPrompt } from "src/ai/agent/systemPrompt";
@@ -38,8 +43,12 @@ export function createAgentRunner(opts: {
         placeFurnitureTool,
         addOpeningTool,
         resizeRoomTool,
+        furnishRoomTool,
+        setSurfaceMaterialTool,
+        generateHouseTool,
+        readSkillTool,
     ]);
-    const system = buildSystemPrompt(listCategories());
+    const system = buildSystemPrompt(listCategories(), listSkills());
     // A6 sẽ flip /ai/chat sang requireAuth — gắn fetchImpl đã có Authorization
     // header sẵn từ bây giờ để token chảy thông ngay khi backend bật guard.
     const transport = new BackendTransport({

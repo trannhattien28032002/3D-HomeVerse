@@ -5,7 +5,7 @@
  * WP2 sẽ thay bằng searchCatalog (fuzzy + tool). Ở WP1b ta nhúng danh sách tĩnh
  * này vào system prompt để model chọn đúng id.
  */
-import objectsData from "src/data/catalog/objects.json";
+import { getObjectsRaw } from "src/shared/catalog/catalogStore";
 import { getPlacement, getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 
 export type CatalogEntry = {
@@ -17,7 +17,7 @@ export type CatalogEntry = {
 };
 
 export function listCatalog(): CatalogEntry[] {
-    const objs = (objectsData as { objects?: Array<{ id?: unknown; name?: unknown; category?: unknown }> }).objects ?? [];
+    const objs = getObjectsRaw();
     const out: CatalogEntry[] = [];
     for (const o of objs) {
         if (typeof o.id !== "string" || typeof o.name !== "string") continue;

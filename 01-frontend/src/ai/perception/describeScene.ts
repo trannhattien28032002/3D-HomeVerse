@@ -41,6 +41,12 @@ export type RoomSummary = {
     bbox: BBoxXZ;
     /** wallId các tường bao quanh, theo thứ tự perimeter. */
     wallIds: string[];
+    /**
+     * Loại phòng đã gán ("living"/"bedroom"/"kitchen"/…), undefined nếu chưa gán.
+     * Lấy từ registry roomTypes (generateHouse/SET_ROOM_TYPE ghi). Cho AI/UI phân biệt
+     * phòng — phòng vẽ tay chưa gán type sẽ là undefined.
+     */
+    type?: string;
 };
 
 export type WallSummary = {
@@ -86,7 +92,7 @@ export type SceneSummary = {
 };
 
 /** Tập con của EngineInstance mà describeScene thật sự cần (đọc-only). */
-export type ScenePerceptionSource = Pick<EngineInstance, "world" | "nodes" | "wallEntityByWallId">;
+export type ScenePerceptionSource = Pick<EngineInstance, "world" | "nodes" | "wallEntityByWallId" | "roomTypes">;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -148,7 +154,7 @@ function bboxOf(points: Vec2XZ[]): BBoxXZ {
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 export function describeScene(engine: ScenePerceptionSource): SceneSummary {
-    const { world, nodes, wallEntityByWallId } = engine;
+    const { world, nodes, wallEntityByWallId, roomTypes } = engine;
 
     // ── Walls + bảng tra cặp-node → wallId (để suy wallIds của phòng) ─────────────
     const walls: WallSummary[] = [];
@@ -185,12 +191,14 @@ export function describeScene(engine: ScenePerceptionSource): SceneSummary {
             if (w) wallIds.push(w);
         }
 
+        const type = roomTypes.get(key);
         rooms.push({
             key,
             area: r(room.area, 2),
             centroid: { x: r(centroid.x), z: r(centroid.z) },
             bbox: bboxOf(room.points),
             wallIds,
+            ...(type && { type }),
         });
     }
 

@@ -51,6 +51,24 @@ type UIState = {
     snapM: number;
     /** Luân phiên bước lưới snap qua các giá trị trong SNAP_OPTIONS. */
     cycleSnap: () => void;
+    /** Hàm chụp Konva Stage hiện hành (PlanView2D đăng ký). null khi 2D chưa mount. */
+    screenshot2D: (() => string | null) | null;
+    /** PlanView2D gọi để đăng ký / huỷ (null) hàm chụp ảnh 2D. */
+    setScreenshot2D: (fn: (() => string | null) | null) => void;
+    /** Tour hướng dẫn (react-joyride) đang chạy hay không. EditorTour đọc làm prop `run`. */
+    isTourRunning: boolean;
+    /** Bật tour — gọi từ nút "?" TopNavBar hoặc auto khi lần đầu vào project. */
+    startTour: () => void;
+    /** Tắt tour — gọi khi user hoàn tất / bỏ qua. */
+    stopTour: () => void;
+    /** Bảng phím tắt (ShortcutsModal) đang mở hay không — mở bằng phím `?`. */
+    isShortcutsOpen: boolean;
+    openShortcuts: () => void;
+    closeShortcuts: () => void;
+    toggleShortcuts: () => void;
+    /** Đang trình chiếu VR (kính) — EditorPage ẩn chrome DOM khi true. */
+    isVRPresenting: boolean;
+    setVRPresenting: (presenting: boolean) => void;
 };
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -94,4 +112,15 @@ export const useUIStore = create<UIState>((set, get) => ({
         setSnapM(next); // đồng bộ engine (non-React, đọc qua snapToGridM)
         set({ snapM: next });
     },
+    screenshot2D: null,
+    setScreenshot2D: (fn) => set({ screenshot2D: fn }),
+    isTourRunning: false,
+    startTour: () => set({ isTourRunning: true }),
+    stopTour: () => set({ isTourRunning: false }),
+    isShortcutsOpen: false,
+    openShortcuts: () => set({ isShortcutsOpen: true }),
+    closeShortcuts: () => set({ isShortcutsOpen: false }),
+    toggleShortcuts: () => set((s) => ({ isShortcutsOpen: !s.isShortcutsOpen })),
+    isVRPresenting: false,
+    setVRPresenting: (presenting) => set({ isVRPresenting: presenting }),
 }));

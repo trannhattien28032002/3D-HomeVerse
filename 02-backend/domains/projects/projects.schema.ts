@@ -17,7 +17,3 @@ export const ListProjectsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   sort: z.enum(['updatedAt', 'createdAt', 'name']).default('updatedAt'),
 });
-
-export type CreateProjectBody = z.infer<typeof CreateProjectSchema>;
-export type UpdateProjectBody = z.infer<typeof UpdateProjectSchema>;
-export type ListProjectsQuery = z.infer<typeof ListProjectsQuerySchema>;

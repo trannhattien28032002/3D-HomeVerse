@@ -18,7 +18,7 @@ import { useEffect, useRef } from "react";
 import type { MutableRefObject, RefObject } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
 import { serializeScene } from "src/engine/serialization";
-import { createAutosave } from "src/data/scene/scenesApi";
+import { createAutosave } from "src/data/scenes/scenesApi";
 import { ApiError } from "src/data/api/client";
 
 const DEBOUNCE_MS = 5000;

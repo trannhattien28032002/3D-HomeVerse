@@ -1,3 +1,5 @@
+// Trung tâm Quản lý Kết nối
+
 // Must run before the pg Pool is created so the patched dns.lookup is in place
 // for the first connection (some networks REFUSE *.pooler.supabase.com — see
 // dns-fix.ts).

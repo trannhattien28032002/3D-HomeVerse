@@ -9,7 +9,8 @@ export const LibrarySearchQuerySchema = z.object({
     .optional()
     .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  // max 500: cho phép FE gom toàn bộ catalog (1 page) khi bootstrap editor.
+  limit: z.coerce.number().int().min(1).max(500).default(50),
 });
 
 export type LibrarySearchQuery = z.infer<typeof LibrarySearchQuerySchema>;

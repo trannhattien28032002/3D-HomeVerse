@@ -16,8 +16,6 @@ import { Transform } from "src/engine/components/core/Transform";
 import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Model3D } from "src/engine/components/render/Model3D";
-import { WallOpening } from "src/engine/components/wall/WallOpening";
-import { WallMounted } from "src/engine/components/wall/WallMounted";
 import { spawnFurnitureGLB, spawnWallItemGLB } from "src/engine/factories/FurnitureFactory";
 import { applyMaterialToSlot, resetSlotToOriginal } from "src/engine/rendering/materialApply";
 import { snapAngleRad } from "src/shared/constants/placement";
@@ -28,7 +26,8 @@ import { collectFurnitureBoxes } from "src/engine/adapters/furnitureBoxes";
 import { findMountWall } from "src/engine/adapters/wallRefs";
 import { getFootprint2D } from "src/engine/catalog/FurnitureCatalog";
 import { collectOccupiedRanges } from "src/engine/utils/wallItemRanges";
-import { wallItemOverlaps, occupancyLane } from "src/shared/geometry/wallMount";
+import { getWallItemTopology, setWallItemTopology } from "src/engine/adapters/wallItemTopology";
+import { resolveWallItemT, occupancyLane } from "src/shared/geometry/wallMount";
 import { countFurniture, MAX_FURNITURE_ENTITIES } from "src/engine/utils/furnitureLimit";
 import type { EngineCommand } from "src/engine/commands/EngineCommands";
 import type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
@@ -92,10 +91,9 @@ export function handlePlaceWallItem(command: PlaceWallItemCmd, deps: DispatcherD
 export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDeps): void {
     const { world, nodeRegistry } = deps;
 
-    const wo = world.getComponent(command.entityId, WallOpening);
-    const wm = world.getComponent(command.entityId, WallMounted);
+    const topo = getWallItemTopology(world, command.entityId);
     const model = world.getComponent(command.entityId, Model3D);
-    if ((!wo && !wm) || !model) { world.markDirty(); return; }
+    if (!topo || !model) { world.markDirty(); return; }
 
     const wall = findMountWall(world, nodeRegistry, command.hostWallId);
     if (!wall) { world.markDirty(); return; }
@@ -104,24 +102,16 @@ export function handleMoveWallItem(command: MoveWallItemCmd, deps: DispatcherDep
     const halfWidth = getFootprint2D(model.modelId).width / 2;
     const minT = halfWidth / wallLen;
     const maxT = 1 - minT;
-    const t = minT < maxT ? Math.max(minT, Math.min(command.t, maxT)) : 0.5;
     const halfWidthT = halfWidth / wallLen;
 
-    // Chồng opening/kệ khác trên cùng tường → từ chối (giữ nguyên, markDirty để 2D snap lại).
-    // Lane: cửa (opening) chiếm cả hai mặt; kệ chỉ chiếm mặt theo command.side.
-    const lane = occupancyLane(wo ? "opening" : "mount", command.side);
+    // Policy "reject": clamp biên (tường ngắn → 0.5), nếu còn đè item cùng lane thì TỪ CHỐI
+    // (giữ nguyên, markDirty để 2D snap lại). Lane: cửa chiếm cả 2 mặt; kệ chỉ mặt command.side.
+    const lane = occupancyLane(topo.kind, command.side);
     const occupied = collectOccupiedRanges(world, command.hostWallId, wallLen, command.entityId);
-    if (wallItemOverlaps(t, halfWidthT, lane, occupied)) { world.markDirty(); return; }
+    const { t, overlapping } = resolveWallItemT(command.t, halfWidthT, minT, maxT, lane, occupied, "reject");
+    if (overlapping) { world.markDirty(); return; }
 
-    if (wo) {
-        wo.hostWallId = command.hostWallId;
-        wo.t = t;
-        wo.side = command.side;
-    } else {
-        wm!.hostWallId = command.hostWallId;
-        wm!.t = t;
-        wm!.side = command.side;
-    }
+    setWallItemTopology(world, command.entityId, { hostWallId: command.hostWallId, t, side: command.side });
     world.markDirty();
 }
 
@@ -241,14 +231,18 @@ export function handleRotateFurniture(command: RotateFurnitureCmd, deps: Dispatc
 // =================================================================
 // APPLY_FURNITURE_MATERIAL — Đổi material một slot (component) của model
 // =================================================================
-// Async (nạp texture PBR). Gán lại mesh.material trên Model3D.root → đổi tức thì
-// ở khung 3D (RenderSystem vẽ mỗi frame). Ghi materialOverrides để serialize.
-// No-op nếu entity không có Model3D (vd legacy box furniture).
+// Async (nạp texture PBR). Gán lại mesh.material trên Model3D.root. Ghi
+// materialOverrides để serialize. No-op nếu entity không có Model3D (vd legacy box).
+// markDirty() SAU khi swap xong: RenderSystem render on-demand (CR-03) — sửa thẳng
+// mesh.material KHÔNG bump revision nên phải báo thủ công, nếu không cảnh đứng yên sẽ
+// không vẽ lại (đổi màu không hiện cho tới khi có tương tác khác). Phải nằm trong
+// .then() vì texture nạp async — markDirty đồng bộ sẽ chạy TRƯỚC lúc material được gán.
 export function handleApplyFurnitureMaterial(command: ApplyMaterialCmd, deps: DispatcherDeps): void {
     const { world, materialLibrary } = deps;
     const model = world.getComponent(command.entityId, Model3D);
     if (!model) return;
     applyMaterialToSlot(model, command.slotId, command.materialId, materialLibrary)
+        .then(() => world.markDirty())
         .catch((err) => console.error("APPLY_FURNITURE_MATERIAL failed:", err));
 }
 
@@ -262,4 +256,5 @@ export function handleResetFurnitureMaterial(command: ResetMaterialCmd, deps: Di
     const model = world.getComponent(command.entityId, Model3D);
     if (!model) return;
     resetSlotToOriginal(model, command.slotId);
+    world.markDirty(); // báo on-demand RenderSystem vẽ lại (xem APPLY_FURNITURE_MATERIAL)
 }

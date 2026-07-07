@@ -1,311 +1,203 @@
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 import './HomePage.css';
 import { Link } from 'react-router-dom';
 
+/**
+ * HomePage — landing "Tiny Home" theo mẫu scratch/home.html.
+ *
+ * Bố cục (cân giữa, tối giản): Header (scroll đổ bóng) → Hero (Build Your Sanctuary) →
+ * Philosophy 3 cột → Community Stats → Gallery Preview 4 cột → CTA → Footer.
+ * Mọi nút "Start Building" điều hướng tới /projects (luồng tạo dự án).
+ * Token màu/typography dùng Tailwind theme của dự án (trùng với config trong mock).
+ */
+
+const GALLERY = [
+    {
+        title: 'The Morning Nook',
+        author: 'by Elara Craft',
+        src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAcV6OGPkjR1mBcfGCFaeCCvlIzTjO5aQY3HH18NQmXCjjwacqBIX-B3UF5wjknupZP01_-mHmCh09M8f2ud_DOtQ_-fC9L1tPry_0ra5JOtsLSZe4ROXbiNimesKbrs72JXFnFq1d89-rW0QdbBcRa7RsKIkFybYMaGasg0JQqOLcZuCheiCi2iSVfb9zo0-a1vEkYYjD9LovZbp9gOGEsNKC-Wjs1G6DTkv2zr0O5baoUvvOootMnqdKF3WG61k7gm_Su8Ul169Lg',
+    },
+    {
+        title: "Baker's Hearth",
+        author: 'by Thorne Forge',
+        src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCLIegHdJwe2mTOJJD9MJfGjKUen4IVw7DGFkV-TxNiSiEv-FGn7dp1zTIkCILmSfIGB7Nj0H3D_7Ftoq4Oit8IgHANd7tpkMkLYMwfKdT2WZsuHIaZ4FQBn07mhYOKfIQZONODGuasuKe69NHX0ZN6Yr78kMu1ZxzySkpL2p6dm-y6vsJaLUXdAP-eMRut8Le2suXOncSkV25XOIh4r1vSqTjMVuDyOvlto57RPyG3zHuWdH8A4J1KKhjbrYBGJyr_65qeiC4uB44P',
+    },
+    {
+        title: "The Architect's Attic",
+        author: 'by Mira Line',
+        src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAk96bpo2JHa2_weSOMwT2EtLjx2mo8Y67hB-HVGN5FCJcG_j87yqOUyXKo9BOMeYlftNp0UVx1zmMU3x9-HLdFg-ecmpnrhH4wqs9D3PTQMZY3ucMNJ59ZssN5fChIbrHkz9e2-oOWgvEsiWMWHDwDpQMImFIk9UyJy3cnNsX-k6jPQXKIW_JIbHCIGd_medzrkWrzJiUTJIqZt1ajSqsi75XIr58hDNazYYqIvZ8NYiLIt0RWidv4C-qVMFwn1oinehcTVSfPBgSP',
+    },
+    {
+        title: 'Glass Conservatory',
+        author: 'by Julian Leaf',
+        src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBgYLlfej27xFWZZ_Zc_3eOZQ_rmlcljJyneaoffJLLmPzYK0CbocWH0-gz03_40h5UPRyrBMDDnPLG3ZcV86XPAJsq-mPX8-GWBFmMvOdihIikUburgmSq99kRCcghvWVPnyvqwDmXSW68IWK757Pb4b5ThfFKYAIbqyL__6udVY-wV6cXG0gTSxfHpAvjsx-sVJMd0X8M6Hrfve0rxwc5-QG-86ODUSVKx6lYOYnn4G9xgG1Cueyp5wFGiZBu5G2x8gddnBR0ltpP',
+    },
+];
+
+const AVATARS = [
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuAziUuTSLKvZH2tsYJioO_sosU-HYSLn093c4PkPdgmLcoMYqMJMyEXz92V7Ohwno32NC0DaB70kbCj8Lqg0A9RgUvlEDYf4qbcLVjpitQQKwPYyBkMeRneoK_L0X0uzWEC85SIuv9A_-YzpegemusHFo8qKcSFtUCQz-mSadIjtfYZfBWeWQ5bki2JPzGBKnospgU9Y5mLRf8bnS-IpBb5TbTzlqsC6vdfppqITmrNNwgojK1WFTweBYULf4cvWSTmMEwaKI6y0Mpm',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuB6Dm8DqFTJ4cHHStTGESi5gy5ucgAz0QFQePhzBY-m4ck_8TEveaqIBbSB1L0XsqfYpNMIroUEAkRag66fG74L1IsyNcRriD6WL_Lu-4UD2BcBYqjibx4HXlJ4U-0nDoFR81E_SwBF6i6mChi23sJy-OZxYwIBZ5SXR7WjPiWma3tjqpx4P1OMpixqU23SJn9Sp2QFD286rNMSMbcf5fHfVoeVLetTsjnQ-5yYMa9k49vQ-nPjpJDAjFDeFxKelCqeZPpmAp-MtGoA',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuDPX8OLyYs31sZOeuz_cu_XN6qfXiJwMBxlUtcvytBrgCAt0XU_Dn9AorGIQDLMe2Mz78DhCVfmAsYu2haKDOE4ZHdaGUJGvILjFxTKmUxkeH3zXqyb5kSdXGLAHnDhA96R5eTUyVue8kL_GcT03KKip0iXIkADmCjtF41CRU41gIwIWj2AamuAgIQD42_ZJ0mt7BhHM9A8OK1kk2IDnwj7aVqssYJYFkI7T8X50QElYB2L6hhkSoWZutPQtSRr9cK2pRyygWDjxKxp',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBHS8wGSrjqVUORSfiDjLOuZv7DOzUG7UKaWM6U4xdy7_WdiwJznWXJEeBO8-IaaJ9hXj2KQDzZR98kS44NBLY5l37n8WJCOGsgcaYSsWsRn2ZyrytpFggA5PkLiaz4yyw2Q3z9KLAJe4-dGvDcDumWaFBTWfC_ShuvfnD_PKNBZQAD4aOS-kVJX-yNi7R-E2bvpFPcTeyi62RqYRyeCt6V9YfKPszC1t3AujRjwD9uqyXfnl7KRpTlE49jE-TuZ1joZYwxD_vv4XjA',
+];
+
+const HERO_IMG =
+    'https://lh3.googleusercontent.com/aida/AP1WRLut9rgQaCUM9MDmKT8OJ_V_bifC7efw3GwyKnIAxxSSM8XMKw2Ub9TyKzjkKT8O2dbPIC8csm5lskEz6xaHLkbZuWVLLvQ_zaDo0udGUE1_PRk6SK65nwWHaiJ5x1plWMSGgjLAd69VyeojxEmAWaoJ0-LlSu_KyXQCURpBJ1dHwFZvszqyjH0gNzZo5hq7hg7ibfPjezfltYph8K8quXK9vCKc-vsrQ5VZO7mSDd7GU88WVc5-Qymrt58I';
+
 export default function HomePage() {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const galleryRef = useRef<HTMLDivElement>(null);
-    const sparkleContainerRef = useRef<HTMLDivElement>(null);
-
-    // Reveal animations
-    useEffect(() => {
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                }
-            });
-        }, observerOptions);
-
-        if (containerRef.current) {
-            const elements = containerRef.current.querySelectorAll('.reveal');
-            elements.forEach(el => observer.observe(el));
-        }
-
-        return () => observer.disconnect();
-    }, []);
-
-    // Particle/Sparkle effect
-    useEffect(() => {
-        const container = sparkleContainerRef.current;
-        if (!container) return;
-
-        let intervalId: any;
-
-        const createParticle = () => {
-            const p = document.createElement('div');
-            p.classList.add('particle');
-            const size = Math.random() * 4 + 1;
-            p.style.width = `${size}px`;
-            p.style.height = `${size}px`;
-            p.style.left = `${Math.random() * 100}vw`;
-            p.style.top = `${Math.random() * 100 + 100}vh`;
-            p.style.animation = `drift ${Math.random() * 10 + 15}s linear forwards`;
-
-            container.appendChild(p);
-            setTimeout(() => {
-                if (container.contains(p)) {
-                    p.remove();
-                }
-            }, 25000);
-        };
-
-        intervalId = setInterval(createParticle, 300);
-
-        return () => clearInterval(intervalId);
-    }, []);
-
-    // Carousel Scroll
-    const scrollGallery = (amount: number) => {
-        if (galleryRef.current) {
-            galleryRef.current.scrollBy({ left: amount, behavior: 'smooth' });
-        }
-    };
-
-    // Parallax
-    const handleScroll = () => {
-        if (!containerRef.current) return;
-        const scrolled = containerRef.current.scrollTop;
-        const elements = containerRef.current.querySelectorAll('.parallax-bg') as NodeListOf<HTMLElement>;
-        elements.forEach(el => {
-            const speed = parseFloat(el.dataset.speed || '0.5');
-            el.style.transform = `translateY(${scrolled * speed}px)`;
-        });
-    };
+    const [scrolled, setScrolled] = useState(false);
 
     return (
         <div
-            ref={containerRef}
-            onScroll={handleScroll}
-            className="bg-background text-on-background font-body-md h-screen overflow-y-auto overflow-x-hidden selection:bg-primary-container/30 scroll-smooth"
+            onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 20)}
+            className="bg-background text-on-background font-body-md h-screen overflow-y-auto overflow-x-hidden scroll-smooth selection:bg-primary-container/30"
         >
-            {/* Sparkle Canvas */}
-            <div ref={sparkleContainerRef} className="fixed inset-0 z-0 pointer-events-none"></div>
-
             {/* TopNavBar */}
-            <nav className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-primary/5">
-                <div className="flex justify-between items-center max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-4">
-                    <div className="flex items-center gap-3">
-                        <img alt="Tiny Home Logo" className="w-10 h-10 rounded-full" src="https://lh3.googleusercontent.com/aida/AP1WRLvEi2oAra0WtaOFX5TC0Znd2OV6NaQbf_8G-x2BTD6KHhVm5XYfpXN0_RP05Q77529EleEpDHtHH-ufLgoBZo7O_N8Yclzuy7jRGsE4Q0i9RaUlaYWc26sYwiQj-J_KfTsbsJrJ7wYlOk54dTQi_UaepK2tvEt5g_bCVDg_3lOgXeBwqyUVj99UW5M4fAP05cuiJb4kvhj30hd9SY230Ee1XIKIDIkdCyhM8tIA43few7FKfVZ3gDppufIK" />
-                        <span className="font-headline-md text-primary tracking-tight">Tiny Home</span>
+            <header
+                className={`fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-primary/5 transition-all duration-500 ${scrolled ? 'shadow-sm' : ''
+                    }`}
+            >
+                <nav
+                    className={`flex justify-between items-center max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop transition-all duration-500 ${scrolled ? 'py-3' : 'py-4'
+                        }`}
+                >
+                    <div className="font-headline-md text-headline-md text-primary tracking-tight">Tiny Home</div>
+                    <div className="hidden md:flex items-center gap-8">
+                        <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors relative nav-active-dot" href="#gallery">Gallery</a>
+                        <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors" href="#community">Blueprints</a>
+                        <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors" href="#community">Community</a>
                     </div>
-                    <div className="hidden md:flex gap-10 items-center">
-                        <a className="text-on-surface-variant hover:text-primary transition-colors font-label-lg" href="#gallery">Gallery</a>
-                        <a className="text-on-surface-variant hover:text-primary transition-colors font-label-lg" href="#blueprints">Blueprints</a>
-                        <a className="text-on-surface-variant hover:text-primary transition-colors font-label-lg" href="#community">Community</a>
-                        <Link
-                            to="/projects"
-                            className="bg-primary text-on-primary font-label-lg px-6 py-2.5 rounded-full hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all"
-                        >
-                            Start Building
-                        </Link>
-                    </div>
-                    <button className="md:hidden text-primary">
-                        <span className="material-symbols-outlined">menu</span>
-                    </button>
-                </div>
-            </nav>
+                    <Link
+                        to="/projects"
+                        className="bg-primary-container text-on-primary-container px-6 py-2 rounded-full font-label-lg text-label-lg hover:shadow-[0_0_15px_rgba(248,180,0,0.3)] transition-all active:scale-95"
+                    >
+                        Start Building
+                    </Link>
+                </nav>
+            </header>
 
-            <main className="relative z-10">
+            <main className="pt-24">
                 {/* Hero Section */}
-                <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-32 pb-20 overflow-hidden">
-                    <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop grid lg:grid-cols-2 gap-12 items-center">
-                        <div className="text-center lg:text-left reveal active">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-container/10 text-primary rounded-full mb-6 font-label-lg border border-primary/10">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                                </span>
-                                1,240 Architects currently building
-                            </div>
-                            <h1 className="font-headline-xl text-5xl md:text-7xl text-primary mb-8 leading-tight">
-                                Build Your Own <br /><span className="italic">Cozy World</span>
-                            </h1>
-                            <p className="font-body-lg text-xl text-on-surface-variant mb-10 max-w-xl mx-auto lg:mx-0">
-                                Escape into a peaceful sanctuary where every timber, teacup, and blossom is placed by your hand. A digital diorama for the soul.
+                <section className="relative min-h-[85vh] flex flex-col items-center justify-center text-center px-margin-mobile hero-glow">
+                    <div className="max-w-4xl w-full mb-12">
+                        <h1 className="font-headline-xl text-headline-xl text-on-background mb-4 opacity-0 translate-y-4 animate-[fadeIn_0.8s_ease-out_forwards]">
+                            Build Your Sanctuary
+                        </h1>
+                        <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto opacity-0 translate-y-4 animate-[fadeIn_0.8s_ease-out_0.2s_forwards]">
+                            Experience the quiet joy of artisanal miniature design in a sun-drenched digital village.
+                        </p>
+                    </div>
+                    <Link
+                        to="/projects"
+                        className="bg-primary text-on-primary px-10 py-4 rounded-full font-label-lg text-label-lg hover:bg-primary/90 hover:shadow-[0_4px_20px_rgba(124,88,0,0.2)] transition-all active:scale-95 opacity-0 animate-[fadeIn_0.8s_ease-out_0.6s_forwards]"
+                    >
+                        Start Building
+                    </Link>
+                </section>
+
+                {/* Philosophy Section */}
+                <section className="py-24 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-16 text-center">
+                        <div className="flex flex-col items-center">
+                            <span className="material-symbols-outlined text-primary text-4xl mb-6">architecture</span>
+                            <h3 className="font-headline-sm text-headline-sm text-on-background mb-3">Tactile Precision</h3>
+                            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                                Every joint, texture, and grain is rendered with the care of a master craftsman.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                <Link to="/projects" className="bg-primary text-on-primary font-label-lg px-10 py-4 rounded-full shadow-xl shadow-primary/20 hover:-translate-y-1 transition-all">
-                                    Start Your Project
-                                </Link>
-                                <button className="bg-surface-container text-primary border border-outline/20 font-label-lg px-10 py-4 rounded-full hover:bg-surface-variant transition-all">
-                                    Tour the Realm
-                                </button>
-                            </div>
                         </div>
-                        <div className="relative reveal delay-200 active">
-                            <div className="animate-float relative z-10">
-                                <img alt="Hero Miniature Room" className="w-full h-auto drop-shadow-[0_35px_35px_rgba(0,0,0,0.15)] rounded-2xl transform hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida/AP1WRLu849iW26NYX22DKtR8TRhW2Yvdj8J8zvgKjN3UaP5w2j7UcYRCBn5guO4SF3yHW7NhhVstPdIr6_6EbWmrGlnpvw_vo7iBBwV2gdwZQ7FiBFlZ5rsWQFj7eytM2AWPlJIEGXwqnL4iRqtsAXBQ_U3svBSaat0gBKfptM2a5gMHZQVIx_B-A7wXoR5h6_uRO_QDNYK92-b7m7IExi8Rgh5DFC_HEvjzBDmN08M5WAxyHds1UVn68ywSbxuL" />
-                            </div>
-                            {/* Floating Decorative Elements */}
-                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary-container/20 rounded-full blur-3xl animate-pulse"></div>
-                            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-secondary-container/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+                        <div className="flex flex-col items-center">
+                            <span className="material-symbols-outlined text-primary text-4xl mb-6">auto_awesome</span>
+                            <h3 className="font-headline-sm text-headline-sm text-on-background mb-3">Infinite Curation</h3>
+                            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                                A curated selection of hand-painted assets to fulfill your specific aesthetic vision.
+                            </p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="material-symbols-outlined text-primary text-4xl mb-6">diversity_3</span>
+                            <h3 className="font-headline-sm text-headline-sm text-on-background mb-3">Village Spirit</h3>
+                            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                                Join a community of builders sharing blueprints in our collaborative open market.
+                            </p>
                         </div>
                     </div>
                 </section>
 
-                {/* Live Builders Section */}
-                <section className="bg-surface-container-low py-12 border-y border-outline-variant/30 overflow-hidden">
-                    <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop">
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                            <div className="flex -space-x-4">
-                                <img alt="Builder" className="w-12 h-12 rounded-full border-2 border-surface shadow-sm hover:translate-y-[-4px] transition-transform cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3Isp-bbJE32Qu9OXpir22pVwmFb7KfMgsKylYngXV7enemr68kajL3EjoKmBUpgf_Rs983V9wrEwxJeB6IB9hqMuDElQ5AAIuHXi1p8467Y9sIZIBoTNQ4M7o3Sm-2CDoCJFz5hWd5cp6Je7mv8zje7n75sQDXeVfARgpD8XQ3hEtUwcVh3vs7Kas2mg3rH8VFuwVO3TGVvDEs_tXwdaZuvIMI_MAMLU4xprOiTljKuxu-agQQiWX5o9rKpgC5Nr0VDLF3IGOs2H8" />
-                                <img alt="Builder" className="w-12 h-12 rounded-full border-2 border-surface shadow-sm hover:translate-y-[-4px] transition-transform cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt_ddWu1ocnwoJBz9wgzQuWnbgEcNT88C7BCxVyHXksSWrZtps2NUsSiMBmXv7CdCovn_tTYC1q-Xqd-UmeYKqj8lwS-8nLJiGA095CBI1Zm9H4ZKfb3xSJvm2TnVqOr1NxsZ3dsjHJfFpYgeMUzQXJmNIeQbrRAGkS9PbnNWb02Qpl_pIH3hUrI9aScz9l8p1P2kcSBEddztL5vLYTZQPdlDB5u0x-xEWVwnB2rMpgna5m-JRE6kXin7O-0OQ0-omar6cmNNGokun" />
-                                <img alt="Builder" className="w-12 h-12 rounded-full border-2 border-surface shadow-sm hover:translate-y-[-4px] transition-transform cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqAODCDTWHNTe2AepJZFCMZnJAyPBG5xKrF4drl035kjIEZXQthTEzTK-F1smT2tz_sGEGAvC3C9rUR1PMzgLV8t5f6b24GHRQ_MR45Plsch8XCHsDY0SNUNbATrYcQ-9JxRjUAQe-iGtoqu9reqdpOx-M7qTLvH-cnh4ai9fFR2_ONAXR8jYagBPtVVTaPEv-oHzK53uB9ecUJaGQGLKZjYv8jsDyYyxEgXrwwYQD0x54Xm4r0HyfYTu6jnAbo5KNMXgrDt-1cYUD" />
-                                <img alt="Builder" className="w-12 h-12 rounded-full border-2 border-surface shadow-sm hover:translate-y-[-4px] transition-transform cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVSecCI3wf7nHwkcoh5_H2aaXI0bnNeRvNYJiiH071KtqWl_cIKYUfpf3i-AeUrLPoTNWlUFG6e7KFNrT9lCnaicQKU7RZ98X02s7NZZEy9W8KnLGVd7nyK7ZXutR4HuyyoPVhIOZaMaM77ta1EkCZHLUXTfDvjSuaQKy-OYgJbCzjg4jPBBkPAYihjN_0THnQIwamkxrYnIc_jBC8TOMaGohwQbIvOlK6wensYlK3OdWVsR_VNQo1J3RQmPp7KIokvMEVG3VVsWTm" />
-                                <div className="w-12 h-12 rounded-full border-2 border-surface bg-primary-container/20 flex items-center justify-center text-primary font-bold text-sm">+8k</div>
-                            </div>
-                            <div className="flex-1 max-w-lg">
-                                <div className="flex items-center gap-4 animate-pulse">
-                                    <div className="h-2 flex-1 bg-primary/10 rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary w-3/4 rounded-full"></div>
-                                    </div>
-                                    <span className="text-sm font-label-lg text-primary">Global Creation Rate: High</span>
-                                </div>
-                            </div>
-                            <div className="text-center md:text-right">
-                                <p className="font-headline-sm text-primary">Active Now</p>
-                                <p className="text-sm text-on-surface-variant">Building across 42 digital villages</p>
-                            </div>
+                {/* Community Stats */}
+                <section className="py-12 border-y border-outline-variant/20" id="community">
+                    <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-center items-center gap-6">
+                        <div className="flex -space-x-3 overflow-hidden">
+                            {AVATARS.map((src, i) => (
+                                <img key={i} alt="Community builder" className="inline-block h-10 w-10 rounded-full ring-2 ring-background object-cover" src={src} />
+                            ))}
                         </div>
+                        <p className="font-label-lg text-label-lg text-on-surface-variant">
+                            Joined by <span className="text-primary font-bold">12,400+</span> active builders creating their sanctuaries today.
+                        </p>
                     </div>
                 </section>
 
-                {/* Features Section */}
-                <section className="py-24 bg-white/30 backdrop-blur-sm">
-                    <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop">
-                        <div className="text-center mb-16 reveal active">
-                            <h2 className="font-headline-lg text-primary text-4xl mb-4">The Craft of Miniatures</h2>
-                            <p className="text-on-surface-variant max-w-2xl mx-auto">Physical sensations in a digital world. Every interaction designed to soothe.</p>
+                {/* Gallery Preview */}
+                <section className="py-24 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto" id="gallery">
+                    <div className="flex justify-between items-end mb-12">
+                        <div>
+                            <h2 className="font-headline-lg text-headline-lg text-on-background">Community Masterpieces</h2>
+                            <p className="font-body-md text-body-md text-on-surface-variant mt-2">Selected works from our guild members.</p>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                            {/* Feature 1 */}
-                            <div className="tactile-card rounded-xl p-10 text-center reveal active">
-                                <div className="w-20 h-20 mx-auto bg-primary-container/10 rounded-2xl flex items-center justify-center mb-8 rotate-3 hover:rotate-0 transition-transform">
-                                    <span className="material-symbols-outlined text-primary text-4xl">architecture</span>
+                        <a className="font-label-lg text-label-lg text-primary flex items-center gap-2 group" href="#gallery">
+                            View Gallery
+                            <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </a>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+                        {GALLERY.map((item) => (
+                            <div key={item.title} className="group cursor-pointer">
+                                <div className="aspect-square bg-surface-container overflow-hidden rounded-lg border border-outline-variant/30 mb-4 transition-all group-hover:border-primary/40">
+                                    <img alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src={item.src} />
                                 </div>
-                                <h3 className="font-headline-md text-primary mb-4">Tactile Precision</h3>
-                                <p className="text-on-surface-variant leading-relaxed">
-                                    The "snap-to-soul" system ensures every tiny timber feels physically weighted and satisfying to place.
-                                </p>
+                                <p className="font-label-lg text-label-lg text-on-background">{item.title}</p>
+                                <p className="font-label-sm text-label-sm text-on-surface-variant">{item.author}</p>
                             </div>
-                            {/* Feature 2 */}
-                            <div className="tactile-card rounded-xl p-10 text-center reveal delay-100 active">
-                                <div className="w-20 h-20 mx-auto bg-secondary-container/20 rounded-2xl flex items-center justify-center mb-8 -rotate-3 hover:rotate-0 transition-transform">
-                                    <span className="material-symbols-outlined text-secondary text-4xl">temp_preferences_custom</span>
-                                </div>
-                                <h3 className="font-headline-md text-primary mb-4">Infinite Curation</h3>
-                                <p className="text-on-surface-variant leading-relaxed">
-                                    Access a library of over 10,000 artisan-crafted assets, from Victorian teapots to blooming moss.
-                                </p>
-                            </div>
-                            {/* Feature 3 */}
-                            <div className="tactile-card rounded-xl p-10 text-center reveal delay-200 active">
-                                <div className="w-20 h-20 mx-auto bg-tertiary/10 rounded-2xl flex items-center justify-center mb-8 rotate-1 hover:rotate-0 transition-transform">
-                                    <span className="material-symbols-outlined text-tertiary text-4xl">celebration</span>
-                                </div>
-                                <h3 className="font-headline-md text-primary mb-4">Village Spirit</h3>
-                                <p className="text-on-surface-variant leading-relaxed">
-                                    Participate in monthly "Tiny Fests." Share your rooms and wander through collaborative community builds.
-                                </p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </section>
 
-                {/* Community Showcase Carousel */}
-                <section className="py-24 bg-surface-container-low/50 relative overflow-hidden" id="gallery">
-                    <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop mb-12 flex justify-between items-end">
-                        <div className="reveal active">
-                            <h2 className="font-headline-lg text-primary text-4xl mb-2">Community Masterpieces</h2>
-                            <p className="text-on-surface-variant">Real rooms built by our incredible architects.</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <button className="w-12 h-12 rounded-full border border-outline/20 flex items-center justify-center hover:bg-primary hover:text-white transition-all" onClick={() => scrollGallery(-400)}>
-                                <span className="material-symbols-outlined">chevron_left</span>
-                            </button>
-                            <button className="w-12 h-12 rounded-full border border-outline/20 flex items-center justify-center hover:bg-primary hover:text-white transition-all" onClick={() => scrollGallery(400)}>
-                                <span className="material-symbols-outlined">chevron_right</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div ref={galleryRef} className="flex gap-6 px-margin-mobile md:px-margin-desktop overflow-x-auto hide-scrollbar scroll-smooth pb-8" id="gallery-container">
-                        {/* Project 1 */}
-                        <div className="min-w-[320px] md:min-w-[400px] group reveal active">
-                            <div className="relative aspect-square rounded-2xl overflow-hidden shadow-xl">
-                                <img alt="Alchemy Lab" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8gsAOAl3gnyj8APZq_xiO-ahlQZFbGAuU2cHvrIa4gJWKdZeDV3ENwAYoCN57-1PiVxkyqheZsx7_49rPY-HDRa2GbjzngYUNXftyhIk92t6NLSWWHEHceIfUsJyLRnas0r_MV3qgoLK2mbitq841D8Xw2dwYNpvsIl5hEHR_OXwZESDABbLk3Z9sNltQyaThPjh2CGaFUnSnkBaM9zpngBR3MByPkjMBWh7zssH0yARIhdCWv96pwJTQtni981qEkkBKY7N5ljvd" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
-                                    <p className="text-white font-headline-sm">The Alchemist's Nook</p>
-                                    <p className="text-white/80 text-sm">by MasterBuilder_Elowen</p>
-                                </div>
-                            </div>
-                        </div>
-                        {/* Project 2 */}
-                        <div className="min-w-[320px] md:min-w-[400px] group reveal delay-100 active">
-                            <div className="relative aspect-square rounded-2xl overflow-hidden shadow-xl">
-                                <img alt="Conservatory" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbY2N4A4eB9YXHqYX5ONVHQE3NIzwfH3RpbsOpByZ_qZnv6uipvThEov4BPMenAHyWeTuHMzq08zm3csuDPhElwgJhCG4posQikUyx9KNQnr7_MmnLQOW5azB9y-GvT_8x51Hexx0V6cpt4Fm42VpzS5Q30wbUHYIfDSGcEfMG5Z7rYCAZYtD_bkflZMYsxwMwBNIO6MNVWVV8OL6laL1H-ehEaKK6K3M6MhXCbO0nWnMLy1_GsKe9PHpBUA9Fds7VIYO-LsCqqtmO" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
-                                    <p className="text-white font-headline-sm">Sunlit Conservatory</p>
-                                    <p className="text-white/80 text-sm">by GreenThumb_Mini</p>
-                                </div>
-                            </div>
-                        </div>
-                        {/* Project 3 */}
-                        <div className="min-w-[320px] md:min-w-[400px] group reveal delay-200 active">
-                            <div className="relative aspect-square rounded-2xl overflow-hidden shadow-xl">
-                                <img alt="Library" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWs1NZWVADOYJNVG5pISaNFH3VzJZDbkqxZLN7u7LdARMLpQ6K2phs4CORHSuoVY7M3U2bgZjs2UQKd7boBUwGpyfGk3_uEp8dxevuxvHsWx9aXwZlSsQgeXL-HRPe9eTOZae9niFqA5BojOPKzGAd1MYNQxXpGNvbvJYsWChMzuRgWwjCgSLVQZH0qhrhaOUPosk1fkm-bUmWsIfoFg8h_v4B4Y37CIy9t4vlOs1ZB2XM-llw2SlP-QN2aOpa11WHbGvMtJ5G7Z7P" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
-                                    <p className="text-white font-headline-sm">Scholar's Retreat</p>
-                                    <p className="text-white/80 text-sm">by AncientInk</p>
-                                </div>
-                            </div>
-                        </div>
-                        {/* Project 4 */}
-                        <div className="min-w-[320px] md:min-w-[400px] group reveal delay-300">
-                            <div className="relative aspect-square rounded-2xl overflow-hidden shadow-xl">
-                                <img alt="Kitchen" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGa0a-FUzZnlzKSo2C9cnwbmGQb7i6qJ1WQ_FHkHiWcLG2Kt_0NU6y9H9MqICsU3tFVve7MEu9UdAPUo2aSc2TWm8dRXgEVTYFIZGKGtB5wueQ_WysQ9u7X3bmzXWzkU6EmcDcIYRrcPpkMR6uxzeWtsRy_VwKSPXZhILdqoRPJ538cjMvf79Hc9GjdUeRFtSPmfcSE42lKBNBnZk3MSPdOjwn4fjppUnn8FPcad_8T7b0AsziRfohQfgeenskZdSfnAtmf9fkFXdr" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
-                                    <p className="text-white font-headline-sm">Morning Kitchen</p>
-                                    <p className="text-white/80 text-sm">by HearthWatcher</p>
-                                </div>
-                            </div>
+                {/* CTA Section */}
+                <section className="py-32 text-center bg-surface-container-low/50">
+                    <div className="max-w-2xl mx-auto px-margin-mobile">
+                        <h2 className="font-headline-lg text-headline-lg text-on-background mb-6">Ready to create your own?</h2>
+                        <p className="font-body-lg text-body-lg text-on-surface-variant mb-10">
+                            Start your journey today with our curated starter kit. Simple, elegant, and entirely yours.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Link
+                                to="/projects"
+                                className="bg-primary text-on-primary px-10 py-4 rounded-full font-label-lg text-label-lg hover:shadow-lg transition-all active:scale-95"
+                            >
+                                Start Building
+                            </Link>
+                            <a
+                                href="#gallery"
+                                className="border border-outline text-on-surface px-10 py-4 rounded-full font-label-lg text-label-lg hover:bg-surface-container transition-all active:scale-95"
+                            >
+                                Explore Blueprints
+                            </a>
                         </div>
                     </div>
                 </section>
             </main>
 
             {/* Footer */}
-            <footer className="bg-surface-container-low border-t border-outline-variant/30 py-16">
-                <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-12">
-                    <div className="text-center md:text-left">
-                        <div className="flex items-center gap-3 justify-center md:justify-start mb-4">
-                            <img alt="Logo" className="w-8 h-8 opacity-60" src="https://lh3.googleusercontent.com/aida/AP1WRLvEi2oAra0WtaOFX5TC0Znd2OV6NaQbf_8G-x2BTD6KHhVm5XYfpXN0_RP05Q77529EleEpDHtHH-ufLgoBZo7O_N8Yclzuy7jRGsE4Q0i9RaUlaYWc26sYwiQj-J_KfTsbsJrJ7wYlOk54dTQi_UaepK2tvEt5g_bCVDg_3lOgXeBwqyUVj99UW5M4fAP05cuiJb4kvhj30hd9SY230Ee1XIKIDIkdCyhM8tIA43few7FKfVZ3gDppufIK" />
-                            <span className="font-headline-sm text-primary">Tiny Home</span>
-                        </div>
-                        <p className="text-on-surface-variant text-sm max-w-xs">A digital sanctuary for those who appreciate the small things. Handcrafted with magic since 2023.</p>
+            <footer className="w-full mt-auto bg-surface-container-low border-t border-outline-variant/30">
+                <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-12 flex flex-col md:flex-row justify-between items-center gap-gutter">
+                    <div className="flex flex-col items-center md:items-start gap-2">
+                        <div className="font-headline-sm text-headline-sm text-primary">Tiny Home</div>
+                        <p className="font-body-sm text-body-sm text-on-surface-variant">© 2024 Tiny Home. Handcrafted with magic.</p>
                     </div>
-                    <div className="flex gap-12 text-sm font-label-lg text-on-surface-variant">
-                        <div className="flex flex-col gap-3">
-                            <p className="text-primary font-bold mb-1">Guild</p>
-                            <a className="hover:text-primary transition-colors" href="#">Discord</a>
-                            <a className="hover:text-primary transition-colors" href="#">Blueprints</a>
-                            <a className="hover:text-primary transition-colors" href="#">Showcase</a>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                            <p className="text-primary font-bold mb-1">Scrolls</p>
-                            <a className="hover:text-primary transition-colors" href="#">Terms</a>
-                            <a className="hover:text-primary transition-colors" href="#">Privacy</a>
-                            <a className="hover:text-primary transition-colors" href="#">Support</a>
-                        </div>
+                    <div className="flex gap-8">
+                        <a className="font-label-sm text-label-sm text-on-surface-variant hover:text-tertiary transition-colors" href="#">Terms of Service</a>
+                        <a className="font-label-sm text-label-sm text-on-surface-variant hover:text-tertiary transition-colors" href="#">Privacy Scrolls</a>
+                        <a className="font-label-sm text-label-sm text-on-surface-variant hover:text-tertiary transition-colors" href="#">Support Guild</a>
                     </div>
-                </div>
-                <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop mt-16 pt-8 border-t border-outline-variant/10 text-center text-xs text-on-surface-variant/60">
-                    © 2024 Tiny Home. All miniature rights reserved.
                 </div>
             </footer>
         </div>

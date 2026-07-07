@@ -52,9 +52,9 @@ Model **đã biết khái niệm** style (Gemini học sẵn). Nút thắt là *
 | WP1a FE agent core | ✅ **Done + test** | dispatchBridge / toolRegistry / AgentClient, test headless |
 | WP1b kênh 5a + chat | ✅ **Done + verify live** | backend domain `ai`, BackendTransport, ráp `AIChatbot` |
 | WP2 `searchCatalog` | ✅ **Done + test** | tool search thay catalog tĩnh trong prompt; 8 test, chỉ trả id thật |
-| WP3 macro tools | ✅ **3/5 macro** | createRoom + addOpening + resizeRoom + guard constraint; furnishRoom→WP4, setSurfaceMaterial→WP7 |
-| WP-DATA tag style/tone | ⏳ chưa làm | **điều kiện cần** cho style (WP5/WP7); khảo sát 2026-06-16: 107 obj + 63 mat hiện **0 tag**, material thiếu `tone` |
-| WP4 solver + WP4-EVAL | 📐 **spec chi tiết** | **tiếp theo**; bất biến đã sửa: `PLACE_FURNITURE` không check collision → solver tự chống chồng; cần calibrate rotY/hướng trước khi code |
+| WP3 macro tools | ✅ **4/5 macro** | createRoom + addOpening + resizeRoom + **furnishRoom** (dùng solver) + guard constraint; setSurfaceMaterial→WP7 |
+| WP-DATA tag style/tone | ✅ **draft xong (2026-06-22)** | 2 generator re-run (`extract-material-colors.cjs` đo màu linear-light + `mine-ai-data.cjs` mine scene); output `src/ai/data/` (material-tags/object-tags/style-packs/room-recipes(+curated)/defaults). tone giờ ĐO khách quan. Chờ user duyệt traits/recipe |
+| WP4 solver + WP4-EVAL | ✅ **DONE (2026-06-22)** | `src/ai/solver/{types,rect,anchors,layoutSolver,index}.ts` thuần + `src/ai/eval/spatialAssertions.ts`; calibrate TD-5 từ dữ liệu (`forward=(sin,cos)`); 12 test (9 solver+eval, 3 furnishRoom integration); assert AABB trực tiếp |
 | WP5 – WP7 | ⏳ chưa làm | |
 
 **Provider: Google Gemini** (đổi từ Anthropic ngày 2026-06-12 do hết credit). SDK `@google/genai`, model mặc định `gemini-2.5-flash` (env `GEMINI_MODEL` đổi `gemini-2.5-pro` / `gemini-2.5-flash-lite`). Có retry+backoff cho lỗi tạm thời (503/429). Wire FE↔BE **trung lập** → đổi provider chỉ sửa `ai.service.ts`.
@@ -333,7 +333,7 @@ solveLayout(room: SolverRoom, intents: PlacementIntent[], existing?: Obstacle[])
 | TD-2 | `PLACE_FURNITURE` không check collision — solver gánh hết | Sai khác #7 | Bám chặt khi làm WP4; nếu sau này có lệnh đặt furniture **ngoài** solver (vd import) → phải tự kiểm chồng. |
 | TD-3 | `describeScene` đọc thẳng ECS, KHÔNG qua `serializeScene` → 2 đường perception dễ phân kỳ | Sai khác #1 | Thêm 1 test khoá shape (`SceneSummary` vs entity thật) để bắt drift khi ECS đổi component. |
 | TD-4 | Loop chưa có cap số bước cứng (chống không hội tụ) | Cross-cutting/Guardrails | Trước WP6 (planner gọi nhiều tool) — đặt max-steps + fallback "cần làm rõ". |
-| TD-5 | rotY=0 forward-axis & convention N/S/E/W **chưa calibrate** | WP4 §3 | **Trước khi viết `anchors.ts`** — 10 phút thủ công, ghi hằng số + comment. |
+| TD-5 | ~~rotY=0 forward-axis & convention N/S/E/W chưa calibrate~~ ✅ **ĐÃ CALIBRATE (2026-06-22)** | WP4 §3 | Chốt TỪ DỮ LIỆU (không eyeball): generator dùng `rotY=deg·π/180`; ghế quanh bàn trong scene mẫu → `forward(rotY)=(sin,cos)` (0→+Z, π/2→+X). Hằng số + comment ở `src/ai/solver/types.ts`. |
 
 ---
 

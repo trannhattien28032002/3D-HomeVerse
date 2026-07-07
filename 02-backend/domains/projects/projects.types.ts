@@ -1,18 +1,3 @@
-// Full project row with all columns (camelCase).
-export interface Project {
-  id: string;
-  ownerId: string;
-  name: string;
-  thumbnailUrl: string | null;
-  sceneData: Record<string, unknown>;
-  floorCount: number;
-  isTemplate: boolean;
-  isPublic: boolean;
-  deletedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // Project metadata without the large sceneData blob.
 export interface ProjectMeta {
   id: string;

@@ -16,7 +16,7 @@
  * từ phía con trỏ thay vì giữ `fixedSide` (tường mới có winding khác).
  */
 import { PX_PER_WORLD, threeRotYToKonvaDeg } from "src/shared/math/coords";
-import { occupancyLane, wallItemOffset, type WallItemDims } from "src/shared/geometry/wallMount";
+import { occupancyLane, wallItemOffset, clampWallItemT, type WallItemDims } from "src/shared/geometry/wallMount";
 import type { PlanTransform } from "src/app/features/plan2d/PlanTransform";
 import type { Wall2D, Node2D, Furniture2D } from "src/app/features/plan2d/types";
 import type { WallItemOccupancy } from "src/engine/utils/wallOccupancy";
@@ -128,7 +128,8 @@ export function projectToNearestWall(
     const halfWidth = footprintWidth / 2;
     const minT = len > 0 ? halfWidth / len : 0;
     const maxT = len > 0 ? 1 - halfWidth / len : 1;
-    const t = minT < maxT ? Math.max(minT, Math.min(bestT, maxT)) : 0.5;
+    // Clamp biên dùng chung với engine (resolveWallItemT reject) — không fork 3 bản.
+    const t = clampWallItemT(bestT, minT, maxT);
 
     // Tâm trên tim tường tại t, rồi DỊCH RA NGOÀI theo pháp tuyến đúng bằng offset bám
     // tường (mount: thickness + depth/2 + faceGap; opening: 0) để preview/ghost khớp pose

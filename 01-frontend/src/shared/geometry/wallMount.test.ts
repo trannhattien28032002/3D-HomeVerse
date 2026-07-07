@@ -10,6 +10,8 @@ import {
     occupancyLane,
     lanesConflict,
     wallItemOverlaps,
+    clampWallItemT,
+    resolveWallItemT,
     type MountWall,
     type WallItemDims,
     type WallItemRange,
@@ -248,5 +250,51 @@ describe("wallItemOverlaps (xung đột = t-chồng VÀ lane tương thích)", (
     });
     it("cửa vs cửa đè nhau → xung đột", () => {
         expect(wallItemOverlaps(0.5, 0.1, 0, [r(0.5, 0)])).toBe(true);
+    });
+});
+
+describe("clampWallItemT", () => {
+    it("clamp về [minT,maxT]", () => {
+        expect(clampWallItemT(0.05, 0.1, 0.9)).toBeCloseTo(0.1);
+        expect(clampWallItemT(0.95, 0.1, 0.9)).toBeCloseTo(0.9);
+        expect(clampWallItemT(0.5, 0.1, 0.9)).toBeCloseTo(0.5);
+    });
+    it("tường ngắn hơn item (minT≥maxT) → 0.5", () => {
+        expect(clampWallItemT(0.9, 0.6, 0.4)).toBeCloseTo(0.5);
+    });
+});
+
+describe("resolveWallItemT (kernel snap/reject — Phase 5.2)", () => {
+    const occ = (t: number, lane: number): WallItemRange => ({ tMin: t - 0.1, tMax: t + 0.1, lane });
+
+    it("trống → cùng kết quả cho cả 2 policy, không overlap", () => {
+        const snap = resolveWallItemT(0.5, 0.1, 0.1, 0.9, 0, [], "snap");
+        const rej = resolveWallItemT(0.5, 0.1, 0.1, 0.9, 0, [], "reject");
+        expect(snap).toEqual({ t: 0.5, overlapping: false });
+        expect(rej).toEqual({ t: 0.5, overlapping: false });
+    });
+
+    it("snap: đè cùng lane → ĐẨY ra cạnh range, hết overlap", () => {
+        // range [0.4,0.6] lane 0; muốn t=0.5 (>= tâm) → đẩy sang tMax+half = 0.6+0.1 = 0.7.
+        const r = resolveWallItemT(0.5, 0.1, 0.1, 0.9, 0, [occ(0.5, 0)], "snap");
+        expect(r.t).toBeCloseTo(0.7);
+        expect(r.overlapping).toBe(false);
+    });
+
+    it("reject: đè cùng lane → GIỮ t (clamp biên), overlapping=true để caller từ chối", () => {
+        const r = resolveWallItemT(0.5, 0.1, 0.1, 0.9, 0, [occ(0.5, 0)], "reject");
+        expect(r.t).toBeCloseTo(0.5);   // không snap
+        expect(r.overlapping).toBe(true);
+    });
+
+    it("reject: tường ngắn (minT≥maxT) → t=0.5 (KHÁC snap không có fallback)", () => {
+        const r = resolveWallItemT(0.9, 0.1, 0.6, 0.4, 0, [], "reject");
+        expect(r.t).toBeCloseTo(0.5);
+    });
+
+    it("khác lane (kệ mặt kia) → không đẩy, không overlap", () => {
+        const r = resolveWallItemT(0.5, 0.1, 0.1, 0.9, +1, [occ(0.5, -1)], "snap");
+        expect(r.t).toBeCloseTo(0.5);
+        expect(r.overlapping).toBe(false);
     });
 });

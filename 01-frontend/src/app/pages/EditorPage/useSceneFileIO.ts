@@ -3,8 +3,9 @@
  *
  * Tách ra từ EditorPage để component không chứa FileReader + URL blob logic.
  *
- * Save (Ctrl+S):
+ * Save / xuất file (Ctrl+Shift+S, hoặc nút trong SaveLoadModal):
  *   serializeScene(engine) → JSON blob → download link → click → revoke.
+ *   (Ctrl+S đã được EditorPage nối sang lưu scene lên máy chủ, KHÔNG xuất file.)
  *
  * Load (Ctrl+O):
  *   Trigger hidden file input → FileReader → validateSceneDocument → deserializeScene.

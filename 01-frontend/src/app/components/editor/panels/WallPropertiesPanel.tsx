@@ -9,36 +9,51 @@
  * Đơn vị: UI hiển thị mm, onApply chuyển sang world units (metres) trước khi gọi.
  * Hỗ trợ chọn nhiều tường: countLabel hiển thị số lượng, Apply áp dụng cho tất cả.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePanelTransition } from "src/app/hooks/usePanelTransition";
 
 /** 1 world unit = 1 m = 1000 mm */
 const MM_PER_WORLD = 1000;
 
 type Props = {
+    open: boolean;
     wallIds: Set<string>;
     initialThickness?: number; // mm, pre-filled from selected wall
     initialHeight?: number;    // mm, pre-filled from selected wall
     onApply: (thicknessWorld: number, heightWorld: number) => void;
 };
 
-export default function WallPropertiesPanel({ wallIds, initialThickness, initialHeight, onApply }: Props) {
-    const [thickness, setThickness] = useState(initialThickness ?? 150);
-    const [height, setHeight] = useState(initialHeight ?? 3200);
+export default function WallPropertiesPanel({ open, wallIds, initialThickness, initialHeight, onApply }: Props) {
+    const { mounted, closing, onAnimationEnd } = usePanelTransition(open);
+
+    // Khi đóng, prop (wallIds/initial*) bị clear ở parent → giữ snapshot cuối để nội dung
+    // không nhảy trong lúc chạy animation thoát.
+    const lastRef = useRef({ wallIds, initialThickness, initialHeight, onApply });
+    if (open) lastRef.current = { wallIds, initialThickness, initialHeight, onApply };
+    const view = lastRef.current;
+
+    const [thickness, setThickness] = useState(view.initialThickness ?? 150);
+    const [height, setHeight] = useState(view.initialHeight ?? 3200);
 
     useEffect(() => {
-        if (initialThickness !== undefined) setThickness(initialThickness);
-    }, [initialThickness]);
+        if (view.initialThickness !== undefined) setThickness(view.initialThickness);
+    }, [view.initialThickness]);
 
     useEffect(() => {
-        if (initialHeight !== undefined) setHeight(initialHeight);
-    }, [initialHeight]);
+        if (view.initialHeight !== undefined) setHeight(view.initialHeight);
+    }, [view.initialHeight]);
 
-    const countLabel = wallIds.size === 1
-        ? `Wall #${[...wallIds][0]}`
-        : `${wallIds.size} walls selected`;
+    if (!mounted) return null;
+
+    const countLabel = view.wallIds.size === 1
+        ? `Wall #${[...view.wallIds][0]}`
+        : `${view.wallIds.size} walls selected`;
 
     return (
-        <aside className="fixed right-10 top-1/2 -translate-y-1/2 z-40 w-72 bg-surface-container/90 backdrop-blur-2xl border border-primary-container/30 shadow-[0_8px_32px_rgba(var(--rgb-primary),0.15)] rounded-2xl p-6 flex flex-col gap-6">
+        <aside
+            className={`fixed right-10 top-1/2 z-40 w-72 bg-surface-container/90 backdrop-blur-2xl border border-primary-container/30 shadow-[0_8px_32px_rgba(var(--rgb-primary),0.15)] rounded-2xl p-6 flex flex-col gap-6 ${closing ? "wall-panel-anim-out" : "wall-panel-anim"}`}
+            onAnimationEnd={onAnimationEnd}
+        >
             <div className="border-b border-primary-container/20 pb-3">
                 <h2 className="font-headline-sm text-headline-sm text-primary leading-none">Wall Properties</h2>
                 <span className="block mt-1 text-body-sm text-on-surface-variant/70">{countLabel}</span>
@@ -105,7 +120,7 @@ export default function WallPropertiesPanel({ wallIds, initialThickness, initial
             </div>
 
             <button
-                onClick={() => onApply(thickness / MM_PER_WORLD, height / MM_PER_WORLD)}
+                onClick={() => view.onApply(thickness / MM_PER_WORLD, height / MM_PER_WORLD)}
                 className="mt-2 w-full py-3 bg-primary text-on-primary rounded-xl font-label-lg text-label-lg uppercase tracking-widest hover:bg-primary/90 transition-colors shadow-sm"
             >
                 Apply Specs

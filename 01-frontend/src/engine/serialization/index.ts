@@ -3,7 +3,7 @@
  * Import từ "src/engine/serialization" — đừng import trực tiếp các file nội bộ.
  */
 
-export type { SceneDocument, SceneNodeRecord, SceneWallRecord, AnySceneDocument } from "./SceneDocument";
+export type { SceneDocument, SceneNodeRecord, SceneWallRecord, AnySceneDocument } from "src/shared/types/SceneDocument";
 export type { ValidationResult } from "./validate";
 export { validateSceneDocument, validationFailed } from "./validate";
 export { serializeScene } from "./serialize";

@@ -14,7 +14,7 @@ scenesRouter.get(
   requireAuth,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await service.loadScene(req.user!.id, String(req.params.id), req.shareContext);
+      const result = await service.loadScene(req.user!.id, String(req.params.id));
       res.json(result);
     } catch (err) {
       next(err);
@@ -29,7 +29,7 @@ scenesRouter.put(
   validate(SaveSceneBodySchema, 'body'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await service.saveScene(req.user!.id, String(req.params.id), req.body, req.shareContext);
+      const result = await service.saveScene(req.user!.id, String(req.params.id), req.body);
       res.json(result);
     } catch (err) {
       next(err);

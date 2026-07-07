@@ -1,4 +1,5 @@
-import objectsData from "src/data/catalog/objects.json";
+import { getObjectsRaw, catalogVersion } from "src/shared/catalog/catalogStore";
+import { resolveAssetUrl } from "src/shared/catalog/assetUrl";
 
 export type CatalogEntry = {
   id: string;
@@ -21,23 +22,44 @@ function isCatalogEntry(o: unknown): o is CatalogEntry {
 
 export const ALL_CATEGORIES = "All";
 
-/**
- * File JSON nguồn chứa một entry rỗng `{}` bị lỗi, nên ta xác thực từng
- * bản ghi và loại bỏ những entry thiếu các trường bắt buộc.
- */
-export const CATALOG_ENTRIES: CatalogEntry[] = (
-  (objectsData as { objects?: unknown[] }).objects ?? []
-).filter(isCatalogEntry).map((entry) => {
-  const raw = entry as unknown as Record<string, unknown>;
-  const placement = raw.placement as Record<string, unknown> | undefined;
-  return { ...entry, wallConstrained: placement?.constraint === "wall" };
-});
+// Cache suy ra từ catalogStore, dựng lại khi store hydrate (version đổi).
+let cachedEntries: CatalogEntry[] | null = null;
+let cachedChips: string[] | null = null;
+let cachedVersion = -1;
 
-/** Danh sách chip suy ra: "All" + các danh mục duy nhất có trong JSON. */
-export const FILTER_CHIPS: string[] = [
-  ALL_CATEGORIES,
-  ...Array.from(new Set(CATALOG_ENTRIES.map((e) => e.category))).sort(),
-];
+function rebuild(): void {
+  const v = catalogVersion();
+  if (cachedEntries && cachedChips && cachedVersion === v) return;
+  cachedEntries = getObjectsRaw()
+    .filter(isCatalogEntry)
+    .map((entry) => {
+      const raw = entry as unknown as Record<string, unknown>;
+      const placement = raw.placement as Record<string, unknown> | undefined;
+      return {
+        ...entry,
+        thumbnailUrl: resolveAssetUrl(entry.thumbnailUrl),
+        modelUrl: resolveAssetUrl(entry.modelUrl),
+        wallConstrained: placement?.constraint === "wall",
+      };
+    });
+  cachedChips = [
+    ALL_CATEGORIES,
+    ...Array.from(new Set(cachedEntries.map((e) => e.category))).sort(),
+  ];
+  cachedVersion = v;
+}
+
+/** Toàn bộ entry catalog (đã xác thực + resolve URL). Đọc từ catalogStore đã hydrate. */
+export function getCatalogEntries(): CatalogEntry[] {
+  rebuild();
+  return cachedEntries!;
+}
+
+/** Danh sách chip lọc: "All" + các danh mục duy nhất hiện có. */
+export function getFilterChips(): string[] {
+  rebuild();
+  return cachedChips!;
+}
 
 /** Chuyển slug danh mục như "bed-frame" thành nhãn hiển thị "Bed Frame". */
 export function labelize(s: string): string {

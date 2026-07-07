@@ -26,6 +26,7 @@ import { NodeRegistry } from "src/engine/graph/NodeRegistry";
 
 import { createScene } from "src/engine/setup/sceneSetup";
 import { createSystems } from "src/engine/setup/systemSetup";
+import { setupXR } from "src/engine/setup/xrSetup";
 import { setOutlineResolution } from "src/engine/setup/postprocessSetup";
 import { createDispatcher } from "src/engine/commands/dispatcher";
 import { UndoHistory } from "src/engine/commands/history";
@@ -41,8 +42,6 @@ import { SelectionHighlight } from "src/engine/rendering/SelectionHighlight";
 import { createAmbientLight, createDirectionalLight } from "src/engine/factories/LightFactory";
 import { FurniturePlacementSystem } from "src/engine/systems/placement/FurniturePlacementSystem";
 import { Transform } from "src/engine/components/core/Transform";
-import { ColliderAABB } from "src/engine/components/physics/ColliderAABB";
-import { StaticBody } from "src/engine/components/physics/StaticBody";
 import { Model3D } from "src/engine/components/render/Model3D";
 import { SurfaceMaterial } from "src/engine/components/render/SurfaceMaterial";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
@@ -73,6 +72,10 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     // khi dựng lại floor mesh) và dispatcher (SET_FLOOR_MATERIAL ghi vào).
     const floorMaterials = new Map<string, string>();
 
+    // Loại phòng theo roomKey (sorted nodeIds) — metadata thuần (không mesh). Dispatcher
+    // (SET_ROOM_TYPE) ghi vào; serialize lưu; describeScene đọc để phơi `type` cho AI/UI.
+    const roomTypes = new Map<string, string>();
+
     const { orbit, gizmoSystem, collisionSystem, dragGhostController, composer, outlinePass, renderScheduler } = createSystems(world, scene, camera, renderer, nodeRegistry, events, meshRegistry, materialRegistry, materialLibrary, floorMaterials);
 
     // Collider sàn "headless" — không có Mesh nên GizmoSystem/RenderSystem bỏ qua.
@@ -82,10 +85,12 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     // chạm-khít bị tính là va chạm → đồ kê sát sàn (nhất là giường, đáy ~Y=0) luôn bị tô đỏ
     // khi kéo. Hạ 2cm tạo khe an toàn lớn hơn sai số float, nhưng sàn VẪN là collider thật
     // chặn vật rơi xuống dưới sàn.
-    const groundEid = world.createEntity();
-    world.addComponent(groundEid, new Transform(0, -0.52, 0));
-    world.addComponent(groundEid, new ColliderAABB(50, 0.5, 50));
-    world.addComponent(groundEid, new StaticBody());
+
+    // BỎ VÌ KHÔNG CẦN THIẾT NỮA VÌ ĐÃ XỬ LÝ Ở GizmoSystem
+    // const groundEid = world.createEntity();
+    // world.addComponent(groundEid, new Transform(0, -0.52, 0));
+    // world.addComponent(groundEid, new ColliderAABB(50, 0.5, 50));
+    // world.addComponent(groundEid, new StaticBody());
 
     // Ambient nâng lên 0.5 để mặt tường quay lưng với mặt trời vẫn đủ sáng để nhìn rõ.
     createAmbientLight(world, { intensity: 0.5 });
@@ -100,7 +105,7 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
 
     // initDefaultScene(world, scene, nodeRegistry, wallEntityByWallId);
 
-    const { dispatch, dispatchAsync } = createDispatcher({ world, scene, events, nodeRegistry, wallEntityByWallId, meshRegistry, materialRegistry, materialLibrary, gltfLoader, modelRegistry, collisionSystem, entityRegistry, floorMaterials });
+    const { dispatch, dispatchAsync } = createDispatcher({ world, scene, events, nodeRegistry, wallEntityByWallId, meshRegistry, materialRegistry, materialLibrary, gltfLoader, modelRegistry, collisionSystem, entityRegistry, floorMaterials, roomTypes });
 
     // ── Undo / redo ────────────────────────────────────────────────────────────
     // instanceRef: ref vòng — cho phép transaction/undo/redo truy cập engineInstance
@@ -137,6 +142,11 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     };
     window.addEventListener("resize", onResize);
 
+    // WebXR (đi dạo bằng kính) — bật xr, player rig + nút Enter VR. Cô lập khỏi core:
+    // RenderSystem tự rẽ nhánh theo renderer.xr.isPresenting. Phải tạo TRƯỚC setAnimationLoop
+    // để xr.enabled đã bật khi loop chạy.
+    const xr = setupXR(renderer, scene, camera, orbit);
+
     let running = true;
     let lastTime = performance.now();
     // P3 (perf): khi ở Plan 2D, không cần chạy full pipeline (physics/orbit/render 3D)
@@ -144,12 +154,22 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     // emit snapshot cho Konva, vẫn giữ 3D sync, nhưng idle gần như 0 (chỉ 1 phép so int).
     let active2D = false;
     let lastProcessedRevision = world.revision;
+    // setAnimationLoop thay requestAnimationFrame: ngoài VR hành xử y hệt rAF; trong VR
+    // three lấy nhịp từ XRSession (72/90/120Hz) — bắt buộc dùng cho WebXR. KHÔNG tự gọi
+    // requestAnimationFrame trong loop nữa.
     function loop() {
         if (!running) return;
         const now = performance.now();
         const dt = (now - lastTime) / 1000;
         lastTime = now;
-        if (!active2D) {
+        // Locomotion VR (teleport/snap-turn/đi mượt) phải dời rig TRƯỚC khi RenderSystem
+        // render trong cùng frame. No-op khi không ở VR.
+        xr.update(dt);
+        // Trong VR PHẢI chạy full pipeline mỗi frame (render stereo liên tục) — kể cả khi
+        // active2D đang bật (người dùng bấm Enter VR lúc desktop ở chế độ 2D) → nếu không
+        // loop "pump theo revision" sẽ bỏ render và kính đứng hình.
+        const xrPresenting = renderer.xr.isPresenting;
+        if (!active2D || xrPresenting) {
             world.update(dt);
         } else if (world.revision !== lastProcessedRevision) {
             // Có mutation từ 2D (hoặc async load xong) → chạy pipeline 1 lần.
@@ -158,9 +178,8 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
             // mesh tường, tạo entity phòng…) để frame sau không chạy lại vô ích.
             lastProcessedRevision = world.revision;
         }
-        requestAnimationFrame(loop);
     }
-    loop();
+    renderer.setAnimationLoop(loop);
 
     const api: EngineApi = {
         events,
@@ -219,6 +238,10 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
             return floorMaterials.get(roomKey) ?? null;
         },
 
+        getRoomType(roomKey) {
+            return roomTypes.get(roomKey) ?? null;
+        },
+
         getFurnitureClipboard(entityId) {
             // Chỉ copy đồ ĐẶT SÀN: phải có FurnitureTag + Model3D + Transform, và KHÔNG
             // phải item bám tường (cửa/kệ) — chúng cần hostWallId/t/side để đặt lại nên
@@ -251,13 +274,17 @@ export function createEngine(canvas: HTMLCanvasElement): EngineInstance {
     const engineInstance: EngineInstance = {
         world,
         api,
+        xr: xr.controls,
         nodes: nodeRegistry,
         wallEntityByWallId,
         materialLibrary,
         floorMaterials,
+        roomTypes,
         dispose() {
             undoHistory.clear();
             running = false;
+            renderer.setAnimationLoop(null);
+            xr.dispose();
             window.removeEventListener("resize", onResize);
             selectionHighlight.dispose();
             composer.dispose();

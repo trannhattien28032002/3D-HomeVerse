@@ -1,0 +1,127 @@
+{
+  "_status": "draft-for-review",
+  "_note": "palette.floor/wall = material mẫu lấy từ houses-styles.cjs (exemplar). floorTarget/wallTarget/avoid = bộ lọc 2 TRỤC (lightness+temperature) cho StyleResolver, grounded vào material-colors.json (số đo từ icon). StyleResolver: chọn material có lightness∈target.lightness VÀ temperature∈target.temperature, loại theo avoid. USER DUYỆT: target + density + lighting.",
+  "_toneAxes": { "lightness": ["light", "medium", "dark"], "temperature": ["warm", "cool", "neutral"] },
+  "packs": {
+    "scandinavian": {
+      "label": "Scandinavian",
+      "wallH": 2.7, "wallT": 0.12,
+      "palette": { "floor": ["WoodFloor051"], "wall": ["PaintedPlaster017"], "bathFloor": "Tiles132A", "bathWall": "Tiles132A", "kitchenFloor": "WoodFloor051" },
+      "floorTarget": { "lightness": ["light", "medium"], "temperature": ["warm", "neutral"] },
+      "wallTarget": { "lightness": ["light"], "temperature": ["neutral", "warm"] },
+      "avoid": { "lightness": ["dark"], "temperature": [] },
+      "preferTraits": ["low-profile", "clean-line"], "avoidTraits": ["ornate", "industrial-pipe"],
+      "density": { "maxMainItemsPerRoom": 5, "minFreeFloorPct": 40 },
+      "lighting": { "colorTempK": 2700, "note": "gỗ sáng + tường trắng, ấm & nhiều ánh sáng" },
+      "accents": ["plant-a", "carpet-A-01"]
+    },
+    "japandi": {
+      "label": "Japandi",
+      "wallH": 2.6, "wallT": 0.12,
+      "palette": { "floor": ["WoodFloor040", "WoodFloor039"], "wall": ["PaintedPlaster017"], "bathFloor": "Tiles132A", "bathWall": "Tiles132A", "kitchenFloor": "Tiles138" },
+      "floorTarget": { "lightness": ["light", "medium"], "temperature": ["warm"] },
+      "wallTarget": { "lightness": ["light"], "temperature": ["neutral", "warm"] },
+      "avoid": { "lightness": [], "temperature": ["cool"] },
+      "preferTraits": ["low-profile", "raw-wood", "clean-line"], "avoidTraits": ["ornate", "sleek"],
+      "density": { "maxMainItemsPerRoom": 4, "minFreeFloorPct": 45 },
+      "lighting": { "colorTempK": 2700, "note": "gỗ ấm, đồ thấp, palette trung tính, nhiều khoảng trống" },
+      "accents": ["plant-a", "vase", "books-a"]
+    },
+    "modern": {
+      "label": "Modern",
+      "wallH": 2.9, "wallT": 0.14,
+      "palette": { "floor": ["WoodFloor043"], "wall": ["Concrete042A", "PaintedPlaster017"], "bathFloor": "Tiles138", "bathWall": "Tiles105", "kitchenFloor": "Tiles138" },
+      "floorTarget": { "lightness": ["medium"], "temperature": ["warm", "neutral"] },
+      "wallTarget": { "lightness": ["light", "medium"], "temperature": ["neutral", "cool"] },
+      "avoid": { "lightness": [], "temperature": [] },
+      "preferTraits": ["sleek", "minimal", "clean-line"], "avoidTraits": ["rustic", "ornate"],
+      "density": { "maxMainItemsPerRoom": 5, "minFreeFloorPct": 35 },
+      "lighting": { "colorTempK": 3500, "note": "gỗ trung tính + bê tông, gọn gàng" },
+      "accents": ["plant-b", "television-b"]
+    },
+    "minimalist": {
+      "label": "Minimalist",
+      "wallH": 3.0, "wallT": 0.12,
+      "palette": { "floor": ["Concrete042A", "WoodFloor051"], "wall": ["PaintedPlaster017"], "bathFloor": "Tiles132A", "bathWall": "Tiles132A", "kitchenFloor": "Concrete042A" },
+      "floorTarget": { "lightness": ["light", "medium"], "temperature": ["neutral", "warm"] },
+      "wallTarget": { "lightness": ["light"], "temperature": ["neutral"] },
+      "avoid": { "lightness": ["dark"], "temperature": [] },
+      "preferTraits": ["minimal", "clean-line"], "avoidTraits": ["ornate", "rustic", "curved"],
+      "density": { "maxMainItemsPerRoom": 3, "minFreeFloorPct": 55 },
+      "lighting": { "colorTempK": 3500, "note": "rất thưa, đơn sắc, nhiều mảng trống" },
+      "accents": ["plant-a"]
+    },
+    "wabi-sabi": {
+      "label": "Wabi-sabi",
+      "wallH": 2.7, "wallT": 0.2,
+      "palette": { "floor": ["Travertine009", "Rock064", "Wood026"], "wall": ["Plaster001"], "bathFloor": "Travertine009", "bathWall": "Plaster001", "kitchenFloor": "Travertine009" },
+      "floorTarget": { "lightness": ["light", "medium"], "temperature": ["warm"] },
+      "wallTarget": { "lightness": ["light", "medium"], "temperature": ["warm", "neutral"] },
+      "avoid": { "lightness": [], "temperature": ["cool"] },
+      "preferTraits": ["raw-wood", "natural", "rustic", "low-profile"], "avoidTraits": ["sleek", "ornate", "metal-frame"],
+      "density": { "maxMainItemsPerRoom": 3, "minFreeFloorPct": 50 },
+      "lighting": { "colorTempK": 2400, "note": "rất ấm, mộc mạc, vật liệu thô không hoàn hảo" },
+      "accents": ["pot", "bowl", "plant-b"]
+    },
+    "mediterranean": {
+      "label": "Mediterranean",
+      "wallH": 3.1, "wallT": 0.22,
+      "palette": { "floor": ["Travertine009", "Tiles107"], "wall": ["Plaster001", "Tiles105"], "bathFloor": "Tiles107", "bathWall": "Tiles105", "kitchenFloor": "Tiles107" },
+      "floorTarget": { "lightness": ["light"], "temperature": ["warm", "neutral"] },
+      "wallTarget": { "lightness": ["light"], "temperature": ["warm", "neutral"] },
+      "avoid": { "lightness": ["dark"], "temperature": ["cool"] },
+      "preferTraits": ["classic", "curved", "natural"], "avoidTraits": ["sleek", "industrial-pipe"],
+      "density": { "maxMainItemsPerRoom": 5, "minFreeFloorPct": 35 },
+      "lighting": { "colorTempK": 2700, "note": "ấm nắng, đá travertine/đất nung, vòm cong" },
+      "accents": ["pot", "plant-b", "rounded-table-a"]
+    },
+    "modern-farmhouse": {
+      "label": "Modern Farmhouse",
+      "wallH": 2.9, "wallT": 0.16,
+      "palette": { "floor": ["WoodFloor064"], "wall": ["PaintedPlaster017", "Planks037A"], "wallAccent": "Bricks058", "bathFloor": "Tiles138", "bathWall": "Tiles105", "kitchenFloor": "Tiles138" },
+      "floorTarget": { "lightness": ["medium", "dark"], "temperature": ["warm"] },
+      "wallTarget": { "lightness": ["light", "medium", "dark"], "temperature": ["warm", "neutral"] },
+      "avoid": { "lightness": [], "temperature": ["cool"] },
+      "preferTraits": ["rustic", "raw-wood", "classic"], "avoidTraits": ["sleek", "ornate"],
+      "density": { "maxMainItemsPerRoom": 5, "minFreeFloorPct": 35 },
+      "lighting": { "colorTempK": 2700, "note": "gỗ ấm + tường trắng + điểm gỗ/gạch mộc" },
+      "accents": ["shelf-d", "books-b", "plant-b"]
+    },
+    "industrial": {
+      "label": "Industrial",
+      "wallH": 3.6, "wallT": 0.2,
+      "palette": { "floor": ["Concrete048"], "wall": ["Bricks085", "Concrete046"], "wallAccent": "Bricks104", "bathFloor": "Tiles105", "bathWall": "Concrete046", "kitchenFloor": "Tiles105" },
+      "floorTarget": { "lightness": ["medium", "dark"], "temperature": ["neutral"] },
+      "wallTarget": { "lightness": ["medium", "light"], "temperature": ["warm", "neutral"] },
+      "avoid": { "lightness": [], "temperature": [] },
+      "preferTraits": ["metal-frame", "industrial-pipe", "raw-wood"], "avoidTraits": ["ornate", "curved"],
+      "density": { "maxMainItemsPerRoom": 5, "minFreeFloorPct": 40 },
+      "lighting": { "colorTempK": 4000, "note": "trần cao, bê tông + gạch thô + kim loại, bóng đèn lộ" },
+      "accents": ["ladder", "vent", "radiator-large", "shelf-b"]
+    },
+    "neo-classical": {
+      "label": "Neo-classical",
+      "wallH": 3.8, "wallT": 0.3,
+      "palette": { "floor": ["Marble012", "WoodFloor070"], "wall": ["Plaster001", "Marble012"], "wallAccent": "Tiles133A", "bathFloor": "Marble012", "bathWall": "Marble012", "kitchenFloor": "Tiles107" },
+      "floorTarget": { "lightness": ["light", "dark"], "temperature": ["neutral", "warm"] },
+      "wallTarget": { "lightness": ["light"], "temperature": ["neutral", "warm"] },
+      "avoid": { "lightness": [], "temperature": ["cool"] },
+      "preferTraits": ["ornate", "classic", "curved"], "avoidTraits": ["industrial-pipe", "minimal"],
+      "density": { "maxMainItemsPerRoom": 6, "minFreeFloorPct": 30 },
+      "lighting": { "colorTempK": 2700, "note": "trần rất cao, đá cẩm thạch, đối xứng, cầu kỳ" },
+      "accents": ["curtains", "globe", "vase", "rounded-table-a"]
+    },
+    "indochine": {
+      "label": "Indochine (bonus — không trong 9 style gốc nhưng có scene mẫu)",
+      "wallH": 3.4, "wallT": 0.18,
+      "palette": { "floor": ["Tiles133A", "Tiles107", "Wood067"], "wall": ["PaintedPlaster017", "Tiles133A"], "bathFloor": "Tiles132A", "bathWall": "Tiles105", "kitchenFloor": "Tiles107" },
+      "floorTarget": { "lightness": ["light", "medium", "dark"], "temperature": ["warm", "neutral"] },
+      "wallTarget": { "lightness": ["light"], "temperature": ["warm", "neutral"] },
+      "avoid": { "lightness": [], "temperature": ["cool"] },
+      "preferTraits": ["classic", "natural", "woven", "curved"], "avoidTraits": ["sleek", "industrial-pipe"],
+      "density": { "maxMainItemsPerRoom": 5, "minFreeFloorPct": 35 },
+      "lighting": { "colorTempK": 2700, "note": "gạch bông, gỗ ấm, quạt trần, mây tre" },
+      "accents": ["fan", "curtains", "plant-a"]
+    }
+  }
+}

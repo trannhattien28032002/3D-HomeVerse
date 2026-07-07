@@ -69,6 +69,7 @@ export default function PlanView2D() {
     const endPlacement2D       = useUIStore(s => s.endPlacement2D);
     const wallPlacementModelId = useUIStore(s => s.wallPlacementModelId);
     const endWallPlacement2D   = useUIStore(s => s.endWallPlacement2D);
+    const setScreenshot2D      = useUIStore(s => s.setScreenshot2D);
     // M-2: memoize PlanTransform — rebuilt only when viewport dimensions change.
     const transform = useMemo(
         () => buildPlanTransform(viewportWidth, viewportHeight),
@@ -176,6 +177,52 @@ export default function PlanView2D() {
     // P0 (DEV-only) — đo tần suất render + số node Konva khi tương tác 2D.
     usePlanPerfProbe(stageRef);
 
+    // ── Chụp ảnh 2D (đăng ký provider cho TopNavBar) ──────────────────────────
+    // Konva Stage trong suốt + lưới/nền là CSS background của container, nên phải tự
+    // ghép nền (#f7f3ea + lưới) lên canvas offscreen rồi vẽ Stage chồng lên. Dùng
+    // stage.toCanvas() (đồng bộ) thay vì toDataURL→Image (async, dễ ra ảnh trống).
+    const captureStage = useCallback((): string | null => {
+        const stage = stageRef.current;
+        if (!stage) return null;
+
+        // Ảnh sạch: bỏ selection/transformer/marquee (giống gizmoSystem.clearSelection() ở 3D).
+        setSelectedFurnitureIds(new Set());
+        setSelectedWallIds(new Set());
+
+        const pixelRatio = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
+        const w = stage.width();
+        const h = stage.height();
+
+        const out = document.createElement("canvas");
+        out.width  = Math.round(w * pixelRatio);
+        out.height = Math.round(h * pixelRatio);
+        const ctx = out.getContext("2d");
+        if (!ctx) return stage.toDataURL({ pixelRatio });
+
+        ctx.scale(pixelRatio, pixelRatio);
+        // Nền màu kem.
+        ctx.fillStyle = "#f7f3ea";
+        ctx.fillRect(0, 0, w, h);
+        // Lưới (tái dùng tham số camera — khớp nền CSS đang hiển thị).
+        ctx.strokeStyle = "rgba(213,196,172,0.5)";
+        ctx.lineWidth = 1;
+        for (let x = gridOffsetX % gridSizePx; x < w; x += gridSizePx) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = gridOffsetY % gridSizePx; y < h; y += gridSizePx) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+        // Nội dung Konva chồng lên (toCanvas đồng bộ → drawImage trực tiếp).
+        ctx.drawImage(stage.toCanvas({ pixelRatio: 1 }), 0, 0, w, h);
+
+        return out.toDataURL("image/png");
+    }, [stageRef, gridSizePx, gridOffsetX, gridOffsetY, setSelectedFurnitureIds, setSelectedWallIds]);
+
+    useEffect(() => {
+        setScreenshot2D(captureStage);
+        return () => setScreenshot2D(null);
+    }, [captureStage, setScreenshot2D]);
+
     // Chọn phòng (từ RoomLayer) — loại trừ furniture/tường để 3 loại không chồng nhau.
     const handleSelectRoom = useCallback((roomKey: string) => {
         setSelected({ kind: "room", id: roomKey });
@@ -279,19 +326,18 @@ export default function PlanView2D() {
                 </Layer>
             </Stage>
 
-            {toolMode === "select" && selectedWallIds.size > 0 && (
-                <WallPropertiesPanel
-                    wallIds={selectedWallIds}
-                    initialThickness={singleSelectedWall ? Math.round(singleSelectedWall.thickness * 1000) : undefined}
-                    initialHeight={singleSelectedWall ? Math.round(singleSelectedWall.height * 1000) : undefined}
-                    onApply={(thickness, height) => {
-                        withTransaction("update wall properties", () => {
-                            for (const id of selectedWallIds)
-                                dispatch({ type: "UPDATE_WALL", wallId: id, thickness, height });
-                        });
-                    }}
-                />
-            )}
+            <WallPropertiesPanel
+                open={toolMode === "select" && selectedWallIds.size > 0}
+                wallIds={selectedWallIds}
+                initialThickness={singleSelectedWall ? Math.round(singleSelectedWall.thickness * 1000) : undefined}
+                initialHeight={singleSelectedWall ? Math.round(singleSelectedWall.height * 1000) : undefined}
+                onApply={(thickness, height) => {
+                    withTransaction("update wall properties", () => {
+                        for (const id of selectedWallIds)
+                            dispatch({ type: "UPDATE_WALL", wallId: id, thickness, height });
+                    });
+                }}
+            />
         </div>
     );
 }

@@ -7,6 +7,35 @@ const _tempBox = new THREE.Box3();
 
 const COL_SUFFIX_RE = /_col(lision)?$/i;
 
+/** Dispose mọi texture map gắn trên material (map/normalMap/roughnessMap/…), rồi dispose chính material. */
+function disposeMaterial(material: THREE.Material): void {
+    for (const value of Object.values(material as unknown as Record<string, unknown>)) {
+        if (value instanceof THREE.Texture) value.dispose();
+    }
+    material.dispose();
+}
+
+/** Dispose geometry + material (+ texture) của mọi mesh trong một ModelTemplate đã cache. Khử trùng lặp vì GLTFLoader dedupe material/geometry dùng chung trong cùng 1 GLB. */
+function disposeTemplate(template: ModelTemplate): void {
+    const disposedGeometries = new Set<THREE.BufferGeometry>();
+    const disposedMaterials = new Set<THREE.Material>();
+    template.scene.traverse((node) => {
+        const mesh = node as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        if (mesh.geometry && !disposedGeometries.has(mesh.geometry)) {
+            disposedGeometries.add(mesh.geometry);
+            mesh.geometry.dispose();
+        }
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const mat of materials) {
+            if (mat && !disposedMaterials.has(mat)) {
+                disposedMaterials.add(mat);
+                disposeMaterial(mat);
+            }
+        }
+    });
+}
+
 function visibleMeshBbox(root: THREE.Object3D, out: THREE.Box3): THREE.Box3 {
     out.makeEmpty();
     root.traverse((node) => {
@@ -138,7 +167,18 @@ export class GLTFModelLoader {
         return promise;
     }
 
+    /**
+     * Dispose toàn bộ GPU resource (geometry/material/texture) của mọi ModelTemplate
+     * đang cache, rồi clear cache. Gọi khi engine teardown (rời editor) — an toàn vì
+     * lúc đó mọi instance đã clone từ cache cũng bị gỡ khỏi scene cùng lượt teardown
+     * (xem ModelRegistry.disposeAll, không tự dispose geometry/material dùng chung).
+     */
     dispose(): void {
+        for (const template of this.cache.values()) {
+            disposeTemplate(template);
+        }
+        this.cache.clear();
+        this.inflight.clear();
         this.dracoLoader.dispose();
     }
 }

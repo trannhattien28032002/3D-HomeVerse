@@ -48,7 +48,7 @@ projectsRouter.get(
   requireAuth,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const project = await service.getProject(req.user!.id, String(req.params.id), req.shareContext);
+      const project = await service.getProject(req.user!.id, String(req.params.id));
       res.json(project);
     } catch (err) {
       next(err);

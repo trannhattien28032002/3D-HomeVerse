@@ -1,0 +1,50 @@
+{
+  "_status": "draft-for-review",
+  "_note": "Recipe có chủ đích cho furnishRoom (WP4). roles theo CATEGORY (model cụ thể do StyleResolver chọn theo tag style). placement = ý định cho solver: against(north/south/east/west-wall|center|corner)|flank|facing|clearance(m). count: số | 'perChairAroundTable' | 'byArea'. USER DUYỆT: role nào required, count, clearance.",
+  "_placementVocab": "against: north-wall|south-wall|east-wall|west-wall|center|corner | flank:<role> | facing: into-room|to-wall | clearance: mét",
+  "rooms": {
+    "living": [
+      { "role": "sofa",        "category": "sofas",       "required": true,  "count": 1, "placement": { "against": "wall", "facing": "into-room", "clearance": 0.6 } },
+      { "role": "coffeeTable",  "category": "tables",      "required": true,  "count": 1, "placement": { "against": "center", "facing": "into-room", "clearance": 0.4, "anchorTo": "sofa" } },
+      { "role": "rug",          "category": "carpets",     "required": false, "count": 1, "placement": { "against": "center", "clearance": 0, "underlay": true } },
+      { "role": "tv",           "category": "electronics", "required": false, "count": 1, "placement": { "against": "wall-opposite:sofa", "facing": "into-room", "clearance": 0.3 } },
+      { "role": "armchair",     "category": "chairs",      "required": false, "count": 1, "placement": { "against": "corner", "facing": "into-room", "clearance": 0.5 } },
+      { "role": "shelf",        "category": "shelves",     "required": false, "count": 1, "placement": { "against": "wall", "facing": "into-room", "clearance": 0.3 } },
+      { "role": "plant",        "category": "miscellaneous", "filter": ["plant-a", "plant-b"], "required": false, "count": 1, "placement": { "against": "corner", "clearance": 0 } }
+    ],
+    "bedroom": [
+      { "role": "bed",         "category": "beds",        "required": true,  "count": 1, "placement": { "against": "wall", "facing": "into-room", "clearance": 0.7, "headboardToWall": true } },
+      { "role": "nightstand",  "category": "drawers",     "required": false, "count": 2, "placement": { "flank": "bed", "facing": "into-room", "clearance": 0.1 } },
+      { "role": "wardrobe",    "category": "drawers",     "required": false, "count": 1, "placement": { "against": "wall", "facing": "into-room", "clearance": 0.6 }, "note": "catalog chưa có category 'wardrobes' riêng → tạm dùng drawers; cân nhắc thêm GLB tủ quần áo" },
+      { "role": "rug",         "category": "carpets",     "required": false, "count": 1, "placement": { "anchorTo": "bed", "against": "center", "clearance": 0, "underlay": true } },
+      { "role": "plant",       "category": "miscellaneous", "filter": ["plant-a", "plant-b"], "required": false, "count": 1, "placement": { "against": "corner", "clearance": 0 } }
+    ],
+    "kitchen": [
+      { "role": "counterRun",  "required": true, "placement": { "against": "wall", "layout": "run" }, "note": "DÃY ÁP TƯỜNG liên tục — solver cần xử đặc biệt (xếp nối tiếp dọc 1 tường), KHÔNG như đồ rời.",
+        "members": [
+          { "category": "kitchen", "filter": ["cupboard-sink"], "required": true },
+          { "category": "kitchen", "filter": ["oven"], "required": true },
+          { "category": "kitchen", "filter": ["cupboard-e", "cupboard-f", "cupboard-d"], "required": false },
+          { "category": "kitchen", "filter": ["fridge-a", "fridge-b"], "required": true }
+        ]
+      },
+      { "role": "diningSet",   "category": "tables", "required": false, "count": 1, "placement": { "against": "center", "clearance": 0.6 }, "withChairs": { "category": "chairs", "count": "perChairAroundTable" } }
+    ],
+    "bathroom": [
+      { "role": "toilet",      "category": "bathroom", "filter": ["toilet-01"],       "required": true,  "count": 1, "placement": { "against": "corner", "facing": "into-room", "clearance": 0.5 } },
+      { "role": "sink",        "category": "bathroom", "filter": ["sink-01"],         "required": true,  "count": 1, "placement": { "against": "wall", "facing": "into-room", "clearance": 0.4 } },
+      { "role": "bathOrShower","category": "bathroom", "filter": ["bath-01", "shower-door-01"], "required": true, "count": 1, "placement": { "against": "wall", "clearance": 0.3 } },
+      { "role": "towelHolder", "category": "bathroom", "filter": ["towel-holder-01"], "required": false, "count": 1, "mounted": true, "placement": { "against": "wall" } }
+    ],
+    "dining": [
+      { "role": "table",       "category": "tables", "required": true,  "count": 1, "placement": { "against": "center", "clearance": 0.7 } },
+      { "role": "chairs",      "category": "chairs", "required": true,  "count": "perChairAroundTable", "placement": { "around": "table", "facing": "to-wall" } },
+      { "role": "centerpiece", "category": "miscellaneous", "filter": ["vase"], "required": false, "count": 1, "placement": { "on": "table" } }
+    ],
+    "study": [
+      { "role": "desk",        "category": "tables", "filter": ["desk"], "required": true,  "count": 1, "placement": { "against": "wall", "facing": "into-room", "clearance": 0.6 } },
+      { "role": "chair",       "category": "chairs", "required": true,  "count": 1, "placement": { "anchorTo": "desk", "facing": "to-wall" } },
+      { "role": "shelf",       "category": "shelves", "required": false, "count": 1, "placement": { "against": "wall", "clearance": 0.3 } }
+    ]
+  }
+}

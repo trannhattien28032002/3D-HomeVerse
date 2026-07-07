@@ -4,7 +4,6 @@ import { NotFoundError } from '../../shared/errors/NotFoundError';
 import { AppError } from '../../shared/errors/AppError';
 import * as repo from './projects.repository';
 import type { ProjectMeta, CreateProjectInput, UpdateProjectMetaInput } from './projects.types';
-import type { ShareContext } from '../../shared/types/shareContext';
 
 export async function listProjects(
   userId: string,
@@ -39,22 +38,25 @@ export async function createProject(
   return repo.create(pool, userId, input);
 }
 
-export async function getProject(
+export async function assertProjectAccess(
   userId: string,
   projectId: string,
-  shareContext?: ShareContext
+  messages?: { notFound?: string; forbidden?: string }
 ): Promise<ProjectMeta> {
   const project = await repo.findById(pool, projectId);
-  if (!project) throw new NotFoundError('Project not found');
-
-  if (project.ownerId === userId) return project;
-
-  // Allow if a valid share context exists for this project.
-  if (shareContext && shareContext.projectId === projectId) {
-    return project;
+  if (!project) throw new NotFoundError(messages?.notFound ?? 'Project not found');
+  if (project.ownerId !== userId) {
+    throw new ForbiddenError(messages?.forbidden ?? 'You do not have access to this project');
   }
+  return project;
+}
 
-  throw new ForbiddenError('You do not have access to this project');
+export async function getProjectMetaById(projectId: string): Promise<ProjectMeta | null> {
+  return repo.findById(pool, projectId);
+}
+
+export function getProject(userId: string, projectId: string): Promise<ProjectMeta> {
+  return assertProjectAccess(userId, projectId);
 }
 
 export async function updateProject(
@@ -62,17 +64,17 @@ export async function updateProject(
   projectId: string,
   input: UpdateProjectMetaInput
 ): Promise<ProjectMeta> {
-  const project = await repo.findById(pool, projectId);
-  if (!project) throw new NotFoundError('Project not found');
-  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can update this project');
+  await assertProjectAccess(userId, projectId, {
+    forbidden: 'Only the owner can update this project',
+  });
 
   return repo.updateMeta(pool, projectId, input);
 }
 
 export async function deleteProject(userId: string, projectId: string): Promise<void> {
-  const project = await repo.findById(pool, projectId);
-  if (!project) throw new NotFoundError('Project not found');
-  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can delete this project');
+  await assertProjectAccess(userId, projectId, {
+    forbidden: 'Only the owner can delete this project',
+  });
 
   await repo.softDelete(pool, projectId);
 }
@@ -93,9 +95,10 @@ export async function duplicateProject(
   sourceId: string
 ): Promise<{ id: string; name: string }> {
   // Verify source project is accessible to this user.
-  const source = await repo.findById(pool, sourceId);
-  if (!source) throw new NotFoundError('Source project not found');
-  if (source.ownerId !== userId) throw new ForbiddenError('Only the owner can duplicate this project');
+  const source = await assertProjectAccess(userId, sourceId, {
+    notFound: 'Source project not found',
+    forbidden: 'Only the owner can duplicate this project',
+  });
 
   // Per Decision B, duplicate is a single-row copy that includes scene_data.
   // No project_objects copy leg, so no transaction is required.

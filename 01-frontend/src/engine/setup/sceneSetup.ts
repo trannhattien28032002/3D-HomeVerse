@@ -7,6 +7,7 @@
  */
 import * as THREE from "three";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
+import { resolveAssetUrl } from "src/shared/catalog/assetUrl";
 
 export type SceneBundle = {
     scene: THREE.Scene;
@@ -44,7 +45,23 @@ export function createScene(canvas: HTMLCanvasElement): SceneBundle {
     camera.position.set(0, 12, 16);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    // WebXR — buộc đường XRWebGLLayer (baseLayer) thay vì XRProjectionLayer:
+    //   three (WebXRManager) dựng projection layer qua `new XRWebGLBinding(session, gl)` — API
+    //   NATIVE — mỗi khi `typeof XRWebGLBinding !== 'undefined'` (luôn đúng ở Chrome). Binding này
+    //   vỡ với "session giả" của WebXR API Emulator ("parameter 1 is not of type 'XRSession'").
+    //   WebXRManager CHỘP cờ `supportsGlBinding` đúng lúc renderer được tạo → ta ẩn tạm
+    //   XRWebGLBinding chỉ trong khoảnh khắc đó rồi khôi phục → manager rơi về baseLayer
+    //   (tương thích cả emulator lẫn Quest; foveation vẫn chạy qua XRWebGLLayer.fixedFoveation).
+    const xrGlobal = window as unknown as { XRWebGLBinding?: unknown };
+    const savedXRBinding = xrGlobal.XRWebGLBinding;
+    const renderer = ((): THREE.WebGLRenderer => {
+        try {
+            xrGlobal.XRWebGLBinding = undefined;
+            return new THREE.WebGLRenderer({ canvas, antialias: true });
+        } finally {
+            xrGlobal.XRWebGLBinding = savedXRBinding;
+        }
+    })();
     renderer.setSize(window.innerWidth, window.innerHeight);
     // Cap DPR ở 2 (CR-03/LW-01): màn 4K/Retina có devicePixelRatio 3 → render 9× số pixel
     // (MSAA half-float + OutlinePass) cho gần như không lợi ích nhìn thấy. Composer kế thừa
@@ -69,7 +86,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneBundle {
     // quá đủ cho phản chiếu. RenderSystem (CR-03) phát hiện scene.environment đổi tham
     // chiếu và render lại đúng một lần khi HDRI nạp xong.
     const loadEnvironment = () => {
-        new HDRLoader().setPath("/hdri").load("/studio.hdr", (texture) => {
+        new HDRLoader().load(resolveAssetUrl("/hdri/studio.hdr")!, (texture) => {
             const envMap = pmrem.fromEquirectangular(texture).texture;
             scene.environment = envMap;
             scene.background = envMap;
