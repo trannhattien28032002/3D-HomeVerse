@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "3d-homeverse",
+  "compatibility_date": "2026-04-17",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "01-frontend"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
