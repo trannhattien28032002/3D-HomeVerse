@@ -1,8 +1,12 @@
+<p align="right">
+  <b>English</b> | <a href="README.vi.md">Tiếng Việt</a>
+</p>
+
 # 🏠 Tiny Home — 3D HomeVerse
 
-> **Công cụ thiết kế nội thất & kiến trúc 3D chạy ngay trên trình duyệt** — vẽ mặt bằng 2D, dựng nhà 3D theo thời gian thực, đặt nội thất, sơn vật liệu, đi dạo bằng VR và nhờ AI thiết kế hộ bạn.
+> **A browser-based 3D interior & architecture design tool** — draw a 2D floor plan, watch it extrude into a real-time 3D house, place furniture, paint materials, walk through it in VR, and let an AI design it for you.
 
-🎬 **Xem demo:** [Video demo trên Google Drive](https://drive.google.com/file/d/1G5QG_qnkotrqUL1YuJktAYZpEc1KNJZn/view?usp=sharing)
+🎬 **Watch the demo:** [Demo video on Google Drive](https://drive.google.com/file/d/1G5QG_qnkotrqUL1YuJktAYZpEc1KNJZn/view?usp=sharing)
 
 <p align="center">
   <img src="01-frontend/public/images/Tiny-home-thumbnail.png" alt="Tiny Home landing page" width="800"/>
@@ -10,86 +14,86 @@
 
 ---
 
-## 1. Giới thiệu
+## 1. Overview
 
-**Tiny Home (3D HomeVerse)** là một web app cho phép người dùng **tự thiết kế bố cục nhà/văn phòng** mà không cần cài phần mềm CAD nặng nề. Người dùng vẽ tường trên mặt bằng 2D dạng đồ thị node, hệ thống sẽ **tự động đùn (extrude) thành khối tường 3D** với góc nối miter chuẩn xác, sau đó có thể kéo-thả nội thất, sơn vật liệu, xem trước bằng 3D hoặc thậm chí **đeo kính VR đi dạo trong chính ngôi nhà vừa thiết kế**.
+**Tiny Home (3D HomeVerse)** is a web app that lets anyone **design a house or office layout** without installing heavyweight CAD software. Users draw walls on a 2D floor plan as a graph of connected nodes; the engine **extrudes them into 3D wall geometry in real time**, with correctly mitered corners at every joint. From there you can drag-and-drop furniture, paint materials, preview the result in full 3D, or even **put on a VR headset and walk through the house you just designed**.
 
-Dự án có kiến trúc **frontend (React + Three.js) tách biệt hoàn toàn khỏi backend (Node.js + Supabase/Postgres)**, hỗ trợ lưu trữ đám mây, versioning, quản lý dự án theo tài khoản, và một **AI Agent (Tiny Home Architect)** có thể tạo cả căn nhà chỉ từ một câu mô tả bằng ngôn ngữ tự nhiên.
+The project is built with a **React + Three.js frontend fully decoupled from a Node.js + Supabase/Postgres backend**, supporting cloud saves, versioning, per-account project management, and an **AI Agent (Tiny Home Architect)** that can generate an entire house from a single natural-language prompt.
 
-## 2. Tính năng nổi bật
+## 2. Key Features
 
-### ✏️ Vẽ mặt bằng 2D — Node-graph wall system
-Tường là các cạnh nối giữa các node; kéo node để chỉnh hình dạng nhà, góc và chiều dài tường được tính & hiển thị tự động, hỗ trợ cắt cửa/cửa sổ theo thời gian thực.
+### ✏️ 2D Floor Plan Drawing — Node-graph wall system
+Walls are edges between nodes; drag a node to reshape the house, with wall length and corner angles computed and displayed live, plus real-time door/window cut-outs.
 
 <p align="center">
   <img src="01-frontend/public/images/Tiny-home-editor-2D.png" alt="2D floor plan editor" width="800"/>
 </p>
 
-### 🧱 Dựng nhà 3D theo thời gian thực
-Mặt bằng 2D được đùn thành khối 3D ngay lập tức, kèm gizmo di chuyển/xoay, đổi vật liệu tường/sàn, đặt nội thất từ catalog, xem theo nhiều góc (Top/Left/Right/Walk).
+### 🧱 Real-Time 3D House Building
+The 2D floor plan is extruded into 3D instantly, with move/rotate gizmos, wall & floor material swapping, furniture placement from a catalog, and multiple view angles (Top/Left/Right/Walk).
 
 <p align="center">
   <img src="01-frontend/public/images/Tiny-home-editor-3D.png" alt="3D editor" width="800"/>
 </p>
 
-### 🤖 AI Agent thiết kế nhà theo mô tả
-Chỉ cần nhập yêu cầu bằng tiếng Việt (VD: *"Hãy làm cho tôi 1 căn nhà rộng 50m², 1 phòng ngủ, 1 phòng khách, 1 nhà vệ sinh theo phong cách Scandinavian"*), AI sẽ tự dựng tường, chọn vật liệu và bố trí nội thất phù hợp phong cách.
+### 🤖 AI Agent House Generation
+Just describe what you want (e.g. *"Build me a 50 m² house with 1 bedroom, 1 living room, and 1 bathroom in a Scandinavian style"*) and the AI will lay out the walls, pick materials, and furnish the space to match the requested style.
 
 <p align="center">
-  <img src="01-frontend/public/images/Tiny-home-AI-chatbot.png" alt="AI chatbot dựng nhà tự động" width="800"/>
+  <img src="01-frontend/public/images/Tiny-home-AI-chatbot.png" alt="AI chatbot auto-building a house" width="800"/>
 </p>
 
-### 🕶️ Đi dạo VR (WebXR)
-Đội kính Quest và **đi dạo trực tiếp trong ngôi nhà vừa thiết kế** — teleport, snap-turn, đi mượt, có mô hình tay cầm và bóng đổ thời gian thực.
+### 🕶️ VR Walkthrough (WebXR)
+Put on a Quest headset and **walk directly through the house you just designed** — teleport, snap-turn, smooth locomotion, controller models, and real-time shadows.
 
 <p align="center">
   <img src="01-frontend/public/images/Tiny-home-VR.png" alt="VR walkthrough" width="800"/>
 </p>
 
-### 🏢 Một số cảnh dựng mẫu
+### 🏢 Sample Scenes
 
 <p align="center">
   <img src="01-frontend/public/images/Tiny-home-scene-demo.png" alt="Demo scene 1" width="49%"/>
   <img src="01-frontend/public/images/Tiny-home-scene-demo-2.png" alt="Demo scene 2" width="49%"/>
 </p>
 
-### Các tính năng khác
-- **Gizmo manipulation** — di chuyển (`Q`) / xoay (`W`) vật thể đã chọn
-- **Multiselect** — chọn nhiều đối tượng, kéo nhóm, xoay nhóm, copy/paste, marquee box-select
-- **Room detection** — tự nhận diện đa giác tường khép kín và tô sàn/trần
-- **Vật lý va chạm** — cannon-es, xem trước ghost khi kéo thả
-- **Lưu/tải scene** — xuất nhập `.homeverseplan`, đồng thời lưu đám mây + versioning qua backend
-- **Quản lý dự án & tài khoản** — đăng nhập (kể cả Google OAuth), danh sách dự án, đổi tên/nhân bản/xoá
-- **HDRI lighting** — môi trường EXR studio cho ánh sáng chân thực
+### Other Features
+- **Gizmo manipulation** — translate (`Q`) / rotate (`W`) selected objects
+- **Multiselect** — select multiple objects, group-drag, group-rotate, copy/paste, marquee box-select
+- **Room detection** — closed wall polygons are auto-detected and filled as floor/ceiling geometry
+- **Collision physics** — cannon-es, with drag-ghost preview
+- **Save/load scenes** — export/import `.homeverseplan`, plus cloud save + versioning via the backend
+- **Project & account management** — sign in (including Google OAuth), project list, rename/duplicate/delete
+- **HDRI lighting** — studio EXR environment map for realistic shading
 
-## 3. Công nghệ sử dụng
+## 3. Tech Stack
 
-| Layer | Công nghệ |
+| Layer | Technology |
 |-------|-----------|
 | UI framework | React 19 + TypeScript |
 | Build tool | Vite 8 |
 | 3D rendering | Three.js 0.183 (OrbitControls, TransformControls, EXRLoader, WebXR) + `three-bvh-csg` |
 | 2D editor canvas | React Konva 19 |
-| Vật lý | cannon-es |
+| Physics | cannon-es |
 | State management | Zustand 5 |
 | Routing | React Router v7 |
 | Styling | Tailwind CSS v4 |
 | Backend | Node.js, Supabase (Postgres, Auth, Storage) |
-| AI | Gemini (AI Agent điều khiển scene bằng ngôn ngữ tự nhiên) |
+| AI | Gemini (AI agent that drives the scene via natural language) |
 
-## 4. Kiến trúc tổng quan
+## 4. Architecture
 
-Codebase frontend được tách thành 2 lớp rõ ràng:
+The frontend codebase is split into two strict layers:
 
-- **`src/engine/`** — ECS (Entity-Component-System) thuần TypeScript, không phụ thuộc React, chỉ import `three` và `cannon-es`.
-- **`src/app/`** — lớp UI React + Zustand, giao tiếp với engine qua **Commands** (dispatch) và **Snapshot events** (subscribe).
+- **`src/engine/`** — a framework-free TypeScript ECS (Entity-Component-System), with no React dependency; it only imports `three` and `cannon-es`.
+- **`src/app/`** — the React + Zustand UI layer, which talks to the engine via **Commands** (dispatch) and **Snapshot events** (subscribe).
 
-Backend cung cấp API cho auth, lưu scene, versioning, quản lý dự án và proxy AI, dữ liệu lưu trên Supabase Postgres; asset 3D (GLB/thumbnail) phục vụ qua Storage bucket.
+The backend provides APIs for auth, scene persistence, versioning, project management, and an AI proxy, backed by Supabase Postgres; 3D assets (GLB/thumbnails) are served from a Storage bucket.
 
-> Chi tiết kỹ thuật đầy đủ xem tại `01-frontend/README.md`, `01-frontend/docs/ARCHITECTURE.md` và `BAO-CAO-PHAN-TICH-DU-AN.md`.
+> For full technical details, see `01-frontend/README.md`, `01-frontend/docs/ARCHITECTURE.md`, and `BAO-CAO-PHAN-TICH-DU-AN.md`.
 
 ---
 
 <p align="center">
-  🎬 <b>Xem demo đầy đủ tại đây:</b> <a href="https://drive.google.com/file/d/1G5QG_qnkotrqUL1YuJktAYZpEc1KNJZn/view?usp=sharing">Google Drive Demo Video</a>
+  🎬 <b>Watch the full demo here:</b> <a href="https://drive.google.com/file/d/1G5QG_qnkotrqUL1YuJktAYZpEc1KNJZn/view?usp=sharing">Google Drive Demo Video</a>
 </p>
