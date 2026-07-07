@@ -1,9 +1,12 @@
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
 /.agent
 /.claude
 /.codegraph
-
-.env
-!.env.example
 
 # Personal notes / scratch / generated docs — not for the shared repo
 /code-explain/
