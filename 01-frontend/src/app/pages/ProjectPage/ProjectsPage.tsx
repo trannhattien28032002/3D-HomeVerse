@@ -14,8 +14,8 @@ import ConfirmDialog from "src/app/components/common/ConfirmDialog";
 import { useProjectList, type ProjectMeta } from "src/app/hooks/useProjectList";
 import { toast } from "src/app/store/useToastStore";
 import { useAuthStore } from "src/app/store/useAuthStore";
-import ProjectsSidebar from "./ProjectsSidebar";
-import ProjectGrid from "./ProjectGrid";
+import ProjectsSidebar from "src/app/pages/ProjectPage/ProjectsSidebar";
+import ProjectGrid from "src/app/pages/ProjectPage/ProjectGrid";
 
 export default function ProjectsPage() {
     const navigate = useNavigate();

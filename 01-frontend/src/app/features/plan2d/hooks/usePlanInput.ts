@@ -1,7 +1,7 @@
 /**
  * usePlanInput — Stage event handlers cho PlanView2D.
  *
- * Tách ra từ PlanView2D (Đợt 6). Xử lý zoom (wheel), pan (middle-mouse),
+ * Tách ra từ PlanView2D (Đợt 6). Xử lý zoom (wheel), pan (chuột phải; chuột giữa fallback),
  * marquee box-select (left-drag trên nền trống ở tool select), và delegate
  * mouse events còn lại xuống tool hiện tại.
  *
@@ -53,6 +53,9 @@ export function usePlanInput({
     // Marquee gesture state (imperative — không re-render trong lúc kéo).
     const marqueeStartRef = useRef<{ x: number; y: number } | null>(null);
     const marqueeShiftRef = useRef(false);
+    // Cờ: gesture chuột-phải vừa rồi CÓ kéo (pan thật) hay không. Dùng để nuốt
+    // sự kiện contextmenu sau khi pan (kẻo công cụ vẽ hiểu nhầm = hoàn tất).
+    const panMovedRef = useRef(false);
 
     function onWheel(e: KonvaEventObject<WheelEvent>) {
         e.evt.preventDefault();
@@ -144,9 +147,11 @@ export function usePlanInput({
     }
 
     function onMouseDown(e: KonvaEventObject<MouseEvent>) {
-        if (e.evt.button === 1) {
+        // Pan: chuột phải (button 2) — chuột giữa (button 1) giữ lại làm fallback.
+        if (e.evt.button === 2 || e.evt.button === 1) {
             e.evt.preventDefault();
             setIsPanning(true);
+            panMovedRef.current = false;
             panStartRef.current = {
                 mouseX: e.evt.clientX, mouseY: e.evt.clientY,
                 stageX: stagePosRef.current.x, stageY: stagePosRef.current.y,
@@ -171,10 +176,10 @@ export function usePlanInput({
         // panStartRef.current set ↔ isPanning — check ref để tránh stale closure.
         // Pan imperative (P1a): cập nhật thẳng Stage, KHÔNG setState mỗi mousemove.
         if (panStartRef.current) {
-            panImperative(
-                panStartRef.current.stageX + e.evt.clientX - panStartRef.current.mouseX,
-                panStartRef.current.stageY + e.evt.clientY - panStartRef.current.mouseY,
-            );
+            const dx = e.evt.clientX - panStartRef.current.mouseX;
+            const dy = e.evt.clientY - panStartRef.current.mouseY;
+            if (Math.abs(dx) > MARQUEE_MIN_PX || Math.abs(dy) > MARQUEE_MIN_PX) panMovedRef.current = true;
+            panImperative(panStartRef.current.stageX + dx, panStartRef.current.stageY + dy);
             return;
         }
         if (marqueeStartRef.current) {
@@ -186,7 +191,7 @@ export function usePlanInput({
     }
 
     function onMouseUp(e: KonvaEventObject<MouseEvent>) {
-        if (e.evt.button === 1) {
+        if ((e.evt.button === 2 || e.evt.button === 1) && panStartRef.current) {
             setIsPanning(false);
             panStartRef.current = null;
             // Commit 1 lần để viewport culling re-sync theo vùng nhìn mới.
@@ -204,6 +209,13 @@ export function usePlanInput({
     }
 
     function onContextMenu(e: KonvaEventObject<MouseEvent>) {
+        // Sau khi pan bằng chuột phải, nuốt contextmenu — kẻo công cụ vẽ hiểu
+        // nhầm là click phải để hoàn tất/hủy. Right-click KHÔNG kéo vẫn xuống tool.
+        if (panMovedRef.current) {
+            panMovedRef.current = false;
+            e.evt.preventDefault();
+            return;
+        }
         getActiveTool().onStageContextMenu(e);
     }
 

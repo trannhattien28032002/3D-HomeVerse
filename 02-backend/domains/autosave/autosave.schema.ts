@@ -6,7 +6,5 @@ export const CreateAutosaveSchema = z.object({
   clientId: z.string().optional(),
 });
 
-export type CreateAutosaveInput = z.infer<typeof CreateAutosaveSchema>;
-
 // Re-export SceneDataSchema for convenience.
 export { SceneDataSchema };

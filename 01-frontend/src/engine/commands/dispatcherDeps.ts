@@ -40,4 +40,6 @@ export type DispatcherDeps = {
     entityRegistry: EntityRegistry;
     /** Material sàn theo roomKey (sorted nodeIds) — bền qua rebuild topology. */
     floorMaterials: Map<string, string>;
+    /** Loại phòng theo roomKey (sorted nodeIds) — metadata bền cho describeScene. */
+    roomTypes: Map<string, string>;
 };

@@ -1,0 +1,825 @@
+{
+  "_status": "measured",
+  "_note": "Màu đo từ icon .webp bằng sharp. avg=trung bình, dom=màu trội. suggestedTone theo luật trong extract-material-colors.cjs.",
+  "colors": {
+    "Asphalt031": {
+      "category": "ground",
+      "avgHex": "#7b7a78",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 49,
+        "s": 1,
+        "l": 48
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Bricks058": {
+      "category": "brick",
+      "avgHex": "#575754",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 54,
+        "s": 2,
+        "l": 34
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Bricks085": {
+      "category": "brick",
+      "avgHex": "#937a69",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 24,
+        "s": 17,
+        "l": 49
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Bricks104": {
+      "category": "brick",
+      "avgHex": "#9d7d6e",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 18,
+        "s": 19,
+        "l": 52
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Concrete028": {
+      "category": "concrete",
+      "avgHex": "#6b6d6e",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 206,
+        "s": 1,
+        "l": 43
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Concrete034": {
+      "category": "concrete",
+      "avgHex": "#a3a29f",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 46,
+        "s": 2,
+        "l": 63
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Concrete042A": {
+      "category": "concrete",
+      "avgHex": "#77736e",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 36,
+        "s": 4,
+        "l": 45
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Concrete046": {
+      "category": "concrete",
+      "avgHex": "#b7b7ac",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 59,
+        "s": 7,
+        "l": 70
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Concrete047A": {
+      "category": "concrete",
+      "avgHex": "#8e8775",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 44,
+        "s": 10,
+        "l": 51
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Concrete048": {
+      "category": "concrete",
+      "avgHex": "#9e9789",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 41,
+        "s": 10,
+        "l": 58
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "CorrugatedSteel009": {
+      "category": "metal",
+      "avgHex": "#636361",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 47,
+        "s": 1,
+        "l": 39
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Fabric018": {
+      "category": "fabric",
+      "avgHex": "#646d4e",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 78,
+        "s": 17,
+        "l": 37
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Fabric054": {
+      "category": "fabric",
+      "avgHex": "#973e37",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 5,
+        "s": 47,
+        "l": 40
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Fabric055": {
+      "category": "fabric",
+      "avgHex": "#b77570",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 5,
+        "s": 33,
+        "l": 58
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Fabric063": {
+      "category": "fabric",
+      "avgHex": "#555147",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 43,
+        "s": 9,
+        "l": 31
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Fabric081A": {
+      "category": "fabric",
+      "avgHex": "#5786a1",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 202,
+        "s": 30,
+        "l": 49
+      },
+      "lightness": "medium",
+      "temperature": "cool",
+      "suggestedTone": "cool"
+    },
+    "Fabric083": {
+      "category": "fabric",
+      "avgHex": "#706c6c",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 354,
+        "s": 2,
+        "l": 43
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Grass001": {
+      "category": "grass",
+      "avgHex": "#3c4c2c",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 89,
+        "s": 27,
+        "l": 23
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Grass004": {
+      "category": "grass",
+      "avgHex": "#575e36",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 71,
+        "s": 27,
+        "l": 29
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Grass005": {
+      "category": "grass",
+      "avgHex": "#576d2c",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 80,
+        "s": 43,
+        "l": 30
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Gravel043": {
+      "category": "stone",
+      "avgHex": "#64655f",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 66,
+        "s": 3,
+        "l": 39
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Ground037": {
+      "category": "ground",
+      "avgHex": "#868157",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 54,
+        "s": 21,
+        "l": 43
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Ground103": {
+      "category": "ground",
+      "avgHex": "#75664f",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 36,
+        "s": 19,
+        "l": 38
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Marble012": {
+      "category": "stone",
+      "avgHex": "#acaeae",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 179,
+        "s": 2,
+        "l": 68
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Metal046B": {
+      "category": "metal",
+      "avgHex": "#41433f",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 90,
+        "s": 3,
+        "l": 25
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Metal049A": {
+      "category": "metal",
+      "avgHex": "#787775",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 46,
+        "s": 1,
+        "l": 46
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Metal055A": {
+      "category": "metal",
+      "avgHex": "#70706e",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 49,
+        "s": 1,
+        "l": 44
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Metal063": {
+      "category": "metal",
+      "avgHex": "#5c5c59",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 49,
+        "s": 2,
+        "l": 36
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Onyx015": {
+      "category": "stone",
+      "avgHex": "#bab9b6",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 44,
+        "s": 3,
+        "l": 72
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "PaintedPlaster017": {
+      "category": "plaster",
+      "avgHex": "#a6a6a2",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 62,
+        "s": 2,
+        "l": 64
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "PavingStones150": {
+      "category": "paving",
+      "avgHex": "#7d7562",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 41,
+        "s": 12,
+        "l": 44
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Planks037A": {
+      "category": "wood",
+      "avgHex": "#59493c",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 27,
+        "s": 19,
+        "l": 29
+      },
+      "lightness": "dark",
+      "temperature": "warm",
+      "suggestedTone": "dark"
+    },
+    "Plaster001": {
+      "category": "plaster",
+      "avgHex": "#a7a5a0",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 39,
+        "s": 4,
+        "l": 64
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Road012A": {
+      "category": "ground",
+      "avgHex": "#4b4a46",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 49,
+        "s": 4,
+        "l": 28
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Rock063": {
+      "category": "stone",
+      "avgHex": "#7f7849",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 53,
+        "s": 27,
+        "l": 39
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Rock064": {
+      "category": "stone",
+      "avgHex": "#706a4d",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 49,
+        "s": 18,
+        "l": 37
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Tiles105": {
+      "category": "tile",
+      "avgHex": "#bdbdbb",
+      "domHex": "#e8e8e8",
+      "hsl": {
+        "h": 55,
+        "s": 2,
+        "l": 74
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Tiles107": {
+      "category": "tile",
+      "avgHex": "#bdbdbb",
+      "domHex": "#e8e8e8",
+      "hsl": {
+        "h": 56,
+        "s": 2,
+        "l": 74
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Tiles132A": {
+      "category": "tile",
+      "avgHex": "#73aab4",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 189,
+        "s": 30,
+        "l": 58
+      },
+      "lightness": "medium",
+      "temperature": "cool",
+      "suggestedTone": "cool"
+    },
+    "Tiles133A": {
+      "category": "tile",
+      "avgHex": "#b7bab9",
+      "domHex": "#e8e8e8",
+      "hsl": {
+        "h": 155,
+        "s": 2,
+        "l": 72
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Tiles138": {
+      "category": "tile",
+      "avgHex": "#424241",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 61,
+        "s": 1,
+        "l": 26
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Travertine009": {
+      "category": "stone",
+      "avgHex": "#c0b9aa",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 41,
+        "s": 15,
+        "l": 71
+      },
+      "lightness": "light",
+      "temperature": "warm",
+      "suggestedTone": "light"
+    },
+    "Wood026": {
+      "category": "wood",
+      "avgHex": "#76503b",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 21,
+        "s": 34,
+        "l": 35
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Wood051": {
+      "category": "wood",
+      "avgHex": "#463d38",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 23,
+        "s": 11,
+        "l": 25
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Wood060": {
+      "category": "wood",
+      "avgHex": "#5d4434",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 23,
+        "s": 28,
+        "l": 28
+      },
+      "lightness": "dark",
+      "temperature": "warm",
+      "suggestedTone": "dark"
+    },
+    "Wood066": {
+      "category": "wood",
+      "avgHex": "#6b4a36",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 22,
+        "s": 33,
+        "l": 32
+      },
+      "lightness": "dark",
+      "temperature": "warm",
+      "suggestedTone": "dark"
+    },
+    "Wood067": {
+      "category": "wood",
+      "avgHex": "#4d3d36",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 19,
+        "s": 17,
+        "l": 26
+      },
+      "lightness": "dark",
+      "temperature": "warm",
+      "suggestedTone": "dark"
+    },
+    "Wood092": {
+      "category": "wood",
+      "avgHex": "#ab7f4e",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 32,
+        "s": 37,
+        "l": 49
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Wood094": {
+      "category": "wood",
+      "avgHex": "#a48b6f",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 32,
+        "s": 23,
+        "l": 54
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Wood095": {
+      "category": "wood",
+      "avgHex": "#b69c78",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 35,
+        "s": 30,
+        "l": 59
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "WoodFloor039": {
+      "category": "woodfloor",
+      "avgHex": "#b2a58b",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 40,
+        "s": 20,
+        "l": 62
+      },
+      "lightness": "light",
+      "temperature": "warm",
+      "suggestedTone": "light"
+    },
+    "WoodFloor040": {
+      "category": "woodfloor",
+      "avgHex": "#ad8e63",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 35,
+        "s": 31,
+        "l": 53
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "WoodFloor043": {
+      "category": "woodfloor",
+      "avgHex": "#765c43",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 29,
+        "s": 28,
+        "l": 36
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "WoodFloor051": {
+      "category": "woodfloor",
+      "avgHex": "#ad8358",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 30,
+        "s": 34,
+        "l": 51
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "WoodFloor064": {
+      "category": "woodfloor",
+      "avgHex": "#745134",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 27,
+        "s": 38,
+        "l": 33
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "WoodFloor070": {
+      "category": "woodfloor",
+      "avgHex": "#684e3c",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 25,
+        "s": 27,
+        "l": 32
+      },
+      "lightness": "dark",
+      "temperature": "warm",
+      "suggestedTone": "dark"
+    },
+    "Plastic012A": {
+      "category": "plastic",
+      "avgHex": "#32302d",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 32,
+        "s": 5,
+        "l": 19
+      },
+      "lightness": "dark",
+      "temperature": "neutral",
+      "suggestedTone": "dark"
+    },
+    "Plastic013A": {
+      "category": "plastic",
+      "avgHex": "#bdbcba",
+      "domHex": "#e8e8e8",
+      "hsl": {
+        "h": 35,
+        "s": 3,
+        "l": 74
+      },
+      "lightness": "light",
+      "temperature": "neutral",
+      "suggestedTone": "light"
+    },
+    "Plastic014A": {
+      "category": "plastic",
+      "avgHex": "#ce864f",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 26,
+        "s": 57,
+        "l": 56
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Plastic015A": {
+      "category": "plastic",
+      "avgHex": "#5f9bba",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 200,
+        "s": 40,
+        "l": 55
+      },
+      "lightness": "medium",
+      "temperature": "cool",
+      "suggestedTone": "cool"
+    },
+    "Plastic016A": {
+      "category": "plastic",
+      "avgHex": "#bcaf55",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 52,
+        "s": 43,
+        "l": 54
+      },
+      "lightness": "medium",
+      "temperature": "warm",
+      "suggestedTone": "warm"
+    },
+    "Plastic017A": {
+      "category": "plastic",
+      "avgHex": "#79ae68",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 105,
+        "s": 30,
+        "l": 54
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    },
+    "Plastic018A": {
+      "category": "plastic",
+      "avgHex": "#81807d",
+      "domHex": "#080808",
+      "hsl": {
+        "h": 45,
+        "s": 2,
+        "l": 50
+      },
+      "lightness": "medium",
+      "temperature": "neutral",
+      "suggestedTone": "medium"
+    }
+  }
+}

@@ -16,9 +16,9 @@ import type { RefObject } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
 import { serializeScene, deserializeScene, validateSceneDocument, validationFailed } from "src/engine/serialization";
 import type { SceneDocument } from "src/engine/serialization";
-import { loadScene, saveScene } from "src/data/scene/scenesApi";
+import { loadScene, saveScene } from "src/data/scenes/scenesApi";
 import { toast } from "src/app/store/useToastStore";
-import { useAutosave } from "./useAutosave";
+import { useAutosave } from "src/app/pages/EditorPage/useAutosave";
 
 export type SceneStatus = "loading" | "ready" | "error";
 export type SaveState = "idle" | "saving" | "saved" | "error";

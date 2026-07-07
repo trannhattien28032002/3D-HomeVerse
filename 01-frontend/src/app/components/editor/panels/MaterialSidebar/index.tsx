@@ -15,6 +15,7 @@ import { useMemo } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
 import type { SelectedTarget } from "src/app/store/useSelectionStore";
 import { getCatalogItem } from "src/engine/catalog/FurnitureCatalog";
+import { usePanelTransition } from "src/app/hooks/usePanelTransition";
 import { T, RGB, alpha } from "src/app/constants/designTokens";
 import { ObjectMaterialPanel } from "./ObjectMaterialPanel";
 import { WallMaterialPanel } from "./WallMaterialPanel";
@@ -28,13 +29,16 @@ type Props = {
 };
 
 export default function MaterialSidebar({ open, selected, engine, onClose }: Props) {
+    // Giữ panel mounted trong lúc chạy animation thoát (open→false vẫn còn `selected`).
+    const { mounted, closing, onAnimationEnd } = usePanelTransition(open && !!selected);
+
     // modelId của object đang chọn — tra từ snapshot mới nhất (chỉ dùng cho kind="object").
     const modelId = useMemo(() => {
-        if (!open || !engine || selected?.kind !== "object") return null;
+        if (!mounted || !engine || selected?.kind !== "object") return null;
         return engine.api.events.lastSnapshot?.furniture.find((x) => x.entityId === selected.id)?.modelId ?? null;
-    }, [open, engine, selected]);
+    }, [mounted, engine, selected]);
 
-    if (!open || !selected) return null;
+    if (!mounted || !selected) return null;
     const sel = selected;
 
     const objectName = sel.kind === "object" && modelId ? getCatalogItem(modelId)?.name ?? modelId : "";
@@ -45,6 +49,8 @@ export default function MaterialSidebar({ open, selected, engine, onClose }: Pro
         <aside
             role="dialog"
             aria-label="Material Editor"
+            className={closing ? "side-panel-anim-out" : "side-panel-anim"}
+            onAnimationEnd={onAnimationEnd}
             style={{
                 position: "fixed",
                 right: 16,

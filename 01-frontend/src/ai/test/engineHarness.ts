@@ -36,6 +36,7 @@ export function buildEngineHarness(): EngineHarness {
     const entityRegistry = new EntityRegistry(world, meshRegistry, modelRegistry);
     const nodeRegistry = new NodeRegistry();
     const wallEntityByWallId = new Map<string, string>();
+    const roomTypes = new Map<string, string>();
 
     const deps: DispatcherDeps = {
         world,
@@ -47,6 +48,7 @@ export function buildEngineHarness(): EngineHarness {
         materialRegistry,
         entityRegistry,
         floorMaterials: new Map(),
+        roomTypes,
         materialLibrary: {} as never,
         gltfLoader: {} as never,
         modelRegistry: {} as never,
@@ -70,5 +72,5 @@ export function buildEngineHarness(): EngineHarness {
         nextWallId: () => uuidv4(),
     };
 
-    return { api, perception: { world, nodes: nodeRegistry, wallEntityByWallId }, world, nodeRegistry, wallEntityByWallId };
+    return { api, perception: { world, nodes: nodeRegistry, wallEntityByWallId, roomTypes }, world, nodeRegistry, wallEntityByWallId };
 }

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
-import materialsData from "src/data/catalog/materials.json";
+import { getMaterialsRaw } from "src/shared/catalog/catalogStore";
+import { resolveAssetUrl } from "src/shared/catalog/assetUrl";
 
 export type MaterialCategory =
     | "fabric" | "concrete" | "metal" | "wood"
@@ -20,84 +21,7 @@ function toLabel(id: string): string {
         .replace(/([A-Za-z])(\d)/g, "$1 $2");   // letter→digit split
 }
 
-function entry(id: string, category: MaterialCategory): MaterialEntry {
-    return {
-        id,
-        label: toLabel(id),
-        category,
-        thumbnail: `/materials/${id}_1K-JPG/${id}.webp`,
-    };
-}
-
-export const MATERIAL_CATALOG: MaterialEntry[] = [
-    // Fabric
-    entry("Fabric018",          "fabric"),
-    entry("Fabric054",          "fabric"),
-    entry("Fabric055",          "fabric"),
-    entry("Fabric063",          "fabric"),
-    entry("Fabric081A",         "fabric"),
-    entry("Fabric083",          "fabric"),
-    // Concrete
-    entry("Concrete028",        "concrete"),
-    entry("Concrete034",        "concrete"),
-    entry("Concrete042A",       "concrete"),
-    entry("Concrete046",        "concrete"),
-    entry("Concrete047A",       "concrete"),
-    entry("Concrete048",        "concrete"),
-    // Metal
-    entry("CorrugatedSteel009", "metal"),
-    entry("Metal046B",          "metal"),
-    entry("Metal049A",          "metal"),
-    entry("Metal055A",          "metal"),
-    entry("Metal063",           "metal"),
-    // Wood
-    entry("Planks037A",         "wood"),
-    entry("Wood026",            "wood"),
-    entry("Wood051",            "wood"),
-    entry("Wood060",            "wood"),
-    entry("Wood066",            "wood"),
-    entry("Wood067",            "wood"),
-    entry("Wood092",            "wood"),
-    entry("Wood094",            "wood"),
-    entry("Wood095",            "wood"),
-    entry("WoodFloor039",       "wood"),
-    entry("WoodFloor040",       "wood"),
-    entry("WoodFloor043",       "wood"),
-    entry("WoodFloor051",       "wood"),
-    entry("WoodFloor064",       "wood"),
-    entry("WoodFloor070",       "wood"),
-    // Tile
-    entry("Tiles105",           "tile"),
-    entry("Tiles107",           "tile"),
-    entry("Tiles132A",          "tile"),
-    entry("Tiles133A",          "tile"),
-    entry("Tiles138",           "tile"),
-    // Brick
-    entry("Bricks058",          "brick"),
-    entry("Bricks085",          "brick"),
-    entry("Bricks104",          "brick"),
-    // Ground
-    entry("Asphalt031",         "ground"),
-    entry("Grass001",           "ground"),
-    entry("Grass004",           "ground"),
-    entry("Grass005",           "ground"),
-    entry("Gravel043",          "ground"),
-    entry("Ground037",          "ground"),
-    entry("Ground103",          "ground"),
-    entry("Road012A",           "ground"),
-    // Stone
-    entry("Marble012",          "stone"),
-    entry("Onyx015",            "stone"),
-    entry("PavingStones150",    "stone"),
-    entry("Rock063",            "stone"),
-    entry("Rock064",            "stone"),
-    entry("Travertine009",      "stone"),
-    // Other
-    entry("PaintedPlaster017",  "other"),
-    entry("Plaster001",         "other"),
-];
-
-/** Texture set của một material đọc từ materials.json (nguồn sự thật path). */
+/** Texture set của một material (path .ktx2 — nguồn sự thật từ catalogStore). */
 interface RawTextures {
     color?: string;
     normal?: string;
@@ -105,14 +29,46 @@ interface RawTextures {
     ao?: string;
 }
 
-/** id → textures. Path trong JSON trỏ .ktx2 (nguồn sự thật duy nhất). */
-const TEXTURES_BY_ID = new Map<string, RawTextures>(
-    (materialsData as unknown as { materials: { id: string; textures: RawTextures }[] }).materials
-        .map((m) => [m.id, m.textures] as const),
-);
+/** Các category mà engine union hỗ trợ trực tiếp. */
+const KNOWN_CATEGORIES: ReadonlySet<MaterialCategory> = new Set<MaterialCategory>([
+    "fabric", "concrete", "metal", "wood", "tile", "brick", "ground", "stone", "other",
+]);
+
+/** Alias category slug của catalog → category engine (những slug không nằm trong union). */
+const CATEGORY_ALIAS: Record<string, MaterialCategory> = {
+    woodfloor: "wood",
+    paving: "stone",
+    grass: "ground",
+    plaster: "other",
+    plastic: "other",
+};
+
+/** Quy category slug của catalog về MaterialCategory của engine (fallback "other"). */
+function toMaterialCategory(cat: string): MaterialCategory {
+    if (CATEGORY_ALIAS[cat]) return CATEGORY_ALIAS[cat];
+    return KNOWN_CATEGORIES.has(cat as MaterialCategory) ? (cat as MaterialCategory) : "other";
+}
+
+/** Catalog material suy ra từ catalogStore (id, label, category engine, thumbnail). */
+function buildCatalog(): MaterialEntry[] {
+    return getMaterialsRaw().materials.map((m) => ({
+        id: m.id,
+        label: toLabel(m.id),
+        category: toMaterialCategory(m.category),
+        thumbnail: m.icon,
+    }));
+}
+
+/** Tra textures của một material theo id (đọc trực tiếp catalogStore). */
+function texturesById(id: string): RawTextures | undefined {
+    return getMaterialsRaw().materials.find((m) => m.id === id)?.textures;
+}
 
 export class MaterialLibrary {
-    static readonly catalog = MATERIAL_CATALOG;
+    /** Catalog material hiện tại (suy ra từ catalogStore đã hydrate). */
+    static get catalog(): MaterialEntry[] {
+        return buildCatalog();
+    }
 
     private ktx2    = new KTX2Loader();
     private matCache = new Map<string, THREE.MeshStandardMaterial>();
@@ -126,8 +82,8 @@ export class MaterialLibrary {
         const hit = this.matCache.get(id);
         if (hit) return hit;
 
-        // Path texture đọc THẲNG từ materials.json (nguồn sự thật duy nhất, chỉ .ktx2).
-        const tx = TEXTURES_BY_ID.get(id);
+        // Path texture đọc THẲNG từ catalogStore (nguồn sự thật duy nhất, chỉ .ktx2).
+        const tx = texturesById(id);
         if (!tx) return null;
 
         const [map, normalMap, roughnessMap, aoMap] = await Promise.all([
@@ -163,7 +119,7 @@ export class MaterialLibrary {
     private loadKTX2(path: string, srgb: boolean): Promise<THREE.Texture | null> {
         return new Promise(resolve => {
             this.ktx2.load(
-                path,
+                resolveAssetUrl(path)!,
                 tex => {
                     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
                     if (srgb) tex.colorSpace = THREE.SRGBColorSpace;

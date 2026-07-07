@@ -1,11 +1,11 @@
 /**
  * Critical test #5 — share token expiry (adapted to the actual wiring).
  *
- * NOTE: the scene routes use `requireAuth` only and never mount
- * `attachShareContext`, so the plan's "GET /projects/:id/scene?shareToken=…"
- * read path is NOT wired (req.shareContext is always undefined there). The
- * token-expiry logic that IS wired lives in `resolveShareToken`, exercised via
- * the public `GET /share/:token`. These tests cover that real path.
+ * NOTE: all project/scene routes are owner-only (`requireAuth`). The
+ * "GET /projects/:id/scene?shareToken=…" read path was never wired and the
+ * share-context scaffolding has been removed. The token-expiry logic that IS
+ * wired lives in `resolveShareToken`, exercised via the public
+ * `GET /share/:token`. These tests cover that real path.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -64,6 +64,26 @@ describe('Share token resolve + expiry (critical #5)', () => {
         .set(...authHeader(other.token))
         .send({ permission: 'viewer' });
       expect(res.status).toBe(403);
+    } finally {
+      await deleteTestUser(other.userId);
+    }
+  });
+
+  it('a non-owner resolving a valid token still gets projectMeta, not a 403 (public flow is not ownership-gated)', async () => {
+    const res = await request(app)
+      .post(`/projects/${projectId}/share`)
+      .set(...authHeader(user.token))
+      .send({ permission: 'viewer' });
+    expect(res.status).toBe(201);
+
+    const other = await createTestUser();
+    try {
+      const resolve = await request(app)
+        .get(`/share/${res.body.token}`)
+        .set(...authHeader(other.token));
+      expect(resolve.status).toBe(200);
+      expect(resolve.body.permission).toBe('viewer');
+      expect(resolve.body.projectMeta.id).toBe(projectId);
     } finally {
       await deleteTestUser(other.userId);
     }

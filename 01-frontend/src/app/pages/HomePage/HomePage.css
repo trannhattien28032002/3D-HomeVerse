@@ -1,34 +1,25 @@
-@keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(1deg); }
+/* HomePage — style riêng cho landing "Tiny Home" (theo mẫu scratch/home.html). */
+
+/* Fade-in cho hero (dùng qua class arbitrary animate-[fadeIn_...] trong TSX). */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes drift {
-    from { transform: translateY(0) translateX(0); opacity: 0; }
-    50% { opacity: 0.8; }
-    to { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+
+/* Vầng sáng ấm phía sau hero. */
+.hero-glow {
+    background: radial-gradient(circle at center, rgba(248, 180, 0, 0.08) 0%, rgba(253, 249, 240, 0) 70%);
 }
-.animate-float { animation: float 6s ease-in-out infinite; }
-.particle {
-    position: fixed;
-    pointer-events: none;
-    background: radial-gradient(circle, rgba(var(--rgb-primary-container),0.4) 0%, rgba(var(--rgb-primary-container),0) 70%);
+
+/* Chấm tròn nhỏ dưới mục nav đang chọn (Gallery). */
+.nav-active-dot::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background-color: #7c5800;
     border-radius: 50%;
-    z-index: 0;
-}
-.reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
-.reveal.active { opacity: 1; transform: translateY(0); }
-
-.tactile-card {
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    background: var(--color-surface);
-    border: 1px solid rgba(131, 117, 96, 0.1);
-}
-.tactile-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(var(--rgb-primary), 0.12), inset 0 0 0 2px rgba(var(--rgb-primary-container), 0.2);
-    border-color: rgba(var(--rgb-primary), 0.3);
-}
-
-.parallax-bg {
-    will-change: transform;
 }

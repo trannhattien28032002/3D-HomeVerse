@@ -106,9 +106,8 @@ export function handleAddWall(command: AddWallCmd, deps: DispatcherDeps): void {
 //   2. Ngắt kết nối topology trong nodeRegistry.
 //   3. Dispose qua entityRegistry (mesh + destroyEntity).
 //   4. Xóa wallEntityByWallId entry.
-//   5. Xóa orphan node — node không còn tường nào kết nối.
-//
-// WARNING: Không invalidate WallPolygon của tường hàng xóm — TODO cũ.
+//   5. Invalidate WallPolygon của các tường hàng xóm còn lại tại node bị ảnh hưởng.
+//   6. Xóa orphan node — node không còn tường nào kết nối.
 export function handleRemoveWall(command: RemoveWallCmd, deps: DispatcherDeps): void {
     const { world, nodeRegistry, wallEntityByWallId, entityRegistry } = deps;
 
@@ -143,6 +142,20 @@ export function handleRemoveWall(command: RemoveWallCmd, deps: DispatcherDeps): 
     // + world.destroyEntity. Thay 3 dòng manual ở dispatcher cũ.
     entityRegistry.disposeEntity(entity);
     wallEntityByWallId.delete(command.wallId);
+
+    // Invalidate WallPolygon của các tường hàng xóm còn lại tại node bị ảnh hưởng —
+    // cách vẽ joint đổi khi 1 tường bị xóa (đối xứng với ADD_WALL ở trên). connectedWallIds
+    // tại đây đã KHÔNG còn command.wallId (disconnectWall chạy trước), nên không cần lọc.
+    for (const nodeId of affectedNodeIds) {
+        const nd = nodeRegistry.get(nodeId);
+        if (!nd) continue;
+        for (const wid of nd.connectedWallIds) {
+            const ent = wallEntityByWallId.get(wid);
+            if (ent != null && world.hasComponent(ent, WallPolygon)) {
+                world.removeComponent(ent, WallPolygon);
+            }
+        }
+    }
 
     // Dọn dẹp orphan nodes.
     for (const nodeId of affectedNodeIds) {

@@ -71,28 +71,42 @@ export class RenderSystem extends System {
         this.scheduler = scheduler;
     }
 
+    /** Đồng bộ Transform của ECS xuống mesh Three.js (dùng chung cho đường desktop + XR). */
+    private syncTransforms(world: World): void {
+        const entities = Query.entitiesWith(world, Transform, Mesh);
+
+        for (const entity of entities) {
+            const transform = world.getComponent(entity, Transform)!;
+            const meshComp = world.getComponent(entity, Mesh)!;
+            const mesh = meshComp.mesh;
+            const isWorldSpace = world.hasComponent(entity, WorldSpaceMesh);
+
+            if (isWorldSpace) {
+                mesh.position.set(0, transform.y, 0);
+                mesh.rotation.set(0, 0, 0);
+            } else {
+                mesh.position.set(transform.x, transform.y, transform.z);
+                mesh.quaternion.set(transform.qx, transform.qy, transform.qz, transform.qw);
+            }
+        }
+
+        this._lastRevision = world.revision;
+    }
+
     update(world: World, deltaTime: number): void {
+        // 0) VR (WebXR): bỏ qua on-demand gating + EffectComposer + gizmo overlay. Phải
+        //    render stereo MỌI frame; renderer.xr tự thay camera bằng ArrayCamera 2 mắt.
+        //    OutlinePass/postprocess không stereo nên không dùng trong VR (walkthrough).
+        if (this.renderer.xr.isPresenting) {
+            if (world.revision !== this._lastRevision) this.syncTransforms(world);
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+
         // 1) ECS revision đổi → sync Transform xuống mesh + cần render.
         const revisionChanged = world.revision !== this._lastRevision;
         if (revisionChanged) {
-            const entities = Query.entitiesWith(world, Transform, Mesh);
-
-            for (const entity of entities) {
-                const transform = world.getComponent(entity, Transform)!;
-                const meshComp = world.getComponent(entity, Mesh)!;
-                const mesh = meshComp.mesh;
-                const isWorldSpace = world.hasComponent(entity, WorldSpaceMesh);
-
-                if (isWorldSpace) {
-                    mesh.position.set(0, transform.y, 0);
-                    mesh.rotation.set(0, 0, 0);
-                } else {
-                    mesh.position.set(transform.x, transform.y, transform.z);
-                    mesh.quaternion.set(transform.qx, transform.qy, transform.qz, transform.qw);
-                }
-            }
-
-            this._lastRevision = world.revision;
+            this.syncTransforms(world);
         }
 
         // 2) Camera đổi? OrbitControlSystem chạy TRƯỚC trong cùng frame nên camera đã

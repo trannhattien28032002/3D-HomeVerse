@@ -1,0 +1,23 @@
+{
+  "_status": "draft-for-review",
+  "_note": "Kích thước/diện tích mặc định cho HousePlanner (WP6). minAreaM2/typicalAreaM2 chấm tay theo chuẩn ở; wallH/wallT default lấy trung vị scene mẫu (range 2.6–3.8 / 0.12–0.3). USER DUYỆT số.",
+  "shell": {
+    "wallH": 2.8,
+    "wallT": 0.14,
+    "comment": "Mỗi StylePack có thể override wallH/wallT (neo-classical 3.8, industrial 3.6…)."
+  },
+  "rooms": {
+    "living":   { "minAreaM2": 14, "typicalAreaM2": 22, "minSideM": 3.2, "needsWindow": true },
+    "bedroom":  { "minAreaM2": 9,  "typicalAreaM2": 14, "minSideM": 2.6, "needsWindow": true },
+    "kitchen":  { "minAreaM2": 6,  "typicalAreaM2": 10, "minSideM": 2.2, "needsWindow": true },
+    "bathroom": { "minAreaM2": 3,  "typicalAreaM2": 5,  "minSideM": 1.5, "needsWindow": false },
+    "dining":   { "minAreaM2": 8,  "typicalAreaM2": 12, "minSideM": 2.6, "needsWindow": true },
+    "study":    { "minAreaM2": 5,  "typicalAreaM2": 8,  "minSideM": 2.2, "needsWindow": true }
+  },
+  "openings": {
+    "interiorDoor": { "models": ["door-a", "door-b", "door-c"], "widthM": 0.9, "clearanceIntoRoomM": 0.9 },
+    "frontDoor":    { "models": ["door-c"], "widthM": 1.0 },
+    "window":       { "models": ["window-a", "window-b", "window-c"], "widthM": 1.2, "sillHeightM": 0.9 }
+  },
+  "comment_allocation": "HousePlanner chia totalAreaM2 cho rooms theo typicalAreaM2 (tỉ lệ), kẹp trong [minAreaM2, ...]; phòng không cửa sổ (bath) ưu tiên đặt sâu trong, không bám mặt tiền."
+}

@@ -231,14 +231,18 @@ export function handleRotateFurniture(command: RotateFurnitureCmd, deps: Dispatc
 // =================================================================
 // APPLY_FURNITURE_MATERIAL — Đổi material một slot (component) của model
 // =================================================================
-// Async (nạp texture PBR). Gán lại mesh.material trên Model3D.root → đổi tức thì
-// ở khung 3D (RenderSystem vẽ mỗi frame). Ghi materialOverrides để serialize.
-// No-op nếu entity không có Model3D (vd legacy box furniture).
+// Async (nạp texture PBR). Gán lại mesh.material trên Model3D.root. Ghi
+// materialOverrides để serialize. No-op nếu entity không có Model3D (vd legacy box).
+// markDirty() SAU khi swap xong: RenderSystem render on-demand (CR-03) — sửa thẳng
+// mesh.material KHÔNG bump revision nên phải báo thủ công, nếu không cảnh đứng yên sẽ
+// không vẽ lại (đổi màu không hiện cho tới khi có tương tác khác). Phải nằm trong
+// .then() vì texture nạp async — markDirty đồng bộ sẽ chạy TRƯỚC lúc material được gán.
 export function handleApplyFurnitureMaterial(command: ApplyMaterialCmd, deps: DispatcherDeps): void {
     const { world, materialLibrary } = deps;
     const model = world.getComponent(command.entityId, Model3D);
     if (!model) return;
     applyMaterialToSlot(model, command.slotId, command.materialId, materialLibrary)
+        .then(() => world.markDirty())
         .catch((err) => console.error("APPLY_FURNITURE_MATERIAL failed:", err));
 }
 
@@ -252,4 +256,5 @@ export function handleResetFurnitureMaterial(command: ResetMaterialCmd, deps: Di
     const model = world.getComponent(command.entityId, Model3D);
     if (!model) return;
     resetSlotToOriginal(model, command.slotId);
+    world.markDirty(); // báo on-demand RenderSystem vẽ lại (xem APPLY_FURNITURE_MATERIAL)
 }

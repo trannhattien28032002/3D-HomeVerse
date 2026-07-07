@@ -245,5 +245,18 @@ export function validateSceneDocument(raw: unknown): ValidationResult {
         }
     }
 
+    // ── Room types (optional) — record roomKey→roomType ───────────────────────
+    if (doc["roomTypes"] !== undefined) {
+        const roomTypes = doc["roomTypes"];
+        if (typeof roomTypes !== "object" || roomTypes === null || Array.isArray(roomTypes)) {
+            return { ok: false, error: '"roomTypes" must be an object if present.' };
+        }
+        for (const [k, v] of Object.entries(roomTypes)) {
+            if (typeof v !== "string" || v === "") {
+                return { ok: false, error: `roomTypes["${k}"] must be a non-empty string.` };
+            }
+        }
+    }
+
     return { ok: true };
 }

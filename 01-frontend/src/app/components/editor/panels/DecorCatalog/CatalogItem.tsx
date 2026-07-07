@@ -100,6 +100,8 @@ export function CatalogItem({ thumbnailUrl, name, index, wallConstrained, onClic
             src={thumbnailUrl}
             alt=""
             draggable={false}
+            loading="lazy"
+            decoding="async"
             onError={() => setImgFailed(true)}
             style={{
               maxWidth: "100%",

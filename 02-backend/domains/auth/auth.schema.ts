@@ -16,8 +16,6 @@ export const RegisterSchema = z
   })
   .strict();
 
-export type RegisterInput = z.infer<typeof RegisterSchema>;
-
 // ── Profile update ──────────────────────────────────────────────────────────
 export const UpdateProfileSchema = z
   .object({
@@ -25,5 +23,3 @@ export const UpdateProfileSchema = z
     avatarUrl: z.string().url().nullable().optional(),
   })
   .strict(); // reject unknown keys — prevents clients from smuggling plan escalations
-
-export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;

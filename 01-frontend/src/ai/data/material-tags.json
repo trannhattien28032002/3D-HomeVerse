@@ -1,0 +1,826 @@
+{
+  "_status": "draft-for-review",
+  "_note": "tone/lightness/temperature/hex = ĐO từ icon (material-colors.json, linear-light avg); style = mined từ scene mẫu. TONE_OVERRIDE trong generator nếu cần sửa tay.",
+  "tags": {
+    "Asphalt031": {
+      "category": "ground",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#7b7a78",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Bricks058": {
+      "category": "brick",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#575754",
+      "style": [
+        "modern-farmhouse"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Bricks085": {
+      "category": "brick",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#937a69",
+      "style": [
+        "industrial"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Bricks104": {
+      "category": "brick",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#9d7d6e",
+      "style": [
+        "industrial"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Concrete028": {
+      "category": "concrete",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#6b6d6e",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Concrete034": {
+      "category": "concrete",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#a3a29f",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Concrete042A": {
+      "category": "concrete",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#77736e",
+      "style": [
+        "minimalist",
+        "modern"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Concrete046": {
+      "category": "concrete",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#b7b7ac",
+      "style": [
+        "industrial"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Concrete047A": {
+      "category": "concrete",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#8e8775",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Concrete048": {
+      "category": "concrete",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#9e9789",
+      "style": [
+        "industrial"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "CorrugatedSteel009": {
+      "category": "metal",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#636361",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Fabric018": {
+      "category": "fabric",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#646d4e",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "neo-classical",
+        "scandinavian",
+        "wabi-sabi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Fabric054": {
+      "category": "fabric",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#973e37",
+      "style": [
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "scandinavian"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Fabric055": {
+      "category": "fabric",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#b77570",
+      "style": [
+        "scandinavian"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Fabric063": {
+      "category": "fabric",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#555147",
+      "style": [
+        "mediterranean",
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Fabric081A": {
+      "category": "fabric",
+      "tone": "cool",
+      "lightness": "medium",
+      "temperature": "cool",
+      "hex": "#5786a1",
+      "style": [
+        "modern",
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Fabric083": {
+      "category": "fabric",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#706c6c",
+      "style": [
+        "indochine",
+        "industrial",
+        "japandi",
+        "modern-farmhouse",
+        "wabi-sabi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Grass001": {
+      "category": "grass",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#3c4c2c",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Grass004": {
+      "category": "grass",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#575e36",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Grass005": {
+      "category": "grass",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#576d2c",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Gravel043": {
+      "category": "stone",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#64655f",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Ground037": {
+      "category": "ground",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#868157",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Ground103": {
+      "category": "ground",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#75664f",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Marble012": {
+      "category": "stone",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#acaeae",
+      "style": [
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Metal046B": {
+      "category": "metal",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#41433f",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Metal049A": {
+      "category": "metal",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#787775",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Metal055A": {
+      "category": "metal",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#70706e",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Metal063": {
+      "category": "metal",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#5c5c59",
+      "style": [
+        "industrial",
+        "modern",
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Onyx015": {
+      "category": "stone",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#bab9b6",
+      "style": [
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "PaintedPlaster017": {
+      "category": "plaster",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#a6a6a2",
+      "style": [
+        "indochine",
+        "japandi",
+        "minimalist",
+        "modern",
+        "modern-farmhouse",
+        "scandinavian"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "PavingStones150": {
+      "category": "paving",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#7d7562",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Planks037A": {
+      "category": "wood",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "warm",
+      "hex": "#59493c",
+      "style": [
+        "modern-farmhouse"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Plaster001": {
+      "category": "plaster",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#a7a5a0",
+      "style": [
+        "mediterranean",
+        "neo-classical",
+        "wabi-sabi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Road012A": {
+      "category": "ground",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#4b4a46",
+      "style": [],
+      "interior": false,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Rock063": {
+      "category": "stone",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#7f7849",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Rock064": {
+      "category": "stone",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#706a4d",
+      "style": [
+        "wabi-sabi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Tiles105": {
+      "category": "tile",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#bdbdbb",
+      "style": [
+        "indochine",
+        "industrial",
+        "mediterranean",
+        "modern",
+        "modern-farmhouse"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Tiles107": {
+      "category": "tile",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#bdbdbb",
+      "style": [
+        "indochine",
+        "mediterranean",
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Tiles132A": {
+      "category": "tile",
+      "tone": "cool",
+      "lightness": "medium",
+      "temperature": "cool",
+      "hex": "#73aab4",
+      "style": [
+        "indochine",
+        "japandi",
+        "minimalist",
+        "scandinavian"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Tiles133A": {
+      "category": "tile",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#b7bab9",
+      "style": [
+        "indochine",
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Tiles138": {
+      "category": "tile",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#424241",
+      "style": [
+        "japandi",
+        "modern",
+        "modern-farmhouse"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Travertine009": {
+      "category": "stone",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "warm",
+      "hex": "#c0b9aa",
+      "style": [
+        "mediterranean",
+        "neo-classical",
+        "wabi-sabi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Wood026": {
+      "category": "wood",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#76503b",
+      "style": [
+        "industrial",
+        "wabi-sabi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Wood051": {
+      "category": "wood",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#463d38",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Wood060": {
+      "category": "wood",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "warm",
+      "hex": "#5d4434",
+      "style": [
+        "wabi-sabi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Wood066": {
+      "category": "wood",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "warm",
+      "hex": "#6b4a36",
+      "style": [
+        "indochine",
+        "modern-farmhouse"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Wood067": {
+      "category": "wood",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "warm",
+      "hex": "#4d3d36",
+      "style": [
+        "indochine",
+        "japandi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Wood092": {
+      "category": "wood",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#ab7f4e",
+      "style": [
+        "scandinavian"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Wood094": {
+      "category": "wood",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#a48b6f",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Wood095": {
+      "category": "wood",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#b69c78",
+      "style": [
+        "mediterranean",
+        "minimalist",
+        "modern",
+        "neo-classical",
+        "scandinavian"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "WoodFloor039": {
+      "category": "woodfloor",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "warm",
+      "hex": "#b2a58b",
+      "style": [
+        "japandi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "WoodFloor040": {
+      "category": "woodfloor",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#ad8e63",
+      "style": [
+        "japandi"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "WoodFloor043": {
+      "category": "woodfloor",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#765c43",
+      "style": [
+        "modern"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "WoodFloor051": {
+      "category": "woodfloor",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#ad8358",
+      "style": [
+        "minimalist",
+        "scandinavian"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "WoodFloor064": {
+      "category": "woodfloor",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#745134",
+      "style": [
+        "modern-farmhouse"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "WoodFloor070": {
+      "category": "woodfloor",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "warm",
+      "hex": "#684e3c",
+      "style": [
+        "neo-classical"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Plastic012A": {
+      "category": "plastic",
+      "tone": "dark",
+      "lightness": "dark",
+      "temperature": "neutral",
+      "hex": "#32302d",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Plastic013A": {
+      "category": "plastic",
+      "tone": "light",
+      "lightness": "light",
+      "temperature": "neutral",
+      "hex": "#bdbcba",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Plastic014A": {
+      "category": "plastic",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#ce864f",
+      "style": [
+        "minimalist",
+        "modern"
+      ],
+      "interior": true,
+      "source": "mined",
+      "toneSource": "measured"
+    },
+    "Plastic015A": {
+      "category": "plastic",
+      "tone": "cool",
+      "lightness": "medium",
+      "temperature": "cool",
+      "hex": "#5f9bba",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Plastic016A": {
+      "category": "plastic",
+      "tone": "warm",
+      "lightness": "medium",
+      "temperature": "warm",
+      "hex": "#bcaf55",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Plastic017A": {
+      "category": "plastic",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#79ae68",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    },
+    "Plastic018A": {
+      "category": "plastic",
+      "tone": "medium",
+      "lightness": "medium",
+      "temperature": "neutral",
+      "hex": "#81807d",
+      "style": [],
+      "interior": true,
+      "source": "inferred",
+      "toneSource": "measured"
+    }
+  }
+}

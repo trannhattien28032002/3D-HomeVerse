@@ -58,7 +58,6 @@ export default function AppRoutes() {
               </RequireAuth>
             }
           />
-          {/* <Route path="/projects/:id" element={<EditorPage />} /> */}
         </RouterRoutes>
       </Suspense>
     </BrowserRouter>

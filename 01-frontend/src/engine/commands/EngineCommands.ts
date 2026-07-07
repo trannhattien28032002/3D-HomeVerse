@@ -162,5 +162,14 @@ export type EngineCommand =
      * + gán lại mesh sàn về material mặc định (FLOOR_DEFAULT_MATERIAL).
      */
     | { type: "RESET_FLOOR_MATERIAL"; roomKey: string }
+
+    /**
+     * Gán LOẠI phòng (living/bedroom/kitchen/…) cho một phòng theo roomKey
+     * (sorted nodeIds — bền qua rebuild topology). Thuần metadata, không có mesh:
+     * ghi vào registry roomKey→roomType để describeScene phơi ra cho AI/UI biết
+     * phòng nào là gì sau khi generate. `roomType` để dạng string mở (engine không
+     * ràng buộc vocab — tầng AI gán nghĩa). Lưu/khôi phục như floorMaterials.
+     */
+    | { type: "SET_ROOM_TYPE"; roomKey: string; roomType: string }
     ;
 

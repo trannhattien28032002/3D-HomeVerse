@@ -11,7 +11,7 @@ import type { EngineInstance } from "src/engine/engineTypes";
 import type { WallFace } from "src/engine/components/render/SurfaceMaterial";
 import { T, RGB, alpha } from "src/app/constants/designTokens";
 import { MaterialGrid } from "./MaterialGrid";
-import { WALL_CATEGORIES } from "./materialCatalog";
+import { getWallCategories } from "./materialCatalog";
 import { ResetButton } from "./ResetButton";
 
 type Props = {
@@ -103,7 +103,7 @@ export function WallMaterialPanel({ engine, wallId }: Props) {
                     <ResetButton onClick={handleWallReset} />
                 </div>
                 <MaterialGrid
-                    allowedCategories={WALL_CATEGORIES}
+                    allowedCategories={getWallCategories()}
                     selectedId={wallFaceMat[selectedFace]}
                     onPick={handleWallPick}
                 />

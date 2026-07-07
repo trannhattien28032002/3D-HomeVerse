@@ -28,7 +28,7 @@ export type { ProjectMeta };
 
 export type LoadState = "loading" | "empty" | "error" | "ready";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 7;
 
 export function useProjectList() {
     const [projects, setProjects] = useState<ProjectMeta[]>([]);

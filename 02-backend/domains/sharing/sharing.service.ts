@@ -2,9 +2,10 @@ import crypto from 'crypto';
 import { pool } from '../../shared/db/client';
 import { ForbiddenError } from '../../shared/errors/ForbiddenError';
 import { NotFoundError } from '../../shared/errors/NotFoundError';
-import * as projectsRepo from '../projects/projects.repository';
+import * as projectsService from '../projects/projects.service';
 import * as repo from './sharing.repository';
 import type { Share, SharePermission } from './sharing.types';
+import type { ProjectMeta } from '../projects/projects.types';
 import type { CreateShareInput, UpdateShareInput } from './sharing.schema';
 
 export async function createShare(
@@ -12,9 +13,9 @@ export async function createShare(
   projectId: string,
   input: CreateShareInput
 ): Promise<Share> {
-  const project = await projectsRepo.findById(pool, projectId);
-  if (!project) throw new NotFoundError('Project not found');
-  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can manage shares');
+  await projectsService.assertProjectAccess(userId, projectId, {
+    forbidden: 'Only the owner can manage shares',
+  });
 
   // If no sharedWith, generate a link share token (32 hex chars).
   const token = !input.sharedWith
@@ -35,9 +36,9 @@ export async function listShares(
   userId: string,
   projectId: string
 ): Promise<Share[]> {
-  const project = await projectsRepo.findById(pool, projectId);
-  if (!project) throw new NotFoundError('Project not found');
-  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can view shares');
+  await projectsService.assertProjectAccess(userId, projectId, {
+    forbidden: 'Only the owner can view shares',
+  });
 
   return repo.listForProject(pool, projectId);
 }
@@ -48,9 +49,9 @@ export async function updateShare(
   shareId: string,
   input: UpdateShareInput
 ): Promise<Share> {
-  const project = await projectsRepo.findById(pool, projectId);
-  if (!project) throw new NotFoundError('Project not found');
-  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can update shares');
+  await projectsService.assertProjectAccess(userId, projectId, {
+    forbidden: 'Only the owner can update shares',
+  });
 
   const share = await repo.findById(pool, shareId);
   if (!share || share.projectId !== projectId) throw new NotFoundError('Share not found');
@@ -66,9 +67,9 @@ export async function revokeShare(
   projectId: string,
   shareId: string
 ): Promise<void> {
-  const project = await projectsRepo.findById(pool, projectId);
-  if (!project) throw new NotFoundError('Project not found');
-  if (project.ownerId !== userId) throw new ForbiddenError('Only the owner can revoke shares');
+  await projectsService.assertProjectAccess(userId, projectId, {
+    forbidden: 'Only the owner can revoke shares',
+  });
 
   const share = await repo.findById(pool, shareId);
   if (!share || share.projectId !== projectId) throw new NotFoundError('Share not found');
@@ -80,7 +81,7 @@ export async function revokeShare(
 // Used by the public GET /share/:token endpoint.
 export async function resolveShareToken(
   token: string
-): Promise<{ share: Share; projectId: string }> {
+): Promise<{ share: Share; projectId: string; projectMeta: ProjectMeta | null }> {
   const share = await repo.findByToken(pool, token);
   if (!share) throw new ForbiddenError('Invalid or expired share token');
 
@@ -88,5 +89,6 @@ export async function resolveShareToken(
     throw new ForbiddenError('Share token has expired');
   }
 
-  return { share, projectId: share.projectId };
+  const projectMeta = await projectsService.getProjectMetaById(share.projectId);
+  return { share, projectId: share.projectId, projectMeta };
 }

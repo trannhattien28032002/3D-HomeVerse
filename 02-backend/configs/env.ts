@@ -1,3 +1,4 @@
+// Bộ lọc kiểm duyệt an ninh (Environment Validation)
 import dotenv from 'dotenv';
 import path from 'path';
 import { z } from 'zod';
@@ -17,6 +18,9 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().min(1).optional(),
   // Optional override model (mặc định gemini-2.5-flash; đổi "gemini-2.5-pro" cho task khó).
   GEMINI_MODEL: z.string().min(1).optional(),
+  // CORS production allowlist — comma-separated origin list (e.g. "https://app.example.com,https://www.example.com").
+  // Optional: nếu không set, production sẽ chặn toàn bộ CORS (an toàn) kèm warning lúc boot.
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
 const result = envSchema.safeParse(process.env);

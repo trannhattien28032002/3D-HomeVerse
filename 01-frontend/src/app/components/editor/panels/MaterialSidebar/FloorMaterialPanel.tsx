@@ -9,7 +9,7 @@ import { useState } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
 import { T } from "src/app/constants/designTokens";
 import { MaterialGrid } from "./MaterialGrid";
-import { FLOOR_CATEGORIES } from "./materialCatalog";
+import { getFloorCategories } from "./materialCatalog";
 import { ResetButton } from "./ResetButton";
 
 type Props = {
@@ -49,7 +49,7 @@ export function FloorMaterialPanel({ engine, roomKey }: Props) {
                 <ResetButton onClick={handleFloorReset} />
             </div>
             <MaterialGrid
-                allowedCategories={FLOOR_CATEGORIES}
+                allowedCategories={getFloorCategories()}
                 selectedId={floorMaterialId}
                 onPick={handleFloorPick}
             />

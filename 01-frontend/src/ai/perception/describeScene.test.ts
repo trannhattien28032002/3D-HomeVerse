@@ -30,6 +30,7 @@ function buildScene() {
     const entityRegistry = new EntityRegistry(world, meshRegistry, modelRegistry);
     const nodeRegistry = new NodeRegistry();
     const wallEntityByWallId = new Map<string, string>();
+    const roomTypes = new Map<string, string>();
 
     const deps: DispatcherDeps = {
         world,
@@ -41,6 +42,7 @@ function buildScene() {
         materialRegistry,
         entityRegistry,
         floorMaterials: new Map(),
+        roomTypes,
         materialLibrary: {} as never,
         gltfLoader: {} as never,
         modelRegistry: {} as never,
@@ -48,8 +50,8 @@ function buildScene() {
     };
 
     const { dispatch } = createDispatcher(deps);
-    const source: ScenePerceptionSource = { world, nodes: nodeRegistry, wallEntityByWallId };
-    return { world, nodeRegistry, wallEntityByWallId, dispatch, source };
+    const source: ScenePerceptionSource = { world, nodes: nodeRegistry, wallEntityByWallId, roomTypes };
+    return { world, nodeRegistry, wallEntityByWallId, roomTypes, dispatch, source };
 }
 
 /** Dựng phòng chữ nhật kín W×D với 4 node + 4 wall. */

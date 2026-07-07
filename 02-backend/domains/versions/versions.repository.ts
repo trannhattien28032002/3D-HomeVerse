@@ -13,6 +13,12 @@ const FULL_COLS = `
   id, project_id, version_num, label, scene_data, created_by, created_at
 `;
 
+// listVersions has no pagination contract on the FE (VersionsPanel renders the full
+// array as-is), so we cap at a generous ceiling server-side instead of introducing
+// cursor pagination — keeps the existing API contract (`{ data: VersionSummary[] }`)
+// unchanged while preventing unbounded row growth for long-lived projects.
+const LIST_VERSIONS_LIMIT = 100;
+
 export async function createVersion(
   client: Client,
   projectId: string,
@@ -47,8 +53,9 @@ export async function listVersions(
     `SELECT ${SUMMARY_COLS}
      FROM public.project_versions
      WHERE project_id = $1
-     ORDER BY version_num DESC`,
-    [projectId]
+     ORDER BY version_num DESC
+     LIMIT $2`,
+    [projectId, LIST_VERSIONS_LIMIT]
   );
   return rows;
 }

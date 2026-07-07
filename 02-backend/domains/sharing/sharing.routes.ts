@@ -3,8 +3,6 @@ import { requireAuth, attachUserIfPresent } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { CreateShareSchema, UpdateShareSchema } from './sharing.schema';
 import * as service from './sharing.service';
-import * as projectsRepo from '../projects/projects.repository';
-import { pool } from '../../shared/db/client';
 
 // ── Sharing routes nested under /projects/:id/share ─────────────────────────
 export const sharingRouter = Router();
@@ -81,10 +79,8 @@ publicShareRouter.get(
   attachUserIfPresent,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { share, projectId } = await service.resolveShareToken(String(req.params.token));
-      // Fetch project metadata to return alongside permission.
-      const project = await projectsRepo.findById(pool, projectId);
-      res.json({ projectMeta: project, permission: share.permission });
+      const { share, projectMeta } = await service.resolveShareToken(String(req.params.token));
+      res.json({ projectMeta, permission: share.permission });
     } catch (err) {
       next(err);
     }

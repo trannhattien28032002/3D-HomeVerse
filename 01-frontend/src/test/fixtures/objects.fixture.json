@@ -1,0 +1,5044 @@
+{
+  "version": 2,
+  "objects": [
+    {
+      "id": "bath-01",
+      "name": "Modern Bath",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/bath-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/bath-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.8,
+        "depth": 1,
+        "height": 1.25
+      },
+      "collisionBox": {
+        "width": 1.8,
+        "depth": 1
+      },
+      "topDown": {
+        "imageUrl": "/topdown/bathroom/bath-01-2D.webp"
+      },
+      "materialSlots": [
+        {
+          "id": "body",
+          "label": "Bathtub Body",
+          "allowedCategories": [
+            "ceramic",
+            "stone"
+          ]
+        },
+        {
+          "id": "tap",
+          "label": "Tap",
+          "allowedCategories": [
+            "metal"
+          ]
+        },
+        {
+          "id": "drain",
+          "label": "Drain Stopper",
+          "allowedCategories": [
+            "metal"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bath",
+          "materialName": "Bathtub",
+          "slotId": "body"
+        },
+        {
+          "meshName": "Bath",
+          "materialName": "Tap",
+          "slotId": "tap"
+        },
+        {
+          "meshName": "Bath",
+          "materialName": "Drain",
+          "slotId": "drain"
+        }
+      ]
+    },
+    {
+      "id": "shower-door-01",
+      "name": "Shower Door",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/shower-door-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/shower-door-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.9,
+        "depth": 0.9,
+        "height": 2.33
+      },
+      "collisionBox": {
+        "width": 0.9,
+        "depth": 0.9
+      },
+      "topDown": {
+        "imageUrl": "/topdown/bathroom/shower-door-01-2D.webp"
+      },
+      "materialSlots": [
+        {
+          "id": "glass",
+          "label": "Glass Door",
+          "allowedCategories": [
+            "glass"
+          ]
+        },
+        {
+          "id": "enclosure",
+          "label": "Frame / Enclosure",
+          "allowedCategories": [
+            "metal"
+          ]
+        },
+        {
+          "id": "drain",
+          "label": "Drain Stopper",
+          "allowedCategories": [
+            "metal"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Shower Door",
+          "materialName": "Glass",
+          "slotId": "glass"
+        },
+        {
+          "meshName": "Shower Door",
+          "materialName": "Enclosure",
+          "slotId": "enclosure"
+        },
+        {
+          "meshName": "Shower Door",
+          "materialName": "Drain",
+          "slotId": "drain"
+        }
+      ]
+    },
+    {
+      "id": "bed-single-01",
+      "name": "Bed single",
+      "category": "beds",
+      "modelUrl": "/models/beds/bed-01.glb",
+      "thumbnailUrl": "/thumbnails/beds/bed-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.8,
+        "depth": 0.9,
+        "height": 0.75
+      },
+      "collisionBox": {
+        "width": 1.8,
+        "depth": 0.9
+      },
+      "topDown": {
+        "imageUrl": "/topdown/beds/bed-01-2D.webp"
+      },
+      "defaultRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "tags": [
+        "oak",
+        "wood",
+        "dining"
+      ],
+      "materialSlots": [
+        {
+          "id": "bedstead",
+          "label": "Bedstead",
+          "allowedCategories": [
+            "wood",
+            "metal"
+          ]
+        },
+        {
+          "id": "fellow",
+          "label": "Fellow",
+          "allowedCategories": [
+            "blanket",
+            "pillow"
+          ]
+        },
+        {
+          "id": "blanket",
+          "label": "Blanket",
+          "allowedCategories": [
+            "blanket",
+            "pillow"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bed single",
+          "materialName": "Bedstead",
+          "slotId": "bedstead"
+        },
+        {
+          "meshName": "Bed single",
+          "materialName": "Fellow",
+          "slotId": "fellow"
+        },
+        {
+          "meshName": "Bed single",
+          "materialName": "Blanket",
+          "slotId": "blanket"
+        }
+      ]
+    },
+    {
+      "id": "door-a",
+      "name": "Door A",
+      "category": "doors",
+      "modelUrl": "/models/doors/door-a.glb",
+      "thumbnailUrl": "/thumbnails/doors/door-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.9,
+        "depth": 0.12,
+        "height": 2.1
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "opening",
+        "cut": {
+          "width": 0.9,
+          "height": 2.05,
+          "sill": 0
+        },
+        "embed": "center"
+      },
+      "materialSlots": [
+        {
+          "id": "frame",
+          "label": "Frame",
+          "allowedCategories": [
+            "wood",
+            "metal"
+          ]
+        },
+        {
+          "id": "surface",
+          "label": "Door Surface",
+          "allowedCategories": [
+            "wood"
+          ]
+        },
+        {
+          "id": "trim",
+          "label": "Trim",
+          "allowedCategories": [
+            "wood",
+            "metal"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Door A",
+          "materialName": "Frame",
+          "slotId": "frame"
+        },
+        {
+          "meshName": "Door A",
+          "materialName": "Surface",
+          "slotId": "surface"
+        },
+        {
+          "meshName": "Door A",
+          "materialName": "Trim",
+          "slotId": "trim"
+        }
+      ]
+    },
+    {
+      "id": "wall-shelf-b",
+      "name": "Wall Shelf B",
+      "category": "shelves",
+      "modelUrl": "/models/shelves/wall-shelf-b.glb",
+      "thumbnailUrl": "/thumbnails/shelves/wall-shelf-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.8,
+        "depth": 0.25,
+        "height": 0.3
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.3,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "shelf",
+          "label": "Shelf",
+          "allowedCategories": [
+            "wood"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Wall shelf B",
+          "materialName": "Brown",
+          "slotId": "shelf"
+        }
+      ]
+    },
+    {
+      "id": "sink-01",
+      "name": "Sink",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/sink-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/sink-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.45,
+        "depth": 0.3,
+        "height": 0.78
+      },
+      "materialSlots": [
+        {
+          "id": "sink",
+          "label": "Sink",
+          "allowedCategories": [
+            "tile",
+            "stone"
+          ]
+        },
+        {
+          "id": "tap",
+          "label": "Tap",
+          "allowedCategories": [
+            "metal"
+          ]
+        },
+        {
+          "id": "drain-sink",
+          "label": "Drain Sink",
+          "allowedCategories": [
+            "tile",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Sink",
+          "materialName": "Sink",
+          "slotId": "sink"
+        },
+        {
+          "meshName": "Sink",
+          "materialName": "Tap",
+          "slotId": "tap"
+        },
+        {
+          "meshName": "Sink",
+          "materialName": "Drain Sink",
+          "slotId": "drain-sink"
+        }
+      ]
+    },
+    {
+      "id": "toilet-01",
+      "name": "Toilet",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/toilet-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/toilet-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.61,
+        "depth": 0.78,
+        "height": 1.04
+      },
+      "materialSlots": [
+        {
+          "id": "toilet",
+          "label": "Toilet",
+          "allowedCategories": [
+            "tile",
+            "stone"
+          ]
+        },
+        {
+          "id": "water",
+          "label": "Water",
+          "allowedCategories": [
+            "tile",
+            "stone"
+          ]
+        },
+        {
+          "id": "lid",
+          "label": "Lid",
+          "allowedCategories": [
+            "tile",
+            "stone"
+          ]
+        },
+        {
+          "id": "button",
+          "label": "Button",
+          "allowedCategories": [
+            "metal"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Toilet",
+          "materialName": "Toilet",
+          "slotId": "toilet"
+        },
+        {
+          "meshName": "Toilet",
+          "materialName": "Water",
+          "slotId": "water"
+        },
+        {
+          "meshName": "Toilet",
+          "materialName": "Lid",
+          "slotId": "lid"
+        },
+        {
+          "meshName": "Toilet",
+          "materialName": "Button",
+          "slotId": "button"
+        }
+      ]
+    },
+    {
+      "id": "toilet-roll-holder-01",
+      "name": "Toilet Roll Holder",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/toilet-roll-holder-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/toilet-roll-holder-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.18,
+        "depth": 0.14,
+        "height": 0.13
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 0.7,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "paper",
+          "label": "Paper",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "toilet-roll-holder",
+          "label": "Toilet roll holder",
+          "allowedCategories": [
+            "tile",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Toilet roll holder",
+          "materialName": "Paper",
+          "slotId": "paper"
+        },
+        {
+          "meshName": "Toilet roll holder",
+          "materialName": "Toilet roll holder",
+          "slotId": "toilet-roll-holder"
+        }
+      ]
+    },
+    {
+      "id": "toilet-rolls-01",
+      "name": "Toilet Rolls",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/toilet-rolls-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/toilet-rolls-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.21,
+        "depth": 0.11,
+        "height": 0.21
+      },
+      "materialSlots": [
+        {
+          "id": "white",
+          "label": "White",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Toilet rolls",
+          "materialName": "White",
+          "slotId": "white"
+        }
+      ]
+    },
+    {
+      "id": "towel-holder-01",
+      "name": "Towel Holder",
+      "category": "bathroom",
+      "modelUrl": "/models/bathroom/towel-holder-01.glb",
+      "thumbnailUrl": "/thumbnails/bathroom/tower-holder-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.02,
+        "depth": 0.18,
+        "height": 0.53
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.1,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "blue",
+          "label": "Blue",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "grey",
+          "label": "Grey",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Towel holder",
+          "materialName": "Blue",
+          "slotId": "blue"
+        },
+        {
+          "meshName": "Towel holder",
+          "materialName": "Grey",
+          "slotId": "grey"
+        }
+      ]
+    },
+    {
+      "id": "bed-double-01",
+      "name": "Bed Double",
+      "category": "beds",
+      "modelUrl": "/models/beds/bed-double-01.glb",
+      "thumbnailUrl": "/thumbnails/beds/bed-double-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.76,
+        "depth": 2.27,
+        "height": 0.74
+      },
+      "materialSlots": [
+        {
+          "id": "brown",
+          "label": "Brown",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "white-002",
+          "label": "White.002",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "blue-001",
+          "label": "Blue.001",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bed double",
+          "materialName": "Brown",
+          "slotId": "brown"
+        },
+        {
+          "meshName": "Bed double",
+          "materialName": "White.002",
+          "slotId": "white-002"
+        },
+        {
+          "meshName": "Bed double",
+          "materialName": "Blue.001",
+          "slotId": "blue-001"
+        }
+      ]
+    },
+    {
+      "id": "bunk-bed-01",
+      "name": "Bunk Bed",
+      "category": "beds",
+      "modelUrl": "/models/beds/bunk-bed-01.glb",
+      "thumbnailUrl": "/thumbnails/beds/bunk-bed-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.06,
+        "depth": 2.27,
+        "height": 1.76
+      },
+      "materialSlots": [
+        {
+          "id": "brown-001",
+          "label": "Brown.001",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "white-003",
+          "label": "White.003",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "yelow",
+          "label": "Yelow",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bunk bed",
+          "materialName": "Brown.001",
+          "slotId": "brown-001"
+        },
+        {
+          "meshName": "Bunk bed",
+          "materialName": "White.003",
+          "slotId": "white-003"
+        },
+        {
+          "meshName": "Bunk bed",
+          "materialName": "Yelow",
+          "slotId": "yelow"
+        }
+      ]
+    },
+    {
+      "id": "triple-bunk-bed-01",
+      "name": "Triple Bunk Bed",
+      "category": "beds",
+      "modelUrl": "/models/beds/triple-bunk-bed-01.glb",
+      "thumbnailUrl": "/thumbnails/beds/triple-bunk-bed-01-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.07,
+        "depth": 2.28,
+        "height": 2.93
+      },
+      "materialSlots": [
+        {
+          "id": "brown-002",
+          "label": "Brown.002",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "green",
+          "label": "Green",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "white-004",
+          "label": "White.004",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Triple bunk bed",
+          "materialName": "Brown.002",
+          "slotId": "brown-002"
+        },
+        {
+          "meshName": "Triple bunk bed",
+          "materialName": "Green",
+          "slotId": "green"
+        },
+        {
+          "meshName": "Triple bunk bed",
+          "materialName": "White.004",
+          "slotId": "white-004"
+        }
+      ]
+    },
+    {
+      "id": "carpet-A-01",
+      "name": "Carpet A",
+      "category": "carpets",
+      "modelUrl": "/models/carpets/carpet-A-01.glb",
+      "thumbnailUrl": "/thumbnails/carpets/carpet-A-thumbnail.webp",
+      "boundingBox": {
+        "width": 2,
+        "depth": 1.4,
+        "height": 0.05
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Carpet A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Carpet A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "carpet-B-01",
+      "name": "Carpet B",
+      "category": "carpets",
+      "modelUrl": "/models/carpets/carpet-B-01.glb",
+      "thumbnailUrl": "/thumbnails/carpets/carpet-B-thumbnail.webp",
+      "boundingBox": {
+        "width": 2.39,
+        "depth": 1,
+        "height": 0.05
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Carpet B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Carpet B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "carpet-C-01",
+      "name": "Carpet C",
+      "category": "carpets",
+      "modelUrl": "/models/carpets/carpet-C-01.glb",
+      "thumbnailUrl": "/thumbnails/carpets/carpet-C-thumbnail.webp",
+      "boundingBox": {
+        "width": 1,
+        "depth": 0.53,
+        "height": 0.05
+      }
+    },
+    {
+      "id": "chair-A-01",
+      "name": "Chair A",
+      "category": "chairs",
+      "modelUrl": "/models/chairs/chair-A-01.glb",
+      "thumbnailUrl": "/thumbnails/chairs/chair-A-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.43,
+        "depth": 0.52,
+        "height": 1
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Chair A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Chair A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "chair-B-01",
+      "name": "Chair B",
+      "category": "chairs",
+      "modelUrl": "/models/chairs/chair-B-01.glb",
+      "thumbnailUrl": "/thumbnails/chairs/chair-B-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.42,
+        "depth": 0.44,
+        "height": 1.08
+      }
+    },
+    {
+      "id": "chair-C-01",
+      "name": "Chair C",
+      "category": "chairs",
+      "modelUrl": "/models/chairs/chair-C-01.glb",
+      "thumbnailUrl": "/thumbnails/chairs/chair-C-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.38,
+        "depth": 0.38,
+        "height": 0.64
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Chair C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Chair C",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "chair-D-01",
+      "name": "Chair D",
+      "category": "chairs",
+      "modelUrl": "/models/chairs/chair-D-01.glb",
+      "thumbnailUrl": "/thumbnails/chairs/chair-D-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.44,
+        "depth": 0.44,
+        "height": 0.34
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Chair D",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "chair-E-01",
+      "name": "Chair E",
+      "category": "chairs",
+      "modelUrl": "/models/chairs/chair-E-01.glb",
+      "thumbnailUrl": "/thumbnails/chairs/chair-E-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.45,
+        "depth": 0.5,
+        "height": 0.95
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Chair E",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Chair E",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Chair E",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "door-c",
+      "name": "Door C",
+      "category": "doors",
+      "modelUrl": "/models/doors/door-c.glb",
+      "thumbnailUrl": "/thumbnails/doors/door-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.94,
+        "depth": 0.3,
+        "height": 2.15
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "opening",
+        "cut": {
+          "width": 0.94,
+          "height": 2.15,
+          "sill": 0
+        },
+        "embed": "center"
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Door C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Door C",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Door C",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "door-b",
+      "name": "Door B",
+      "category": "doors",
+      "modelUrl": "/models/doors/door-b.glb",
+      "thumbnailUrl": "/thumbnails/doors/door-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.9,
+        "depth": 0.12,
+        "height": 2.1
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "opening",
+        "cut": {
+          "width": 0.9,
+          "height": 2.05,
+          "sill": 0
+        },
+        "embed": "center"
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Door B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Door B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "drawer-a",
+      "name": "Drawer A",
+      "category": "drawers",
+      "modelUrl": "/models/drawers/drawer-a.glb",
+      "thumbnailUrl": "/thumbnails/drawers/drawer-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.59,
+        "depth": 0.61,
+        "height": 0.78
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Drawer A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Drawer A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "drawer-b",
+      "name": "Drawer B",
+      "category": "drawers",
+      "modelUrl": "/models/drawers/drawer-b.glb",
+      "thumbnailUrl": "/thumbnails/drawers/drawer-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.52,
+        "depth": 0.54,
+        "height": 0.73
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Drawer B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Drawer B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "console-a",
+      "name": "Console A",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/console-a.glb",
+      "thumbnailUrl": "/thumbnails/electronics/console-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.3,
+        "depth": 0.3,
+        "height": 0.63
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Console A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "console-b",
+      "name": "Console B",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/console-b.glb",
+      "thumbnailUrl": "/thumbnails/electronics/console-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.55,
+        "depth": 0.45,
+        "height": 0.19
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Console B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "console-c",
+      "name": "Console C",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/console-c.glb",
+      "thumbnailUrl": "/thumbnails/electronics/console-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.33,
+        "depth": 0.64,
+        "height": 0.66
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Console C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Console C",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "console-d",
+      "name": "Console D",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/console-d.glb",
+      "thumbnailUrl": "/thumbnails/electronics/console-d-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.44,
+        "depth": 0.48,
+        "height": 0.08
+      }
+    },
+    {
+      "id": "keyboard",
+      "name": "Keyboard",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/keyboard.glb",
+      "thumbnailUrl": "/thumbnails/electronics/keyboard-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.81,
+        "depth": 0.32,
+        "height": 0.07
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Keyboard",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "laptop",
+      "name": "Laptop",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/laptop.glb",
+      "thumbnailUrl": "/thumbnails/electronics/laptop-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.57,
+        "depth": 0.48,
+        "height": 0.41
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Laptop",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Laptop",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Laptop",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "monitor",
+      "name": "Monitor",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/monitor.glb",
+      "thumbnailUrl": "/thumbnails/electronics/monitor-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.93,
+        "depth": 0.21,
+        "height": 0.81
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Monitor",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Monitor",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Monitor",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "pc",
+      "name": "Pc",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/pc.glb",
+      "thumbnailUrl": "/thumbnails/electronics/pc-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.35,
+        "depth": 0.68,
+        "height": 0.78
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "PC",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "PC",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "phone",
+      "name": "Phone",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/phone.glb",
+      "thumbnailUrl": "/thumbnails/electronics/phone-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.16,
+        "depth": 0.32,
+        "height": 0.03
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Phone ",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Phone ",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Phone ",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "tablet",
+      "name": "Tablet",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/tablet.glb",
+      "thumbnailUrl": "/thumbnails/electronics/tablet-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.35,
+        "depth": 0.48,
+        "height": 0.04
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Tablet",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Tablet",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Tablet",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "television-a",
+      "name": "Television A",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/television-a.glb",
+      "thumbnailUrl": "/thumbnails/electronics/television-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.9,
+        "depth": 0.82,
+        "height": 0.9
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Television A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Television A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Television A",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "television-b",
+      "name": "Television B",
+      "category": "electronics",
+      "modelUrl": "/models/electronics/television-b.glb",
+      "thumbnailUrl": "/thumbnails/electronics/television-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.92,
+        "depth": 0.32,
+        "height": 1.22
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Television B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Television B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "blender",
+      "name": "Blender",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/blender.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/blender-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.31,
+        "depth": 0.3,
+        "height": 0.51
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Blender",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Blender",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "cupboard-a",
+      "name": "Cupboard A",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/cupboard-a.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/cupboard-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.52,
+        "depth": 0.67,
+        "height": 0.9
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cupboard A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Cupboard A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "cupboard-b",
+      "name": "Cupboard B",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/cupboard-b.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/cupboard-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.97,
+        "depth": 0.67,
+        "height": 0.94
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cupboard B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Cupboard B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "cupboard-c",
+      "name": "Cupboard C",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/cupboard-c.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/cupboard-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.97,
+        "depth": 0.67,
+        "height": 0.93
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cupboard C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Cupboard C",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "cupboard-d",
+      "name": "Cupboard D",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/cupboard-d.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/cupboard-d-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.52,
+        "depth": 0.67,
+        "height": 0.93
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cupboard D",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Cupboard D",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "cupboard-e",
+      "name": "Cupboard E",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/cupboard-e.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/cupboard-e-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.97,
+        "depth": 0.67,
+        "height": 0.93
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cupboard E",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Cupboard E",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "cupboard-f",
+      "name": "Cupboard F",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/cupboard-f.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/cupboard-f-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.81,
+        "depth": 0.67,
+        "height": 0.93
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cupboard F",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Cupboard F",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "cupboard-sink",
+      "name": "Cupboard Sink",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/cupboard-sink.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/cupboard-sink-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.97,
+        "depth": 0.67,
+        "height": 1.04
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cupboard sink",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Cupboard sink",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Cupboard sink",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "dishwasher",
+      "name": "Dishwasher",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/dishwasher.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/dishwasher-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.62,
+        "depth": 0.7,
+        "height": 0.9
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Dishwasher",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Dishwasher",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "fridge-a",
+      "name": "Fridge A",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/fridge-a.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/fridge-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.9,
+        "depth": 0.63,
+        "height": 1.94
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Fridge A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Fridge A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "fridge-b",
+      "name": "Fridge B",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/fridge-b.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/fridge-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.81,
+        "depth": 0.59,
+        "height": 2.06
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Fridge B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Fridge B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "kettle",
+      "name": "Kettle",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/kettle.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/kettle-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.42,
+        "depth": 0.31,
+        "height": 0.57
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Kettle",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Kettle",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Kettle",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "kitchen-roll",
+      "name": "Kitchen Roll",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/kitchen-roll.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/kitchen-roll-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.22,
+        "depth": 0.22,
+        "height": 0.4
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Kitchen Roll",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Kitchen Roll",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "knife-block",
+      "name": "Knife Block",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/knife-block.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/knife-block-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.15,
+        "depth": 0.22,
+        "height": 0.3
+      }
+    },
+    {
+      "id": "microwave",
+      "name": "Microwave",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/microwave.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/microwave-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.52,
+        "depth": 0.4,
+        "height": 0.32
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Microwave",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Microwave",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Microwave",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "oven",
+      "name": "Oven",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/oven.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/oven-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.74,
+        "depth": 0.69,
+        "height": 0.93
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-4",
+          "label": "Part 4",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-5",
+          "label": "Part 5",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Oven",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Oven",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Oven",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        },
+        {
+          "meshName": "Oven",
+          "materialName": "Component 4",
+          "slotId": "component-4"
+        },
+        {
+          "meshName": "Oven",
+          "materialName": "Component 5",
+          "slotId": "component-5"
+        }
+      ]
+    },
+    {
+      "id": "toaster",
+      "name": "Toaster",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/toaster.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/toaster-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.48,
+        "depth": 0.25,
+        "height": 0.35
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Toaster",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Toaster",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "washing-machine",
+      "name": "Washing Machine",
+      "category": "kitchen",
+      "modelUrl": "/models/kitchen/washing-machine.glb",
+      "thumbnailUrl": "/thumbnails/kitchen/washing-machine-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.63,
+        "depth": 0.78,
+        "height": 0.9
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Washing machine",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Washing machine",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Washing machine",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "alarm-clock",
+      "name": "Alarm Clock",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/alarm-clock.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/alarm-clock-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.13,
+        "depth": 0.08,
+        "height": 0.07
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Alarm clock",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Alarm clock",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "bin",
+      "name": "Bin",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/bin.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/bin-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.4,
+        "depth": 0.4,
+        "height": 0.59
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bin",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "books-a",
+      "name": "Books A",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/books-a.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/books-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.52,
+        "depth": 0.18,
+        "height": 0.3
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-4",
+          "label": "Part 4",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Books A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Books A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Books A",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        },
+        {
+          "meshName": "Books A",
+          "materialName": "Component 4",
+          "slotId": "component-4"
+        }
+      ]
+    },
+    {
+      "id": "books-b",
+      "name": "Books B",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/books-b.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/books-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.46,
+        "depth": 0.18,
+        "height": 0.3
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-4",
+          "label": "Part 4",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Books B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Books B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Books B",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        },
+        {
+          "meshName": "Books B",
+          "materialName": "Component 4",
+          "slotId": "component-4"
+        }
+      ]
+    },
+    {
+      "id": "bowl",
+      "name": "Bowl",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/bowl.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/bowl-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.25,
+        "depth": 0.25,
+        "height": 0.09
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Bowl",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "broom",
+      "name": "Broom",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/broom.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/broom-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.33,
+        "depth": 0.18,
+        "height": 1.09
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Broom",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "ceiling-fan",
+      "name": "Ceiling Fan",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/ceiling-fan.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/ceiling-fan-thumbnail.webp",
+      "boundingBox": {
+        "width": 2.08,
+        "depth": 2.08,
+        "height": 0.34
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Ceiling fan",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "clock",
+      "name": "Clock",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/clock.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/clock-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.36,
+        "depth": 0.05,
+        "height": 0.36
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.6,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Clock",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Clock",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Clock",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "curtains",
+      "name": "Curtains",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/curtains.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/curtains-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.52,
+        "depth": 0.16,
+        "height": 1.74
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.0,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Curtains",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Curtains",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "fan",
+      "name": "Fan",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/fan.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/fan-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.45,
+        "depth": 0.32,
+        "height": 0.6
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Fan",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Fan",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "glass",
+      "name": "Glass",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/glass.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/glass-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.09,
+        "depth": 0.09,
+        "height": 0.18
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Glass",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "globe",
+      "name": "Globe",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/globe.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/globe-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.34,
+        "depth": 0.28,
+        "height": 0.44
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Globe",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Globe",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Globe",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "hoover",
+      "name": "Hoover",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/hoover.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/hoover-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.26,
+        "depth": 0.26,
+        "height": 0.09
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Hoover",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Hoover",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "ladder",
+      "name": "Ladder",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/ladder.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/ladder-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.3,
+        "depth": 0.06,
+        "height": 1.47
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Ladder",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "light-switch",
+      "name": "Light Switch",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/light-switch.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/light-switch-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.08,
+        "depth": 0.02,
+        "height": 0.08
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.1,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Light switch",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Light switch",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "mirror-a",
+      "name": "Mirror A",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/mirror-a.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/mirror-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.68,
+        "depth": 0.08,
+        "height": 1.46
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.0,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Mirror A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Mirror A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "mirror-b",
+      "name": "Mirror B",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/mirror-b.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/mirror-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.53,
+        "depth": 0.08,
+        "height": 0.85
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.2,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Mirror B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Mirror B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "mug",
+      "name": "Mug",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/mug.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/mug-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.14,
+        "depth": 0.11,
+        "height": 0.11
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Mug",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "pan",
+      "name": "Pan",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/pan.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/pan-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.39,
+        "depth": 0.23,
+        "height": 0.04
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Pan",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Pan",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "plant-a",
+      "name": "Plant A",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/plant-a.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/plant-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.54,
+        "depth": 0.56,
+        "height": 1.21
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-4",
+          "label": "Part 4",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Plant A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Plant A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Plant A",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        },
+        {
+          "meshName": "Plant A",
+          "materialName": "Component 4",
+          "slotId": "component-4"
+        }
+      ]
+    },
+    {
+      "id": "plant-b",
+      "name": "Plant B",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/plant-b.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/plant-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.19,
+        "depth": 0.19,
+        "height": 0.25
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Plant B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Plant B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Plant B",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "plate",
+      "name": "Plate",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/plate.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/plate-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.26,
+        "depth": 0.26,
+        "height": 0.03
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Plate",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "pot",
+      "name": "Pot",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/pot.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/pot-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.36,
+        "depth": 0.2,
+        "height": 0.13
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Pot",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Pot",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "radiator-large",
+      "name": "Radiator Large",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/radiator-large.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/radiator-large-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.83,
+        "depth": 0.2,
+        "height": 0.73
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 0.15,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Radiator large",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Radiator large",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "radiator-small",
+      "name": "Radiator Small",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/radiator-small.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/radiator-small-thumbnail.webp",
+      "boundingBox": {
+        "width": 1,
+        "depth": 0.2,
+        "height": 0.72
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 0.15,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Radiator small",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Radiator small",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "safe-a",
+      "name": "Safe A",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/safe-a.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/safe-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.41,
+        "depth": 0.23,
+        "height": 0.2
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Safe",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Safe",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "safe-b",
+      "name": "Safe B",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/safe-b.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/safe-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.35,
+        "depth": 0.36,
+        "height": 0.49
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Large safe",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Large safe",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "socket",
+      "name": "Socket",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/socket.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/socket-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.15,
+        "depth": 0.02,
+        "height": 0.08
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 0.3,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Socket",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Socket",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "speaker",
+      "name": "Speaker",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/speaker.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/speaker-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.16,
+        "depth": 0.16,
+        "height": 0.3
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-3",
+          "label": "Part 3",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Speaker",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Speaker",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        },
+        {
+          "meshName": "Speaker",
+          "materialName": "Component 3",
+          "slotId": "component-3"
+        }
+      ]
+    },
+    {
+      "id": "vase",
+      "name": "Vase",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/vase.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/vase-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.16,
+        "depth": 0.16,
+        "height": 0.23
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Vase",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "vent",
+      "name": "Vent",
+      "category": "miscellaneous",
+      "modelUrl": "/models/miscellaneous/vent.glb",
+      "thumbnailUrl": "/thumbnails/miscellaneous/vent-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.27,
+        "depth": 0.03,
+        "height": 0.13
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 2.0,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Vent",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "shelf-a",
+      "name": "Shelf A",
+      "category": "shelves",
+      "modelUrl": "/models/shelves/shelf-a.glb",
+      "thumbnailUrl": "/thumbnails/shelves/shelf-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.67,
+        "depth": 0.49,
+        "height": 2.21
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Shelf A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Shelf A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "shelf-b",
+      "name": "Shelf B",
+      "category": "shelves",
+      "modelUrl": "/models/shelves/shelf-b.glb",
+      "thumbnailUrl": "/thumbnails/shelves/shelf-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.26,
+        "depth": 0.51,
+        "height": 2.21
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Shelf B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Shelf B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "shelf-c",
+      "name": "Shelf C",
+      "category": "shelves",
+      "modelUrl": "/models/shelves/shelf-c.glb",
+      "thumbnailUrl": "/thumbnails/shelves/shelf-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.67,
+        "depth": 0.41,
+        "height": 2.21
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Shelf C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "shelf-d",
+      "name": "Shelf D",
+      "category": "shelves",
+      "modelUrl": "/models/shelves/shelf-d.glb",
+      "thumbnailUrl": "/thumbnails/shelves/shelf-d-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.26,
+        "depth": 0.39,
+        "height": 2.21
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Shelf D",
+          "materialName": "Component  1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "shelf-e",
+      "name": "Shelf E",
+      "category": "shelves",
+      "modelUrl": "/models/shelves/shelf-e.glb",
+      "thumbnailUrl": "/thumbnails/shelves/shelf-e-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.26,
+        "depth": 0.41,
+        "height": 1.64
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Shelf E",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "wall-shelf-a",
+      "name": "Wall Shelf A",
+      "category": "shelves",
+      "modelUrl": "/models/shelves/wall-shelf-a.glb",
+      "thumbnailUrl": "/thumbnails/shelves/wall-shelf-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.63,
+        "depth": 0.41,
+        "height": 0.36
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "mount",
+        "mountHeight": 1.3,
+        "faceGap": 0
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Wall shelf A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "sofa-a",
+      "name": "Sofa A",
+      "category": "sofas",
+      "modelUrl": "/models/sofas/sofa-a.glb",
+      "thumbnailUrl": "/thumbnails/sofas/sofa-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 2.13,
+        "depth": 0.9,
+        "height": 0.91
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Sofa A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Sofa A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "sofa-b",
+      "name": "Sofa B",
+      "category": "sofas",
+      "modelUrl": "/models/sofas/sofa-b.glb",
+      "thumbnailUrl": "/thumbnails/sofas/sofa-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.27,
+        "depth": 0.94,
+        "height": 0.9
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Sofa B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Sofa B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "sofa-c",
+      "name": "Sofa C",
+      "category": "sofas",
+      "modelUrl": "/models/sofas/sofa-c.glb",
+      "thumbnailUrl": "/thumbnails/sofas/sofa-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.14,
+        "depth": 0.89,
+        "height": 0.56
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Sofa C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "sofa-d",
+      "name": "Sofa D",
+      "category": "sofas",
+      "modelUrl": "/models/sofas/sofa-d.glb",
+      "thumbnailUrl": "/thumbnails/sofas/sofa-d-thumbnail.webp",
+      "boundingBox": {
+        "width": 2.64,
+        "depth": 0.85,
+        "height": 0.75
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Sofa D",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "desk",
+      "name": "Desk",
+      "category": "tables",
+      "modelUrl": "/models/tables/desk.glb",
+      "thumbnailUrl": "/thumbnails/tables/desk-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.95,
+        "depth": 0.92,
+        "height": 0.88
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Desk",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Desk",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "rounded-table-a",
+      "name": "Rounded Table A",
+      "category": "tables",
+      "modelUrl": "/models/tables/rounded-table-a.glb",
+      "thumbnailUrl": "/thumbnails/tables/rounded-table-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.87,
+        "depth": 1.18,
+        "height": 0.73
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Rounded table A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "rounded-table-b",
+      "name": "Rounded Table B",
+      "category": "tables",
+      "modelUrl": "/models/tables/rounded-table-b.glb",
+      "thumbnailUrl": "/thumbnails/tables/rounded-table-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.18,
+        "depth": 1.18,
+        "height": 0.73
+      },
+      "materialSlots": [
+        {
+          "id": "brown-002",
+          "label": "Brown.002",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "brown-2-001",
+          "label": "Brown 2.001",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Cylinder.010",
+          "materialName": "Brown.002",
+          "slotId": "brown-002"
+        },
+        {
+          "meshName": "Cylinder.010",
+          "materialName": "Brown 2.001",
+          "slotId": "brown-2-001"
+        }
+      ]
+    },
+    {
+      "id": "rounded-table-c",
+      "name": "Rounded Table C",
+      "category": "tables",
+      "modelUrl": "/models/tables/rounded-table-c.glb",
+      "thumbnailUrl": "/thumbnails/tables/rounded-table-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.18,
+        "depth": 1.18,
+        "height": 0.85
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Rounded table C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Rounded table C",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "table-a",
+      "name": "Table A",
+      "category": "tables",
+      "modelUrl": "/models/tables/table-a.glb",
+      "thumbnailUrl": "/thumbnails/tables/table-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.7,
+        "depth": 0.73,
+        "height": 0.81
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Table A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "table-b",
+      "name": "Table B",
+      "category": "tables",
+      "modelUrl": "/models/tables/table-b.glb",
+      "thumbnailUrl": "/thumbnails/tables/table-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.68,
+        "depth": 0.73,
+        "height": 0.38
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Table B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        }
+      ]
+    },
+    {
+      "id": "table-c",
+      "name": "Table C",
+      "category": "tables",
+      "modelUrl": "/models/tables/table-c.glb",
+      "thumbnailUrl": "/thumbnails/tables/table-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.38,
+        "depth": 0.73,
+        "height": 0.38
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Table C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Table C",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "table-d",
+      "name": "Table D",
+      "category": "tables",
+      "modelUrl": "/models/tables/table-d.glb",
+      "thumbnailUrl": "/thumbnails/tables/table-d-thumbnail.webp",
+      "boundingBox": {
+        "width": 2.62,
+        "depth": 0.87,
+        "height": 0.56
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Table D",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Table D",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "window-a",
+      "name": "Window A",
+      "category": "windows",
+      "modelUrl": "/models/windows/window-a.glb",
+      "thumbnailUrl": "/thumbnails/windows/window-a-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.68,
+        "depth": 0.1,
+        "height": 1.39
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "opening",
+        "cut": {
+          "width": 0.68,
+          "height": 1.39,
+          "sill": 0.9
+        },
+        "embed": "center"
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Window A",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Window A",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "window-b",
+      "name": "Window B",
+      "category": "windows",
+      "modelUrl": "/models/windows/window-b.glb",
+      "thumbnailUrl": "/thumbnails/windows/window-b-thumbnail.webp",
+      "boundingBox": {
+        "width": 1.15,
+        "depth": 0.09,
+        "height": 1.51
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "opening",
+        "cut": {
+          "width": 1.15,
+          "height": 1.51,
+          "sill": 0.9
+        },
+        "embed": "center"
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Window B",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Window B",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    },
+    {
+      "id": "window-c",
+      "name": "Window C",
+      "category": "windows",
+      "modelUrl": "/models/windows/window-c.glb",
+      "thumbnailUrl": "/thumbnails/windows/window-c-thumbnail.webp",
+      "boundingBox": {
+        "width": 0.91,
+        "depth": 0.07,
+        "height": 0.92
+      },
+      "placement": {
+        "constraint": "wall",
+        "wallBehavior": "opening",
+        "cut": {
+          "width": 0.91,
+          "height": 0.92,
+          "sill": 0.9
+        },
+        "embed": "center"
+      },
+      "materialSlots": [
+        {
+          "id": "component-1",
+          "label": "Part 1",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        },
+        {
+          "id": "component-2",
+          "label": "Part 2",
+          "allowedCategories": [
+            "wood",
+            "metal",
+            "fabric",
+            "stone"
+          ]
+        }
+      ],
+      "materialBindings": [
+        {
+          "meshName": "Window C",
+          "materialName": "Component 1",
+          "slotId": "component-1"
+        },
+        {
+          "meshName": "Window C",
+          "materialName": "Component 2",
+          "slotId": "component-2"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,446 @@
+{
+  "_status": "draft-for-review",
+  "_note": "Mined từ 10 scene; count = số scene dùng. Role required do người chốt.",
+  "rooms": {
+    "living": {
+      "sofas": [
+        {
+          "modelId": "sofa-d",
+          "count": 5
+        },
+        {
+          "modelId": "sofa-c",
+          "count": 3
+        },
+        {
+          "modelId": "sofa-a",
+          "count": 3
+        },
+        {
+          "modelId": "sofa-b",
+          "count": 2
+        }
+      ],
+      "carpets": [
+        {
+          "modelId": "carpet-B-01",
+          "count": 6
+        },
+        {
+          "modelId": "carpet-A-01",
+          "count": 4
+        }
+      ],
+      "tables": [
+        {
+          "modelId": "table-c",
+          "count": 7
+        },
+        {
+          "modelId": "table-d",
+          "count": 2
+        },
+        {
+          "modelId": "table-a",
+          "count": 2
+        },
+        {
+          "modelId": "rounded-table-b",
+          "count": 1
+        }
+      ],
+      "chairs": [
+        {
+          "modelId": "chair-D-01",
+          "count": 6
+        },
+        {
+          "modelId": "chair-E-01",
+          "count": 4
+        },
+        {
+          "modelId": "chair-C-01",
+          "count": 4
+        }
+      ],
+      "shelves": [
+        {
+          "modelId": "wall-shelf-a",
+          "count": 3
+        },
+        {
+          "modelId": "shelf-e",
+          "count": 2
+        },
+        {
+          "modelId": "wall-shelf-b",
+          "count": 2
+        },
+        {
+          "modelId": "shelf-b",
+          "count": 2
+        },
+        {
+          "modelId": "shelf-c",
+          "count": 1
+        },
+        {
+          "modelId": "shelf-d",
+          "count": 1
+        }
+      ],
+      "miscellaneous": [
+        {
+          "modelId": "plant-a",
+          "count": 12
+        },
+        {
+          "modelId": "clock",
+          "count": 8
+        },
+        {
+          "modelId": "mirror-a",
+          "count": 7
+        },
+        {
+          "modelId": "vase",
+          "count": 3
+        },
+        {
+          "modelId": "globe",
+          "count": 3
+        },
+        {
+          "modelId": "mirror-b",
+          "count": 3
+        },
+        {
+          "modelId": "radiator-large",
+          "count": 2
+        },
+        {
+          "modelId": "curtains",
+          "count": 2
+        },
+        {
+          "modelId": "pot",
+          "count": 1
+        },
+        {
+          "modelId": "fan",
+          "count": 1
+        },
+        {
+          "modelId": "books-b",
+          "count": 1
+        },
+        {
+          "modelId": "ladder",
+          "count": 1
+        },
+        {
+          "modelId": "vent",
+          "count": 1
+        },
+        {
+          "modelId": "plant-b",
+          "count": 1
+        }
+      ],
+      "electronics": [
+        {
+          "modelId": "television-b",
+          "count": 7
+        },
+        {
+          "modelId": "pc",
+          "count": 1
+        }
+      ],
+      "kitchen": [
+        {
+          "modelId": "cupboard-f",
+          "count": 2
+        },
+        {
+          "modelId": "cupboard-sink",
+          "count": 2
+        },
+        {
+          "modelId": "oven",
+          "count": 2
+        },
+        {
+          "modelId": "fridge-b",
+          "count": 2
+        }
+      ],
+      "bathroom": [
+        {
+          "modelId": "towel-holder-01",
+          "count": 1
+        }
+      ]
+    },
+    "kitchen": {
+      "kitchen": [
+        {
+          "modelId": "cupboard-sink",
+          "count": 8
+        },
+        {
+          "modelId": "oven",
+          "count": 8
+        },
+        {
+          "modelId": "fridge-a",
+          "count": 5
+        },
+        {
+          "modelId": "fridge-b",
+          "count": 3
+        },
+        {
+          "modelId": "cupboard-f",
+          "count": 3
+        },
+        {
+          "modelId": "cupboard-e",
+          "count": 2
+        },
+        {
+          "modelId": "cupboard-d",
+          "count": 2
+        },
+        {
+          "modelId": "kettle",
+          "count": 1
+        },
+        {
+          "modelId": "dishwasher",
+          "count": 1
+        },
+        {
+          "modelId": "toaster",
+          "count": 1
+        }
+      ],
+      "tables": [
+        {
+          "modelId": "table-a",
+          "count": 5
+        }
+      ],
+      "chairs": [
+        {
+          "modelId": "chair-C-01",
+          "count": 4
+        },
+        {
+          "modelId": "chair-A-01",
+          "count": 2
+        },
+        {
+          "modelId": "chair-D-01",
+          "count": 2
+        },
+        {
+          "modelId": "chair-E-01",
+          "count": 2
+        }
+      ],
+      "miscellaneous": [
+        {
+          "modelId": "bowl",
+          "count": 1
+        },
+        {
+          "modelId": "mirror-a",
+          "count": 1
+        },
+        {
+          "modelId": "pot",
+          "count": 1
+        }
+      ],
+      "shelves": [
+        {
+          "modelId": "wall-shelf-a",
+          "count": 1
+        }
+      ]
+    },
+    "dining": {
+      "tables": [
+        {
+          "modelId": "table-b",
+          "count": 3
+        },
+        {
+          "modelId": "rounded-table-b",
+          "count": 1
+        },
+        {
+          "modelId": "rounded-table-a",
+          "count": 1
+        },
+        {
+          "modelId": "table-a",
+          "count": 1
+        }
+      ],
+      "chairs": [
+        {
+          "modelId": "chair-C-01",
+          "count": 16
+        },
+        {
+          "modelId": "chair-B-01",
+          "count": 4
+        },
+        {
+          "modelId": "chair-A-01",
+          "count": 3
+        }
+      ],
+      "miscellaneous": [
+        {
+          "modelId": "vase",
+          "count": 4
+        },
+        {
+          "modelId": "curtains",
+          "count": 1
+        }
+      ]
+    },
+    "bedroom": {
+      "beds": [
+        {
+          "modelId": "bed-double-01",
+          "count": 10
+        }
+      ],
+      "drawers": [
+        {
+          "modelId": "drawer-a",
+          "count": 6
+        },
+        {
+          "modelId": "drawer-b",
+          "count": 5
+        }
+      ],
+      "carpets": [
+        {
+          "modelId": "carpet-C-01",
+          "count": 10
+        },
+        {
+          "modelId": "carpet-A-01",
+          "count": 1
+        }
+      ],
+      "miscellaneous": [
+        {
+          "modelId": "plant-b",
+          "count": 6
+        },
+        {
+          "modelId": "mirror-a",
+          "count": 4
+        },
+        {
+          "modelId": "plant-a",
+          "count": 2
+        },
+        {
+          "modelId": "radiator-large",
+          "count": 1
+        }
+      ],
+      "chairs": [
+        {
+          "modelId": "chair-D-01",
+          "count": 1
+        }
+      ]
+    },
+    "bathroom": {
+      "bathroom": [
+        {
+          "modelId": "sink-01",
+          "count": 11
+        },
+        {
+          "modelId": "bath-01",
+          "count": 10
+        },
+        {
+          "modelId": "toilet-01",
+          "count": 10
+        },
+        {
+          "modelId": "towel-holder-01",
+          "count": 9
+        },
+        {
+          "modelId": "shower-door-01",
+          "count": 7
+        }
+      ]
+    },
+    "study": {
+      "tables": [
+        {
+          "modelId": "desk",
+          "count": 1
+        }
+      ],
+      "chairs": [
+        {
+          "modelId": "chair-D-01",
+          "count": 1
+        }
+      ],
+      "miscellaneous": [
+        {
+          "modelId": "books-a",
+          "count": 1
+        },
+        {
+          "modelId": "mirror-a",
+          "count": 1
+        }
+      ],
+      "shelves": [
+        {
+          "modelId": "shelf-c",
+          "count": 1
+        }
+      ]
+    },
+    "foyer": {
+      "tables": [
+        {
+          "modelId": "rounded-table-a",
+          "count": 1
+        }
+      ],
+      "miscellaneous": [
+        {
+          "modelId": "plant-a",
+          "count": 2
+        },
+        {
+          "modelId": "vase",
+          "count": 1
+        },
+        {
+          "modelId": "mirror-b",
+          "count": 1
+        }
+      ]
+    }
+  }
+}

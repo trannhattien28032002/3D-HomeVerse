@@ -9,6 +9,7 @@
 import { useMemo, useState } from "react";
 import type { EngineInstance } from "src/engine/engineTypes";
 import { getCatalogItem, getMaterialSlots } from "src/engine/catalog/FurnitureCatalog";
+import { resolveAssetUrl } from "src/shared/catalog/assetUrl";
 import { T, RGB, alpha } from "src/app/constants/designTokens";
 import { MaterialGrid } from "./MaterialGrid";
 import { ResetButton } from "./ResetButton";
@@ -35,7 +36,7 @@ export function ObjectMaterialPanel({ engine, entityId, modelId }: Props) {
     }
 
     const objectName = modelId ? getCatalogItem(modelId)?.name ?? modelId : "";
-    const thumbnail = modelId ? getCatalogItem(modelId)?.thumbnailUrl : undefined;
+    const thumbnail = modelId ? resolveAssetUrl(getCatalogItem(modelId)?.thumbnailUrl) : undefined;
 
     // Slot active: ưu tiên lựa chọn người dùng nếu còn hợp lệ, else slot đầu tiên.
     const effectiveSlotId = (selectedSlotId && slots.some((s) => s.id === selectedSlotId))

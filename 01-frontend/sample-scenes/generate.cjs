@@ -200,7 +200,7 @@ function validate(doc, file) {
 // ════════════════════════════════════════════════════════════════════════════
 //  ĐỊNH NGHĨA CÁC HOUSE
 // ════════════════════════════════════════════════════════════════════════════
-const HOUSES = require("./houses.cjs");
+const HOUSES = [...require("./houses.cjs"), ...require("./houses-styles.cjs")];
 
 let ok = 0;
 for (const house of HOUSES) {

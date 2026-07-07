@@ -1,18 +1,13 @@
 import { Pool, PoolClient } from 'pg';
 import { typedQuery } from '../../shared/db/queryHelper';
 import { NotFoundError } from '../../shared/errors/NotFoundError';
-import type { Project, ProjectMeta, CreateProjectInput, UpdateProjectMetaInput } from './projects.types';
+import type { ProjectMeta, CreateProjectInput, UpdateProjectMetaInput } from './projects.types';
 import type { ListProjectsCursor } from './projects.types';
 
 type Client = Pool | PoolClient;
 
 const META_COLS = `
   id, owner_id, name, thumbnail_url, floor_count,
-  is_template, is_public, deleted_at, created_at, updated_at
-`;
-
-const ALL_COLS = `
-  id, owner_id, name, thumbnail_url, scene_data, floor_count,
   is_template, is_public, deleted_at, created_at, updated_at
 `;
 
@@ -42,18 +37,6 @@ export async function findById(
   const { rows } = await typedQuery<ProjectMeta>(
     client,
     `SELECT ${META_COLS} FROM public.projects WHERE id = $1 AND deleted_at IS NULL`,
-    [id]
-  );
-  return rows[0] ?? null;
-}
-
-export async function findByIdFull(
-  client: Client,
-  id: string
-): Promise<Project | null> {
-  const { rows } = await typedQuery<Project>(
-    client,
-    `SELECT ${ALL_COLS} FROM public.projects WHERE id = $1 AND deleted_at IS NULL`,
     [id]
   );
   return rows[0] ?? null;

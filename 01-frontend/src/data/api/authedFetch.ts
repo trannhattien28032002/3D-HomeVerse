@@ -8,14 +8,11 @@
  * Dùng cho /ai/chat (A6 sẽ chuyển devOnly → requireAuth): header có sẵn ngay từ
  * bây giờ nên không cần sửa gì thêm ở FE khi backend bật guard.
  */
-import { supabase } from "src/data/auth/supabaseClient";
+import { attachAuthHeader } from "src/data/api/authHeader";
 
 export const authedFetch: typeof fetch = async (input, init) => {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-
     const headers = new Headers(init?.headers);
-    if (token) headers.set("authorization", `Bearer ${token}`);
+    await attachAuthHeader(headers);
 
     return fetch(input, { ...init, headers });
 };

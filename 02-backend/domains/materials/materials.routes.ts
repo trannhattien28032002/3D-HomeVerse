@@ -8,6 +8,10 @@ import * as service from './materials.service';
 
 export const materialsRouter = Router();
 
+// Material catalog is near-static reference data shared across all users — safe to
+// cache at the HTTP layer.
+const CATALOG_CACHE_CONTROL = 'public, max-age=300';
+
 // GET /materials/search — FTS + trgm search (before /:slug to avoid route collision).
 materialsRouter.get(
   '/search',
@@ -17,6 +21,7 @@ materialsRouter.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await service.searchMaterials(req.query as unknown as MaterialSearchQuery);
+      res.set('Cache-Control', CATALOG_CACHE_CONTROL);
       res.json(result);
     } catch (err) {
       next(err);
@@ -32,6 +37,7 @@ materialsRouter.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await service.listMaterials(req.query as unknown as MaterialSearchQuery);
+      res.set('Cache-Control', CATALOG_CACHE_CONTROL);
       res.json(result);
     } catch (err) {
       next(err);

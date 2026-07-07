@@ -5,7 +5,7 @@
  * Tách từ ProjectsPage (Phase 5.6).
  */
 import type { ProjectMeta, LoadState } from "src/app/hooks/useProjectList";
-import ProjectCard from "./ProjectCard";
+import ProjectCard from "src/app/pages/ProjectPage/ProjectCard";
 
 type Props = {
     search: string;

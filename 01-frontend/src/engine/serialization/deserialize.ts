@@ -22,7 +22,7 @@
  */
 
 import type { EngineInstance } from "src/engine/engineTypes";
-import type { SceneDocument } from "./SceneDocument";
+import type { SceneDocument } from "src/shared/types/SceneDocument";
 import { FurnitureTag } from "src/engine/components/furniture/FurnitureTag";
 import { Query } from "src/engine/ecs/Query";
 import { DEFAULT_WALL_HEIGHT } from "src/shared/constants/wall";
@@ -89,6 +89,10 @@ export async function deserializeScene(
     // doc.floors (bước 6) sẽ nạp lại đúng tập material.
     engine.floorMaterials.clear();
 
+    // Xoá registry loại phòng — doc.roomTypes (bước 6) nạp lại đúng tập. Không xoá thì
+    // entry cũ còn sót làm describeScene gán nhầm type khi nạp scene khác / undo.
+    engine.roomTypes.clear();
+
     // ── 2. Khôi phục node ─────────────────────────────────────────────────────
     // Mọi node phải tồn tại trước khi dispatch bất kỳ ADD_WALL nào.
     for (const node of doc.nodes) {
@@ -151,5 +155,12 @@ export async function deserializeScene(
     if (myGen !== _generation) return;
     for (const [roomKey, materialId] of Object.entries(doc.floors ?? {})) {
         dispatch({ type: "SET_FLOOR_MATERIAL", roomKey, materialId });
+    }
+
+    // ── 7. Khôi phục loại phòng ───────────────────────────────────────────────
+    // SET_ROOM_TYPE ghi registry roomKey→roomType (thuần metadata, không mesh) nên
+    // thứ tự với phát hiện phòng không quan trọng.
+    for (const [roomKey, roomType] of Object.entries(doc.roomTypes ?? {})) {
+        dispatch({ type: "SET_ROOM_TYPE", roomKey, roomType });
     }
 }

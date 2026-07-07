@@ -35,6 +35,7 @@ interface SourceObject {
   topDown?: { imageUrl?: string };
   boundingBox?: unknown;
   collisionBox?: unknown;
+  placement?: unknown;
   materialSlots?: unknown;
   materialBindings?: unknown;
   isPremium?: boolean;
@@ -66,12 +67,12 @@ async function seedObjects(): Promise<number> {
       await client.query(
         `INSERT INTO public.library_objects
            (id, name, category, model_url, thumbnail_url, topdown_url,
-            bounding_box, collision_box, material_slots, material_bindings,
+            bounding_box, collision_box, placement, material_slots, material_bindings,
             is_premium, is_active)
          VALUES
            ($1, $2, $3, $4, $5, $6,
-            $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb,
-            $11, TRUE)
+            $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb,
+            $12, TRUE)
          ON CONFLICT (id) DO UPDATE SET
            name              = EXCLUDED.name,
            category          = EXCLUDED.category,
@@ -80,6 +81,7 @@ async function seedObjects(): Promise<number> {
            topdown_url       = EXCLUDED.topdown_url,
            bounding_box      = EXCLUDED.bounding_box,
            collision_box     = EXCLUDED.collision_box,
+           placement         = EXCLUDED.placement,
            material_slots    = EXCLUDED.material_slots,
            material_bindings = EXCLUDED.material_bindings,
            is_premium        = EXCLUDED.is_premium,
@@ -94,6 +96,7 @@ async function seedObjects(): Promise<number> {
           o.topDown?.imageUrl ?? null,
           json(o.boundingBox ?? {}),
           json(o.collisionBox ?? {}),
+          o.placement ? json(o.placement) : null,
           json(o.materialSlots ?? []),
           json(o.materialBindings ?? []),
           o.isPremium ?? false,

@@ -9,8 +9,3 @@ export interface SceneData {
 export interface LoadSceneResponse {
   sceneData: SceneData;
 }
-
-// Request body for PUT /projects/:id/scene.
-export interface SaveSceneBody {
-  sceneData: SceneData;
-}

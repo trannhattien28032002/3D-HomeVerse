@@ -18,7 +18,7 @@ import {
     getVersion,
     restoreVersion,
     type VersionSummary,
-} from "src/data/scene/versionsApi";
+} from "src/data/versions/versionsApi";
 import { apiErrorMessage } from "src/data/api/client";
 import { toast } from "src/app/store/useToastStore";
 

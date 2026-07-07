@@ -69,6 +69,7 @@ import {
     handleResetWallMaterial,
     handleResetFloorMaterial,
 } from "src/engine/commands/handlers/surfaceHandlers";
+import { handleSetRoomType } from "src/engine/commands/handlers/roomMetaHandlers";
 
 // Re-export type để consumer (engine.ts, tests) không phải đổi import path.
 export type { DispatcherDeps } from "src/engine/commands/dispatcherDeps";
@@ -134,6 +135,9 @@ export function createDispatcher(deps: DispatcherDeps): {
             case "SET_FLOOR_MATERIAL":    handleSetFloorMaterial(command, deps); break;
             case "RESET_WALL_MATERIAL":   handleResetWallMaterial(command, deps); break;
             case "RESET_FLOOR_MATERIAL":  handleResetFloorMaterial(command, deps); break;
+
+            // ── Room metadata (loại phòng) ────────────────────────────────────
+            case "SET_ROOM_TYPE":         handleSetRoomType(command, deps); break;
 
             // ── Exhaustiveness check ──────────────────────────────────────────
             // Nếu thêm 1 case mới vào EngineCommand mà quên handle ở đây, TS sẽ

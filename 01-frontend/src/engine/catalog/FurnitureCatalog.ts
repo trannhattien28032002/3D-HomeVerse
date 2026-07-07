@@ -10,7 +10,8 @@
  * Mọi getter đều "an toàn": luôn có giá trị dùng được (DEFAULT_FOOTPRINT) để
  * lớp render 2D không bao giờ phải đoán mò.
  */
-import objectsData from "src/data/catalog/objects.json";
+import { getObjectsRaw, catalogVersion } from "src/shared/catalog/catalogStore";
+import { resolveAssetUrl } from "src/shared/catalog/assetUrl";
 
 export type TargetBBox = { width: number; depth: number; height: number };
 export type CollisionBox = { width: number; depth: number; height?: number };
@@ -92,21 +93,32 @@ function isValidEntry(o: unknown): o is JsonCatalogEntry {
     return typeof r.id === "string" && typeof r.name === "string";
 }
 
-const catalogMap = new Map<string, JsonCatalogEntry>(
-    ((objectsData as { objects?: unknown[] }).objects ?? [])
-        .filter(isValidEntry)
-        .map((o) => [o.id, o]),
-);
+// Map theo modelId dựng lười từ catalogStore; dựng lại khi store hydrate (version đổi)
+// nên getter dưới đây vẫn ĐỒNG BỘ — caller (engine/2D) không phải đổi.
+let cachedMap: Map<string, JsonCatalogEntry> | null = null;
+let cachedVersion = -1;
+
+function catalogMap(): Map<string, JsonCatalogEntry> {
+    const v = catalogVersion();
+    if (cachedMap && cachedVersion === v) return cachedMap;
+    cachedMap = new Map<string, JsonCatalogEntry>(
+        getObjectsRaw()
+            .filter(isValidEntry)
+            .map((o) => [o.id, o]),
+    );
+    cachedVersion = v;
+    return cachedMap;
+}
 
 export function getCatalogItem(modelId: string): JsonCatalogEntry | undefined {
-    return catalogMap.get(modelId);
+    return catalogMap().get(modelId);
 }
 
 export function getAssetPath(modelId: string): string {
     const item = getCatalogItem(modelId);
     if (!item) throw new Error(`Unknown modelId: ${modelId}`);
     if (!item.modelUrl) throw new Error(`No modelUrl for: ${modelId}`);
-    return item.modelUrl;
+    return resolveAssetUrl(item.modelUrl)!;
 }
 
 /** Trả về bounding box kỳ vọng từ objects.json, hoặc undefined nếu không khai báo. */
@@ -140,7 +152,7 @@ export function getCollisionBox(modelId: string): CollisionBox | undefined {
  * Khung nhìn mặt bằng dùng để vẽ ảnh footprint của nội thất.
  */
 export function getTopDownUrl(modelId: string): string | undefined {
-    return getCatalogItem(modelId)?.topDown?.imageUrl;
+    return resolveAssetUrl(getCatalogItem(modelId)?.topDown?.imageUrl);
 }
 
 /**

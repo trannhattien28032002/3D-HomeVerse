@@ -82,6 +82,7 @@ export class OrbitControlSystem extends System {
 
     private camera: THREE.Camera;
     private scene: THREE.Scene;
+    private renderer: THREE.WebGLRenderer;
     private domElement: HTMLElement;
     // LW-03: rect canvas được cache, invalidate khi resize/scroll — onMouseMove đọc
     // mỗi lần di chuột nên gọi getBoundingClientRect() trực tiếp dễ gây forced-reflow.
@@ -106,6 +107,7 @@ export class OrbitControlSystem extends System {
         super();
         this.camera = camera;
         this.scene = scene;
+        this.renderer = renderer;
         this.domElement = renderer.domElement;
         this.rectCache = new CachedClientRect(this.domElement);
 
@@ -229,6 +231,10 @@ export class OrbitControlSystem extends System {
 
     update(world: World, deltaTime: number): void {
         void world;
+
+        // VR: headset điều khiển pose camera (qua player rig). Bỏ qua hoàn toàn — nếu chạy,
+        // controls.update() sẽ tính lại camera.position từ toạ độ cầu nội bộ và đè pose kính.
+        if (this.renderer.xr.isPresenting) return;
 
         if (this._transition) {
             // Tiến animation và áp cubic ease-out để camera giảm tốc vào vị trí

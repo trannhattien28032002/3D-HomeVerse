@@ -52,7 +52,7 @@ export type DimensionSnapshot = {
     endX: number;
     endZ: number;
     /** Vector đơn vị vuông góc với tường (về bên trái của hướng start→end) */
-    perpX: number;
+    perpX: number; //perpendicular: vector vuông góc
     perpZ: number;
 };
 
@@ -104,7 +104,7 @@ export type FurnitureSnapshot = {
     width: number; // footprint XZ (mét)
     depth: number;
     /** URL ảnh top-down từ catalog. Undefined = vẽ hộp xám fallback. */
-    topDownUrl: string | undefined;
+    topDownUrl: string | undefined; // Hiện tại không còn xài nữa
     // Wall-item metadata (undefined cho floor furniture)
     isWallItem?: boolean;
     wallBehavior?: "opening" | "mount";

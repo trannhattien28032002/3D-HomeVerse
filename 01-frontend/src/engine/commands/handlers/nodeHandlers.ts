@@ -194,7 +194,13 @@ export function handleMoveNodes(command: MoveNodesCmd, deps: DispatcherDeps): vo
 // Sau vòng lặp: invalidate polygon tất cả tường của targetNode (topology
 // vừa thay đổi). Cuối cùng: xóa sourceNode.
 //
-// TODO: cân nhắc immutable update thay vì mutate WallNodes in-place.
+// An toàn cho undo/redo dù mutate WallNodes in-place (đã audit — KHÔNG đổi thành
+// immutable update): `transactionApi.ts` chụp `serializeScene(inst)` TRƯỚC KHI
+// `fn()` (chứa dispatch MERGE_NODE) chạy, và `serializeScene` build từng
+// `SceneWallRecord` bằng value-copy (`{ startNodeId: wn.startNodeId, ... }`), không
+// giữ reference tới component `WallNodes` sống. Vì vậy mutation in-place ở dưới
+// không thể làm hỏng snapshot undo đã chụp trước đó — undo luôn deserialize lại
+// một document độc lập, không phụ thuộc identity của object bị mutate.
 export function handleMergeNode(command: MergeNodeCmd, deps: DispatcherDeps): void {
     const { world, nodeRegistry, wallEntityByWallId, entityRegistry } = deps;
     const { sourceNodeId, targetNodeId } = command;

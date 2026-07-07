@@ -40,9 +40,14 @@ function reskinWall(entity: string, deps: DispatcherDeps): void {
     const surf = world.getComponent(entity, SurfaceMaterial);
     const def = materialRegistry.get(WALL_DEFAULT_MATERIAL);
 
+    // markDirty() sau mỗi lần gán mesh.material: RenderSystem render on-demand (CR-03) —
+    // sửa thẳng mesh.material/mutate SurfaceMaterial.faces KHÔNG luôn bump revision (chỉ
+    // add/removeComponent mới bump), nên đổi material lần 2 trên cùng tường sẽ không vẽ lại
+    // nếu không báo thủ công. Phần async phải markDirty trong .then() (sau khi gán).
     if (!surf || surf.isEmpty()) {
         meshComp.mesh.material = def; // single → three.js bỏ qua groups (như cũ)
         releaseSurfaceMaterial(prev);
+        world.markDirty();
         return;
     }
 
@@ -53,9 +58,10 @@ function reskinWall(entity: string, deps: DispatcherDeps): void {
         .then(([left, right]) => {
             // Component có thể đã đổi trong lúc await — đọc lại để gán đúng trạng thái mới nhất.
             const cur = world.getComponent(entity, SurfaceMaterial);
-            if (!cur || cur.isEmpty()) { meshComp.mesh.material = def; releaseSurfaceMaterial(prev); return; }
+            if (!cur || cur.isEmpty()) { meshComp.mesh.material = def; releaseSurfaceMaterial(prev); world.markDirty(); return; }
             meshComp.mesh.material = [left, right, def]; // [LEFT, RIGHT, OTHER]
             releaseSurfaceMaterial(prev);
+            world.markDirty();
         })
         .catch((err) => console.error("reskinWall failed:", err));
 }
@@ -92,14 +98,16 @@ function withRoomFloorMesh(
 }
 
 export function handleSetFloorMaterial(command: SetFloorMaterialCmd, deps: DispatcherDeps): void {
-    const { materialLibrary, floorMaterials } = deps;
+    const { world, materialLibrary, floorMaterials } = deps;
     floorMaterials.set(command.roomKey, command.materialId);
 
     // Áp ngay lên mesh sàn của phòng hiện có khớp roomKey (nếu đang tồn tại).
+    // markDirty() trong .then() (sau khi gán material async) — báo on-demand RenderSystem
+    // vẽ lại; floorMaterials.set/gán mesh.material KHÔNG bump revision (xem reskinWall).
     withRoomFloorMesh(command.roomKey, deps, (mesh) => {
         const prev = mesh.material;
         buildSurfaceMaterial(materialLibrary, command.materialId)
-            .then((mat) => { if (mat) { mesh.material = mat; releaseSurfaceMaterial(prev); } })
+            .then((mat) => { if (mat) { mesh.material = mat; releaseSurfaceMaterial(prev); world.markDirty(); } })
             .catch((err) => console.error("SET_FLOOR_MATERIAL failed:", err));
     });
 }
@@ -120,12 +128,13 @@ export function handleResetWallMaterial(command: ResetWallMaterialCmd, deps: Dis
 
 /** Khôi phục material mặc định cho sàn: xoá registry + gán lại mesh sàn mặc định. */
 export function handleResetFloorMaterial(command: ResetFloorMaterialCmd, deps: DispatcherDeps): void {
-    const { materialRegistry, floorMaterials } = deps;
+    const { world, materialRegistry, floorMaterials } = deps;
     floorMaterials.delete(command.roomKey);
 
     withRoomFloorMesh(command.roomKey, deps, (mesh) => {
         const prev = mesh.material;
         mesh.material = materialRegistry.get(FLOOR_DEFAULT_MATERIAL);
         releaseSurfaceMaterial(prev); // thu hồi surface-material cũ về default (C2)
+        world.markDirty(); // báo on-demand RenderSystem vẽ lại (xem reskinWall)
     });
 }

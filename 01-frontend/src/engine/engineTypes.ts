@@ -126,6 +126,8 @@ export type EngineApi = {
     getWallMaterial: (wallId: string, face: WallFace) => string | null;
     /** Trả về materialId hiện tại của sàn phòng (theo roomKey), hoặc null. */
     getFloorMaterial: (roomKey: string) => string | null;
+    /** Trả về loại phòng (living/bedroom/…) theo roomKey, hoặc null nếu chưa gán. */
+    getRoomType: (roomKey: string) => string | null;
     /**
      * Đọc dữ liệu copy của một entity ĐẶT SÀN (modelId + transform + materials).
      * Trả về null nếu entity không phải đồ đặt sàn (vd cửa/kệ bám tường, hoặc không
@@ -170,9 +172,28 @@ export type EngineApiFacade = {
  *   - EngineContext.Provider (cho React components)
  *   - window.gameEngine       (backward-compat, debug)
  */
+/**
+ * Điều khiển WebXR (chế độ đi dạo bằng kính VR) — bề mặt React/UI tiêu thụ.
+ * Hiện thực ở engine/setup/xrSetup.ts; gắn vào EngineInstance.xr trong createEngine.
+ */
+export type XRControls = {
+    /** Thiết bị có hỗ trợ immersive-vr không (Promise, false nếu không có navigator.xr). */
+    isSupported: () => Promise<boolean>;
+    /** Đang trình chiếu trong kính hay không (đọc đồng bộ). */
+    isPresenting: () => boolean;
+    /** Mở session immersive-vr (yêu cầu cử chỉ người dùng — gọi từ onClick). */
+    enter: () => Promise<void>;
+    /** Kết thúc session đang chạy (nếu có). */
+    exit: () => Promise<void>;
+    /** Đăng ký lắng nghe trạng thái present (true=vào VR / false=ra). Trả hàm huỷ. */
+    subscribe: (cb: (presenting: boolean) => void) => () => void;
+};
+
 export type EngineInstance = {
     world: World;
     api: EngineApi;
+    /** Điều khiển WebXR (đi dạo bằng kính) — UI gọi enter/exit, subscribe present. */
+    xr: XRControls;
     /** NodeRegistry — topology graph của tất cả node/wall. */
     nodes: NodeRegistry;
     /** Ánh xạ wallId (uuid) → ECS entityId (uuid) — cần thiết cho serialize và dispatcher. */
@@ -184,6 +205,12 @@ export type EngineInstance = {
      * và RoomSystem. serialize đọc để lưu; deserialize ghi lại qua SET_FLOOR_MATERIAL.
      */
     floorMaterials: Map<string, string>;
+    /**
+     * Loại phòng theo roomKey (sorted nodeIds) → roomType ("living"/"bedroom"/…).
+     * Metadata thuần (không mesh). serialize đọc để lưu; deserialize ghi lại qua
+     * SET_ROOM_TYPE; describeScene đọc để phơi `type` cho AI/UI.
+     */
+    roomTypes: Map<string, string>;
     /** Dọn dẹp toàn bộ Three.js objects, event listeners, physics khi unmount. */
     dispose: () => void;
 };

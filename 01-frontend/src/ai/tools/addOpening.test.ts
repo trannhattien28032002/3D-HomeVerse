@@ -19,6 +19,7 @@ const perception: ScenePerceptionSource = {
     world: new World(),
     nodes: new NodeRegistry(),
     wallEntityByWallId: new Map([["w1", "e1"]]),
+    roomTypes: new Map(),
 };
 
 describe("addOpening", () => {

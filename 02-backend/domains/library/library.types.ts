@@ -23,6 +23,9 @@ export interface LibraryObject {
   topdownUrl: string | null;
   boundingBox: Record<string, unknown>; // { width, depth, height }
   collisionBox: Record<string, unknown>; // { width, depth }
+  // Wall-placement spec for doors/windows/wall-mounted items. null for floor items
+  // (the default). Shape: { constraint:'wall', wallBehavior:'mount'|'opening', mountHeight?, faceGap?, cut? }.
+  placement: Record<string, unknown> | null;
   materialSlots: MaterialSlot[];
   materialBindings: MaterialBinding[];
   isPremium: boolean;

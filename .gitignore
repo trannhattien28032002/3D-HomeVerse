@@ -1,3 +1,14 @@
 /.agent
 /.claude
 /.codegraph
+
+.env
+!.env.example
+
+# Personal notes / scratch / generated docs — not for the shared repo
+/code-explain/
+/code-walkthrough/
+/feature-guides/
+/database/
+/BAO-CAO-*.md
+01-frontend/scratch/

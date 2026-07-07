@@ -57,6 +57,7 @@ function buildDeps(): { deps: DispatcherDeps; world: World; nodeRegistry: NodeRe
         materialRegistry,
         entityRegistry,
         floorMaterials: new Map(),
+        roomTypes: new Map(),
         // Stubs — not exercised by node/wall commands:
         materialLibrary: {} as never,
         gltfLoader: {} as never,

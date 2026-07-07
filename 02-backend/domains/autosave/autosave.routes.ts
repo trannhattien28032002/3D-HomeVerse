@@ -19,8 +19,7 @@ autosaveRouter.post(
       const result = await service.createAutosave(
         req.user!.id,
         String(req.params.id),
-        req.body,
-        req.shareContext
+        req.body
       );
       res.status(201).json(result);
     } catch (err) {
@@ -35,7 +34,7 @@ autosaveRouter.get(
   requireAuth,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const autosave = await service.getLatest(req.user!.id, String(req.params.id), req.shareContext);
+      const autosave = await service.getLatest(req.user!.id, String(req.params.id));
       res.json(autosave);
     } catch (err) {
       next(err);

@@ -1,23 +1,16 @@
+// Trạm kiểm soát an ninh (Middleware)
+
 import { Request, Response, NextFunction } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import jwt from 'jsonwebtoken';
 import { env } from '../configs/env';
 import { AppError } from '../shared/errors/AppError';
-import { pool } from '../shared/db/client';
-import { typedQuery } from '../shared/db/queryHelper';
-import type { ShareContext } from '../shared/types/shareContext';
 
 interface SupabaseJwtPayload {
   sub: string;
   email?: string;
   app_metadata?: { plan?: string };
   user_metadata?: { plan?: string };
-}
-
-interface ShareRow {
-  projectId: string;
-  permission: 'viewer' | 'commenter' | 'editor';
-  expiresAt: Date | null;
 }
 
 function extractToken(req: Request): string | null {
@@ -64,7 +57,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   req.user = {
     id: payload.sub,
     email: payload.email ?? '',
-    plan: payload.app_metadata?.plan ?? payload.user_metadata?.plan ?? 'free',
+    plan: payload.app_metadata?.plan ?? payload.user_metadata?.plan ?? 'free', // Gói miễn phí cơ bản (Hiện tại chưa phát triển)
   };
   next();
 }
@@ -90,51 +83,4 @@ export async function attachUserIfPresent(
     }
   }
   next();
-}
-
-// Reads ?shareToken query param, looks it up in the DB, checks expiry,
-// and attaches req.shareContext when valid. Does NOT reject the request.
-// To avoid circular imports, the DB query is done inline here.
-export async function attachShareContext(
-  req: Request,
-  _res: Response,
-  next: NextFunction
-): Promise<void> {
-  const shareToken = req.query.shareToken as string | undefined;
-  if (!shareToken) {
-    next();
-    return;
-  }
-
-  try {
-    const { rows } = await typedQuery<ShareRow>(
-      pool,
-      `SELECT project_id, permission, expires_at
-       FROM public.project_shares
-       WHERE token = $1`,
-      [shareToken]
-    );
-
-    const share = rows[0];
-    if (share && (!share.expiresAt || new Date(share.expiresAt) > new Date())) {
-      req.shareContext = {
-        projectId: share.projectId,
-        permission: share.permission,
-      };
-    }
-  } catch {
-    // Silently ignore errors; share context simply won't be attached.
-  }
-
-  next();
-}
-
-// Allows the request if either req.user (JWT) or req.shareContext is set.
-// Use on routes accessible by both authenticated users and share-token holders.
-export function requireAuthOrShare(req: Request, _res: Response, next: NextFunction): void {
-  if (req.user || req.shareContext) {
-    next();
-    return;
-  }
-  throw new AppError('Authentication or share token required', 401, 'UNAUTHORIZED');
 }

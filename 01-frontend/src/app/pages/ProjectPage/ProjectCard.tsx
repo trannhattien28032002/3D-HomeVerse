@@ -2,7 +2,8 @@
  * ProjectCard — 1 card project trong grid: thumbnail + tên + ngày + menu ngữ cảnh
  * (đổi tên / nhân bản / xoá). Click card → vào editor. Tách từ ProjectsPage (Phase 5.6).
  */
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import type { ProjectMeta } from "src/app/hooks/useProjectList";
 
@@ -19,7 +20,26 @@ type ProjectCardProps = {
 export default function ProjectCard({ project, onRename, onDuplicate, onDelete }: ProjectCardProps) {
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    // Toạ độ fixed của menu (render qua portal để không bị article overflow-hidden cắt).
+    const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
     const dateLabel = new Date(project.createdAt).toLocaleDateString();
+
+    // Tính vị trí menu neo theo nút more_vert mỗi khi mở.
+    useLayoutEffect(() => {
+        if (!menuOpen) return;
+        const place = () => {
+            const r = triggerRef.current?.getBoundingClientRect();
+            if (r) setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+        };
+        place();
+        window.addEventListener("resize", place);
+        window.addEventListener("scroll", place, true);
+        return () => {
+            window.removeEventListener("resize", place);
+            window.removeEventListener("scroll", place, true);
+        };
+    }, [menuOpen]);
 
     const runAction = (action: () => void) => (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -49,8 +69,9 @@ export default function ProjectCard({ project, onRename, onDuplicate, onDelete }
                             {dateLabel}
                         </p>
                     </div>
-                    <div className="relative flex-shrink-0">
+                    <div className="flex-shrink-0">
                         <button
+                            ref={triggerRef}
                             aria-label="Tuỳ chọn project"
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -60,7 +81,7 @@ export default function ProjectCard({ project, onRename, onDuplicate, onDelete }
                         >
                             <span className="material-symbols-outlined">more_vert</span>
                         </button>
-                        {menuOpen && (
+                        {menuOpen && menuPos && createPortal(
                             <>
                                 {/* Backdrop bắt click ngoài để đóng menu */}
                                 <button
@@ -74,7 +95,8 @@ export default function ProjectCard({ project, onRename, onDuplicate, onDelete }
                                 />
                                 <div
                                     onClick={(e) => e.stopPropagation()}
-                                    className="absolute right-0 top-full mt-1 z-[201] w-44 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-[0_12px_32px_rgba(var(--rgb-primary),0.18)] py-1.5 flex flex-col"
+                                    style={{ top: menuPos.top, right: menuPos.right }}
+                                    className="fixed z-[201] w-44 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-[0_12px_32px_rgba(var(--rgb-primary),0.18)] py-1.5 flex flex-col"
                                 >
                                     <button
                                         onClick={runAction(() => onRename(project))}
@@ -98,7 +120,8 @@ export default function ProjectCard({ project, onRename, onDuplicate, onDelete }
                                         Xoá
                                     </button>
                                 </div>
-                            </>
+                            </>,
+                            document.body,
                         )}
                     </div>
                 </div>
